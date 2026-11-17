@@ -1,6 +1,6 @@
 # spotify-ai (working title)
 
-> **Status: research / planning. Nothing is installable yet.**
+> **Status: early. Ad blocking installs on Linux; the AI agent is not built yet.**
 
 A desktop Spotify setup for Windows, macOS and Linux:
 
@@ -9,13 +9,28 @@ A desktop Spotify setup for Windows, macOS and Linux:
 - an AI agent inside Spotify that manages your playlists in plain language;
 - you never enter API keys and never give your credentials to anyone.
 
-It is built from three layers, installed by one command:
+It is built from three parts, installed by one command:
 
-1. [SpotX](https://github.com/SpotX-Official/SpotX) (Windows) / [SpotX-Bash](https://github.com/SpotX-Official/SpotX-Bash) (macOS, Linux) — ad blocking;
-2. [Spicetify](https://github.com/spicetify/cli) — mod platform for the Spotify desktop client;
-3. the agent from this repository — a Spicetify extension.
+1. [Spicetify](https://github.com/spicetify/cli) — mod platform for the Spotify desktop client;
+2. [adblockify](https://github.com/rxri/spicetify-extensions) by rxri — ad-blocking Spicetify extension;
+3. the agent from this repository — a Spicetify custom app *(not built yet)*.
 
-SpotX and Spicetify are **not** part of this repository. The installer downloads them from their official repositories.
+Spicetify and adblockify are **not** part of this repository. The installer downloads pinned versions from their official repositories and verifies checksums.
+
+## Install (Linux, Spotify from the official apt repository)
+
+Open Spotify once and log in, then:
+
+```bash
+git clone https://github.com/ganfay/spotify-ai.git && cd spotify-ai && ./install.sh
+```
+
+Something broke? Run `./install.sh` again — it repairs the setup.
+Remove everything: `./install.sh --uninstall`.
+
+The installer asks for `sudo` twice on the first run: to stop Spotify auto-updates (`apt-mark hold`) and to let your user write to `/usr/share/spotify`. Windows and macOS are not supported yet.
+
+Side effect to know about: the ad blocker switches the client to a "premium" state (for example unlimited skips). Server-side premium features (downloads, higher quality) stay locked.
 
 ## Docs
 

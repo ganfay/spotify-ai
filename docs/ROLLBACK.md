@@ -21,7 +21,11 @@ Local folder `backups/2026-11-17-stock/` (git-ignored, never pushed):
 cd /usr/share/spotify && sha256sum --quiet -c ~/GolandProjects/spotify-ai/backups/2026-11-17-stock/usr-share-spotify.sha256 && echo STOCK
 ```
 
-## Undo, from smallest to biggest step
+## Normal way
+
+`./install.sh --uninstall` — restores Spotify files, removes Spicetify, gives the folder back to root, allows updates.
+
+## Undo by hand, from smallest to biggest step
 
 1. **Remove Spicetify changes:** `spicetify restore`
 2. **Remove SpotX-Bash patches:** `bash <(curl -sSL https://spotx-official.github.io/run.sh) --uninstall`

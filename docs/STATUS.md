@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Steps 1.1–1.2 done: baseline measured ([perf/BASELINE.md](perf/BASELINE.md)). Steps 1.3–1.6 and 1.8 done: backup, update hold, SpotX-Bash, Spicetify on top; variant A passes all performance criteria.
+**Phase 1 — ads + stats on Linux: almost done.** Variant B (Spicetify + adblockify) chosen (decision 22). `install.sh` v0 works: fresh install and repeat run tested. Open: stats check on the phone; `--uninstall` and the sudo steps of the installer are not tested yet.
 
 ## Done
 
@@ -23,9 +23,9 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Variant B is installed now: 60-minute ad test + phone stats check (owner). Variant A: ads passed (owner listened, no ads); stats check pending (appears with delay).
-2. Step 1.10: choose the variant by decision 13.
-3. Step 1.11: installer v0 for Linux.
+1. Owner: test `./install.sh --uninstall` then `./install.sh` (covers the sudo steps), and check "Recently played" / "Listening stats" on the phone.
+2. Phase 2, step 2.1: API probe of the internal client calls on the real client.
+3. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 
 ## Blockers / open questions
 
