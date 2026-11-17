@@ -32,13 +32,16 @@ const css = {
     display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "8px 10px",
     borderBottom: "1px solid rgba(255,255,255,.07)", cursor: "pointer", borderRadius: 4,
   },
-  group: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "10px 14px", margin: "10px 0" },
-  entry: { display: "flex", alignItems: "center", gap: 10, padding: "5px 0", cursor: "pointer" },
+  group: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "14px 18px", margin: "12px 0" },
+  entry: { display: "flex", alignItems: "center", gap: 14, padding: "8px 0", cursor: "pointer" },
   tag: { fontSize: 11, padding: "1px 7px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 6 },
-  bar: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", margin: "16px 0" },
-  primary: { padding: "9px 18px", borderRadius: 20, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "#000" },
-  secondary: { padding: "9px 18px", borderRadius: 20, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)" },
-  danger: { padding: "9px 18px", borderRadius: 20, border: 0, fontWeight: 700, cursor: "pointer", background: "#e22134", color: "#fff" },
+  bar: { display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", margin: "28px 0 40px" },
+  primary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "#000" },
+  secondary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)" },
+  danger: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "#e22134", color: "#fff" },
+  cards: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginTop: 24 },
+  card: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "18px 20px", minHeight: 96 },
+  badge: { fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 8 },
   notice: { background: "rgba(30,215,96,.12)", borderRadius: 8, padding: "12px 14px", margin: "14px 0" },
   error: { color: "#f15e6c", margin: "10px 0" },
 } as const;
@@ -175,9 +178,9 @@ function Duplicates({ playlist, onBack }: { playlist: Playlist; onBack: () => vo
               </button>
             )}
             {confirming && (
-              <span>
-                Remove {picked.size} tracks from “{playlist.name}”?{" "}
-                <button style={css.danger} disabled={!!busy} onClick={removeHere}>Yes, remove</button>{" "}
+              <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 12 }}>
+                <span style={{ marginRight: 16 }}>Remove {picked.size} tracks from “{playlist.name}”?</span>
+                <button style={{ ...css.danger, marginRight: 12 }} disabled={!!busy} onClick={removeHere}>Yes, remove</button>
                 <button style={css.secondary} onClick={() => setConfirming(false)}>Cancel</button>
               </span>
             )}
@@ -189,48 +192,78 @@ function Duplicates({ playlist, onBack }: { playlist: Playlist; onBack: () => vo
   );
 }
 
-function App() {
+interface Feature {
+  id: string;
+  title: string;
+  text: string;
+  ready: boolean;
+}
+const FEATURES: Feature[] = [
+  { id: "duplicates", title: "Find duplicates", text: "Exact repeats and different versions of one song.", ready: true },
+  { id: "agent", title: "AI agent", text: "Tell it in your own words what to do with a playlist.", ready: false },
+  { id: "language", title: "Filter by language", text: "For example: everything except Russian, into a new playlist.", ready: false },
+  { id: "split", title: "Split a big playlist", text: "Into smaller ones by mood, genre or energy.", ready: false },
+  { id: "cleanup", title: "Clean up", text: "Tracks that do not fit, each with a reason.", ready: false },
+  { id: "recommend", title: "Recommendations", text: "New songs based on a playlist, with a reason for each.", ready: false },
+];
+
+function Home({ onOpen }: { onOpen: (id: string) => void }) {
+  return (
+    <div style={css.cards}>
+      {FEATURES.map((f) => (
+        <div key={f.id} style={{ ...css.card, cursor: f.ready ? "pointer" : "default", opacity: f.ready ? 1 : 0.55 }}
+             onClick={() => f.ready && onOpen(f.id)}>
+          <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
+            {f.title}{!f.ready && <span style={css.badge}>soon</span>}
+          </div>
+          <div style={css.muted}>{f.text}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: Playlist) => void; onBack: () => void }) {
   const { useEffect, useState } = hooks();
   const [playlists, setPlaylists] = useState(null as Playlist[] | null);
-  const [selected, setSelected] = useState(null as Playlist | null);
   const [error, setError] = useState("");
-  const [prompt, setPrompt] = useState("");
-  const [note, setNote] = useState("");
-
   useEffect(() => {
     spotify.listPlaylists().then(setPlaylists, (e: Error) => setError(e.message));
-  }, [selected]);
+  }, []);
+  return (
+    <div>
+      <p style={{ ...css.muted, cursor: "pointer", marginTop: 20 }} onClick={onBack}>← All tools</p>
+      <h2 style={{ fontSize: 20, margin: "6px 0 12px" }}>{title} — pick a playlist</h2>
+      {error && <p style={css.error}>{error}</p>}
+      {!playlists && !error && <p style={css.muted}>Loading…</p>}
+      {playlists?.map((p: Playlist) => (
+        <div key={p.uri} style={css.row} onClick={() => onPick(p)}>
+          <span>{p.name}{!p.editable && <span style={css.muted}> · not yours (a copy can still be made)</span>}</span>
+          <span style={css.muted}>{p.trackCount} tracks</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-  const submit = (event: { preventDefault(): void }) => {
-    event.preventDefault();
-    if (prompt.trim()) setNote("The AI is not connected yet. For now, pick a playlist below to find duplicates.");
-  };
+function App() {
+  const { useState } = hooks();
+  const [tool, setTool] = useState("" as string);
+  const [selected, setSelected] = useState(null as Playlist | null);
 
+  let body;
+  if (tool === "duplicates" && selected) {
+    body = <div style={{ marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
+  } else if (tool === "duplicates") {
+    body = <PlaylistPicker title="Find duplicates" onPick={setSelected} onBack={() => setTool("")} />;
+  } else {
+    body = <Home onOpen={setTool} />;
+  }
   return (
     <section style={css.page}>
       <h1 style={{ marginBottom: 4 }}>AI Playlists</h1>
       <p style={css.muted}>Nothing in your library changes until you confirm it.</p>
-      <form onSubmit={submit} style={{ margin: "18px 0 8px" }}>
-        <input style={css.input} value={prompt} placeholder="Describe what to do with your playlists (AI — coming soon)"
-               onChange={(e: any) => setPrompt(e.target.value)} />
-      </form>
-      {note && <p style={css.muted}>{note}</p>}
-      {error && <p style={css.error}>{error}</p>}
-
-      {selected ? (
-        <Duplicates playlist={selected} onBack={() => setSelected(null)} />
-      ) : (
-        <div>
-          <h2 style={{ fontSize: 18, margin: "24px 0 8px" }}>Find duplicates — pick a playlist</h2>
-          {!playlists && !error && <p style={css.muted}>Loading…</p>}
-          {playlists?.map((p: Playlist) => (
-            <div key={p.uri} style={css.row} onClick={() => setSelected(p)}>
-              <span>{p.name}{!p.editable && <span style={css.muted}> · not yours (a copy can still be made)</span>}</span>
-              <span style={css.muted}>{p.trackCount} tracks</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {body}
     </section>
   );
 }

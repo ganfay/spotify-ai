@@ -46,19 +46,12 @@ await build({
   footer: { js: "function render(){return __aiPlaylists.render();}" },
 });
 
-// The only code that runs at Spotify startup: it adds one button.
-await build({
-  ...common,
-  entryPoints: ["src/extension/button.ts"],
-  outfile: join(out, "button.js"),
-  format: "iife",
-  minify: true,
-});
-
-const icon = '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6L8 1z"/></svg>';
+// Spicetify itself puts a link to a custom app into the top bar, using this icon.
+// So the app needs no startup code at all (decision 9).
+const icon = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M10 2.5l2.2 5.8 5.8 2.2-5.8 2.2L10 18.500l-2.2-5.800L2 10.500l5.800-2.200L10 2.500z"/><path d="M18.500 14l1.050 2.700 2.700 1.050-2.700 1.050L18.500 21.500l-1.050-2.700-2.700-1.050 2.700-1.050L18.500 14z"/></svg>';
 await writeFile(
   join(out, "manifest.json"),
-  JSON.stringify({ name: "AI Playlists", icon, "active-icon": icon, subfiles: [], subfiles_extension: ["button.js"] }, null, 2),
+  JSON.stringify({ name: "AI Playlists", icon, "active-icon": icon, subfiles: [], subfiles_extension: [] }, null, 2),
 );
 console.log(`built ${out}`);
 
