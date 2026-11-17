@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Steps 1.1–1.2 done: baseline measured ([perf/BASELINE.md](perf/BASELINE.md)). Step 1.3 done: backup + [ROLLBACK.md](ROLLBACK.md).
+**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Steps 1.1–1.2 done: baseline measured ([perf/BASELINE.md](perf/BASELINE.md)). Steps 1.3–1.6 and 1.8 done: backup, update hold, SpotX-Bash, Spicetify on top; variant A passes all performance criteria.
 
 ## Done
 
@@ -23,9 +23,9 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Step 1.5: `sudo apt-mark hold spotify-client` (owner runs it).
-2. Step 1.6: SpotX-Bash at the pinned commit (`versions`), flags `--noninteractive -e` (owner runs it, needs sudo).
-3. Step 1.7: ad test (60 min), stats check on the phone, benchmark label `spotx`.
+1. Step 1.7 for variant A: 60-minute ad test and phone stats check (owner).
+2. Step 1.9: variant B (restore stock → Spicetify + adblockify), same tests.
+3. Step 1.10–1.11: choose the variant, installer v0.
 
 ## Blockers / open questions
 

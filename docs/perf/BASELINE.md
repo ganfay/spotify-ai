@@ -41,3 +41,19 @@ Spotify 1.3.4.258 (apt), Ubuntu 26.04, 12 CPU threads, 14 GB RAM. Medians of 5 r
 The extra CPU while playing is in the GPU process (~14 %) and one renderer (~12.5 %), stable in all 5 windows and in a repeat sample. That pattern means something is being drawn continuously (an animation or looping video in the UI), not audio work. Cause not identified yet — needs a look at the screen. Verified in the patched binary: only `gabo-receiver-service/public/…` is disabled, `gabo-receiver-service/v3/events/` is intact.
 
 **Follow-up (same day):** the 26–30 % appears right after a fresh start + playback and was reproduced; after the owner interacted with the window it dropped to 3–9 % (normal). The old ad blocker did not show this with the same procedure. Root cause not found. **Owner's decision: not critical, accepted, move on.** Re-check when comparing with variant B.
+
+## Variant A: SpotX-Bash + Spicetify 2.46.7 (`spotx-spicetify`) — 2026-11-17
+
+Spicetify applied with `inject_css 0`, `replace_colors 0`, no extensions, no custom apps.
+
+| Metric | `stock` | `spotx-spicetify` | Verdict |
+|---|---|---|---|
+| Startup until settled | 6.55 s | 6.27 s | pass (−4 %) |
+| CPU paused | 1.86 % | 1.78 % | pass |
+| CPU playing | 4.80 % | 4.10 % | pass |
+| RAM paused | 1136 MB | 1088 MB | pass (−4 %) |
+| RAM playing | 1160 MB | 1138 MB | pass (−2 %) |
+
+**All performance criteria pass.** The 26–30 % playing CPU seen with SpotX alone did **not** appear here with the identical procedure (fresh start → playback by MPRIS). Why is unknown; possibly Spicetify's preprocessing removes whatever was animating.
+
+Network check of the patched client while running: 7 TCP connections, all to Google Cloud addresses; 6 in the same block as `spclient.wg.spotify.com` / `api-partner.spotify.com`, one (104.199.65.9) not matched to a Spotify hostname. No third-party hosts seen (single snapshot).
