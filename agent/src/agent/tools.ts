@@ -188,6 +188,8 @@ export class Toolbox {
   private readonly tracks = new Map<string, Track[]>();
   /** Tracks found outside the user's playlists: "c1", "c2", … */
   private readonly catalogue: Track[] = [];
+  /** Per playlist: how many tracks from the start the model has been shown. */
+  private readonly shown = new Map<string, number>();
 
   /** Set by the agent: receives short progress texts of long-running tools. */
   notify: (text: string) => void = () => {};
@@ -237,6 +239,17 @@ export class Toolbox {
     return { playlist, tracks };
   }
 
+  private markShown(playlistUri: string, upTo: number): void {
+    this.shown.set(playlistUri, Math.max(this.shown.get(playlistUri) ?? 0, upTo));
+  }
+
+  /** An error text when the model is about to decide about tracks it never read. */
+  private unread(playlist: Playlist, tracks: Track[]): string | null {
+    const seen = this.shown.get(playlist.uri) ?? 0;
+    if (seen >= tracks.length) return null;
+    return `You have only read tracks t1-t${seen} of ${tracks.length}. Read the rest first (get_tracks or get_track_data with offset ${seen}), then propose again.`;
+  }
+
   /** Turns "t12" into the track; unknown ids are collected, not guessed. */
   private pick(tracks: Track[], ids: unknown, bad: string[]): Track[] {
     const out: Track[] = [];
@@ -257,6 +270,7 @@ export class Toolbox {
     const { playlist, tracks } = await this.playlist(args.playlist_id);
     const offset = Math.max(0, Number(args.offset ?? 0) || 0);
     const page = tracks.slice(offset, offset + PAGE);
+    if (offset <= (this.shown.get(playlist.uri) ?? 0)) this.markShown(playlist.uri, offset + page.length);
     return {
       playlist: playlist.name,
       total: tracks.length,
@@ -275,7 +289,10 @@ export class Toolbox {
     if (fields.length === 0) return { error: "fields must contain 'language' and/or 'mood'." };
     const offset = Math.max(0, Number(args.offset ?? 0) || 0);
     const page = tracks.slice(offset, offset + PAGE);
-    const facts = await this.spotify.getTrackData(page.map((t) => t.uri), fields, (done, total) => this.notify(`Reading track data ${done}/${total}`));
+    // Progress is shown for the whole playlist, not for this page only.
+    const facts = await this.spotify.getTrackData(page.map((t) => t.uri), fields, (done, total) =>
+      this.notify(`Checking tracks ${Math.min(tracks.length, offset + page.length - (total - done))} of ${tracks.length}`));
+    if (offset <= (this.shown.get(playlist.uri) ?? 0)) this.markShown(playlist.uri, offset + page.length);
     const num = (v: number | undefined, digits = 2) => (v === undefined ? "?" : v.toFixed(digits));
     const lines = page.map((t, i) => {
       const f = facts.get(t.uri) ?? {};
@@ -284,13 +301,19 @@ export class Toolbox {
       if (fields.includes("mood")) parts.push(`energy=${num(f.energy)} valence=${num(f.valence)} dance=${num(f.danceability)} tempo=${num(f.tempo, 0)} acoustic=${num(f.acousticness)}`);
       return parts.join(" | ");
     });
-    return { playlist: playlist.name, total: tracks.length, offset, returned: page.length, has_more: offset + page.length < tracks.length, tracks: lines.join("\n") };
+    const more = offset + page.length < tracks.length;
+    return {
+      playlist: playlist.name, total: tracks.length, offset, returned: page.length, has_more: more,
+      ...(more ? { next: `Call get_track_data again with offset ${offset + page.length} — ${tracks.length - offset - page.length} tracks are not read yet.` } : {}),
+      tracks: lines.join("\n"),
+    };
   }
 
   private async findDuplicates(args: Args): Promise<Result> {
     const { playlist, tracks } = await this.playlist(args.playlist_id);
     const position = new Map(tracks.map((t, i) => [t.uid, i + 1]));
     const groups = findDuplicates(tracks);
+    this.markShown(playlist.uri, tracks.length);
     return {
       playlist: playlist.name,
       total_tracks: tracks.length,
@@ -371,6 +394,9 @@ export class Toolbox {
     if (hasInclude) {
       chosen = this.pick(tracks, args.track_ids, bad);
     } else {
+      const { playlist } = await this.playlist(args.source_playlist_id);
+      const problem = this.unread(playlist, tracks);
+      if (problem) return { error: problem };
       const excluded = new Set(this.pick(tracks, args.exclude_track_ids, bad).map((t) => t.uid));
       chosen = tracks.filter((t) => !excluded.has(t.uid));
     }
@@ -417,6 +443,8 @@ export class Toolbox {
     const { playlist, tracks } = await this.playlist(args.source_playlist_id);
     const raw = Array.isArray(args.groups) ? (args.groups as { name?: unknown; track_ids?: unknown }[]) : [];
     if (raw.length < 2) return { error: "A split needs at least 2 groups." };
+    const problem = this.unread(playlist, tracks);
+    if (problem) return { error: problem };
     const bad: string[] = [];
     const used = new Set<string>();
     let twice = 0;

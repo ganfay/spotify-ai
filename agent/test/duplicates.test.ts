@@ -7,7 +7,7 @@ import type { Track } from "../src/spotify/types";
 let n = 0;
 const t = (name: string, artist: string, uri?: string, durationMs = 200_000): Track => ({
   uri: uri ?? `spotify:track:${++n}`, uid: `uid${++n}`, name, artists: [artist], album: "", durationMs,
-  addedAt: "", explicit: false, playable: true, local: false,
+  addedAt: "", explicit: false, playable: true, local: false, imageUrl: "",
 });
 
 test("exact duplicates: later copies are suggested", () => {

@@ -26,6 +26,8 @@ export interface Track {
   explicit: boolean;
   playable: boolean;
   local: boolean;
+  /** Small cover image (https), or "". */
+  imageUrl: string;
 }
 
 /** Points at one entry of a playlist. */

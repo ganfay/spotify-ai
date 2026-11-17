@@ -10,7 +10,7 @@ import { isConfigured, loadSettings } from "../settings";
 import { restoreSnapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
 import { getTrackData } from "../spotify/facts";
-import { BackLink, css, Dots, duration, hooks, Icon, Spinner } from "./ui";
+import { BackLink, css, Dots, duration, hooks, Icon, Spinner, TrackRow } from "./ui";
 
 declare const Spicetify: any;
 
@@ -38,14 +38,10 @@ function TrackRows({ tracks, onToggle }: { tracks: ProposedTrack[]; onToggle?: (
   return (
     <div style={scroll}>
       {tracks.slice(0, MAX_ROWS).map(({ track, reason, selected }) => (
-        <label key={track.uid} style={css.entry}>
-          {onToggle && <input type="checkbox" checked={selected} onChange={() => onToggle(track.uid)} />}
-          <span style={{ flex: 1 }}>
-            {track.name}
-            <div style={css.muted}>{track.artists.join(", ")}{reason && <span> — {reason}</span>}</div>
-          </span>
-          {track.durationMs > 0 && <span style={css.muted}>{duration(track.durationMs)}</span>}
-        </label>
+        <TrackRow key={track.uid} uri={track.uri} name={track.name} imageUrl={track.imageUrl} local={track.local}
+                  sub={<span>{track.artists.join(", ")}{reason && <span> — {reason}</span>}</span>}
+                  right={track.durationMs > 0 ? duration(track.durationMs) : undefined}
+                  checked={selected} onToggle={onToggle ? () => onToggle(track.uid) : undefined} onPlay={spotify.playTrack} />
       ))}
       {tracks.length > MAX_ROWS && <p style={css.muted}>…and {tracks.length - MAX_ROWS} more (they follow their checkbox state too).</p>}
     </div>

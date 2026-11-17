@@ -10,7 +10,7 @@ import type { Playlist, Track } from "../src/spotify/types";
 
 const track = (i: number, name: string, artist: string): Track => ({
   uri: `spotify:track:${i}`, uid: `uid${i}`, name, artists: [artist], album: "Album", durationMs: 180_000,
-  addedAt: "2026-01-01T00:00:00Z", explicit: false, playable: true, local: false,
+  addedAt: "2026-01-01T00:00:00Z", explicit: false, playable: true, local: false, imageUrl: "",
 });
 const TRACKS = [track(1, "Обійми", "Океан Ельзи"), track(2, "Кукла колдуна", "Король и Шут"), track(3, "Stay", "Rihanna"), track(4, "Плакала", "KAZKA")];
 const PLAYLIST: Playlist = { uri: "spotify:playlist:a", name: "Mix", description: "", ownerName: "me", editable: true, trackCount: 4, imageUrl: "" };
@@ -180,6 +180,7 @@ test("Toolbox: invented ids are rejected, exclude-list and unsure tracks work", 
 test("Split: every track once, leftovers reported; apply creates the playlists", async () => {
   const { port, created } = fakeSpotify();
   const box = new Toolbox(port);
+  await box.call("get_tracks", { playlist_id: "p1" });
   const res = await box.call("propose_split", {
     source_playlist_id: "p1", summary: "by language",
     groups: [{ name: "UA", track_ids: ["t1", "t4"] }, { name: "Other", track_ids: ["t3", "t1"] }],
@@ -222,7 +223,7 @@ test("get_track_data: language codes and mood numbers, unknown shown as ?", asyn
   assert.equal(lines[0], "t1 | Обійми | Океан Ельзи | lang=uk | pop=60 | energy=0.40 valence=0.30 dance=0.50 tempo=96 acoustic=0.60");
   assert.match(lines[1]!, /lang=ru/);
   assert.equal(lines[3], "t4 | Плакала | KAZKA | lang=? | pop=? | energy=? valence=? dance=? tempo=? acoustic=?");
-  assert.deepEqual(progress, ["Reading track data 4/4"]);
+  assert.deepEqual(progress, ["Checking tracks 4 of 4"]);
   assert.match(String((await box.call("get_track_data", { playlist_id: "p1", fields: ["lyrics"] })).error), /fields must contain/);
 });
 
@@ -242,4 +243,24 @@ test("Recommendations: candidates exclude what is in the playlist; only cN ids c
   if (proposal.kind !== "additions") throw new Error("expected additions");
   await applyAdditionsAsNew(port, proposal);
   assert.deepEqual(created, [{ name: "Mix — recommendations", uris: ["spotify:track:10", "spotify:track:12"] }]);
+});
+
+test("An exclude-list or a split is refused until every track of a big playlist was read", async () => {
+  const many = Array.from({ length: 1200 }, (_, i) => track(i + 1, `Song ${i + 1}`, "A"));
+  const { port } = fakeSpotify();
+  const big: SpotifyPort = { ...port, getTracks: async () => many };
+  const box = new Toolbox(big);
+  const progress: string[] = [];
+  box.notify = (t) => progress.push(t);
+  const first = await box.call("get_track_data", { playlist_id: "p1", fields: ["language"] });
+  assert.equal(first.has_more, true);
+  assert.match(String(first.next), /offset 1000 — 200 tracks are not read yet/);
+  assert.equal(progress.at(-1), "Checking tracks 1000 of 1200");
+  const early = await box.call("propose_new_playlist", { source_playlist_id: "p1", name: "x", summary: "s", exclude_track_ids: ["t2"] });
+  assert.match(String(early.error), /only read tracks t1-t1000 of 1200.*offset 1000/s);
+  assert.match(String((await box.call("propose_split", { source_playlist_id: "p1", summary: "s", groups: [{ name: "a", track_ids: ["t1"] }, { name: "b", track_ids: ["t2"] }] })).error), /only read/);
+  await box.call("get_track_data", { playlist_id: "p1", fields: ["language"], offset: 1000 });
+  assert.equal(progress.at(-1), "Checking tracks 1200 of 1200");
+  const ok = await box.call("propose_new_playlist", { source_playlist_id: "p1", name: "x", summary: "s", exclude_track_ids: ["t2"] });
+  assert.equal(ok.tracks_in_playlist, 1199);
 });

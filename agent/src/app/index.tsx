@@ -8,7 +8,7 @@ import type { EntryRef, Playlist, Track } from "../spotify/types";
 
 import { AgentView } from "./agent";
 import { SettingsView } from "./settings";
-import { BackLink, css, duration, GlobalStyles, hooks, Icon, Spinner } from "./ui";
+import { BackLink, css, duration, GlobalStyles, hooks, Icon, Spinner, TrackRow } from "./ui";
 
 declare const Spicetify: any;
 
@@ -119,15 +119,11 @@ function Duplicates({ playlist, onBack }: { playlist: Playlist; onBack: () => vo
             <div key={group.entries[0]!.track.uid} style={css.group}>
               <div style={css.muted}>{group.kind === "exact" ? "Same track twice" : "Different versions of one song"}</div>
               {group.entries.map(({ track, position, tags }) => (
-                <label key={track.uid} style={css.entry}>
-                  <input type="checkbox" checked={picked.has(track.uid)} onChange={() => toggle(track.uid)} />
-                  <span style={{ flex: 1 }}>
-                    {track.name}
-                    {tags.map((tag) => <span key={tag} style={css.tag}>{tag}</span>)}
-                    <div style={css.muted}>{track.artists.join(", ")} · {track.album}</div>
-                  </span>
-                  <span style={css.muted}>#{position} · {duration(track.durationMs)}</span>
-                </label>
+                <TrackRow key={track.uid} uri={track.uri} name={track.name} imageUrl={track.imageUrl} local={track.local}
+                          badges={tags.map((tag) => <span key={tag} style={css.tag}>{tag}</span>)}
+                          sub={`${track.artists.join(", ")} · ${track.album}`}
+                          right={`#${position} · ${duration(track.durationMs)}`}
+                          checked={picked.has(track.uid)} onToggle={() => toggle(track.uid)} onPlay={spotify.playTrack} />
               ))}
             </div>
           ))}

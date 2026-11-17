@@ -78,13 +78,22 @@ export function GlobalStyles() {
       .sai-adv summary::-webkit-details-marker { display: none; }
       .sai-adv summary svg { transition: transform .15s; }
       .sai-adv[open] summary svg { transform: rotate(90deg); }
+      .sai-cover { position: relative; width: 40px; height: 40px; border-radius: 4px; overflow: hidden; flex: none; cursor: pointer; background: rgba(255,255,255,.07); display: flex; align-items: center; justify-content: center; color: var(--spice-subtext, #b3b3b3); }
+      .sai-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .sai-cover .play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); color: #fff; opacity: 0; transition: opacity .12s; }
+      .sai-trackrow:hover .sai-cover .play, .sai-cover.on .play { opacity: 1; }
+      .sai-cover.on .play { color: var(--spice-button, #1ed760); }
+      .sai-trackrow { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 6px; transition: background .12s; }
+      .sai-trackrow:hover { background: rgba(255,255,255,.06); }
+      .sai-trackrow .title { cursor: pointer; }
+      .sai-trackrow .title:hover { text-decoration: underline; }
       .sai-composer:focus-within { border-color: rgba(255,255,255,.35) !important; }
       .sai-composer input { outline: none; }
     `}</style>
   );
 }
 
-type IconName = "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
+type IconName = "play" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -103,6 +112,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     case "check": body = <path d="M5 12.5l4.5 4.5L19 7.5" {...stroke} strokeWidth={2.4} />; break;
     case "cross": body = <path d="M6 6l12 12M18 6L6 18" {...stroke} strokeWidth={2.4} />; break;
     case "send": body = <path d="M12 19V5M5.500 11.500L12 5l6.500 6.500" {...stroke} strokeWidth={2.4} />; break;
+    case "play": body = <path fill="currentColor" d="M8 5.500v13a.6.6 0 0 0 .92.500l10-6.500a.6.6 0 0 0 0-1l-10-6.500A.6.6 0 0 0 8 5.500z" />; break;
     case "plus": body = <path d="M12 5v14M5 12h14" {...stroke} />; break;
     case "chevron": body = <path d="M9 6l6 6-6 6" {...stroke} />; break;
     case "lock": body = <g {...stroke} strokeWidth={1.8}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></g>; break;
@@ -159,6 +169,54 @@ export function ResultBadge({ ok, title, detail }: { ok: boolean; title: string;
         <div style={{ fontWeight: 700, color }}>{title}</div>
         {detail && <div style={{ ...css.muted, marginTop: 2 }}>{detail}</div>}
       </span>
+    </div>
+  );
+}
+
+/** Which track was started from our lists last (shared by all rows on the page). */
+let nowPlaying = "";
+const listeners = new Set<() => void>();
+
+/**
+ * One track in a list: optional checkbox, cover (click = play it in Spotify),
+ * title, a second line, and something on the right.
+ */
+export function TrackRow(props: {
+  uri: string; name: string; imageUrl: string; local?: boolean;
+  sub: any; right?: any; badges?: any;
+  checked?: boolean; onToggle?: () => void;
+  onPlay: (uri: string) => Promise<void>;
+  key?: string;
+}) {
+  const { useEffect, useState } = hooks();
+  const [, refresh] = useState(0);
+  useEffect(() => {
+    const listener = () => refresh(Math.random());
+    listeners.add(listener);
+    return (() => void listeners.delete(listener)) as unknown as void;
+  }, []);
+  const play = () => {
+    if (props.local) return;
+    nowPlaying = props.uri;
+    listeners.forEach((l) => l());
+    props.onPlay(props.uri).catch(() => {
+      nowPlaying = "";
+      listeners.forEach((l) => l());
+    });
+  };
+  return (
+    <div className="sai-trackrow">
+      {props.onToggle && <input type="checkbox" checked={!!props.checked} onChange={props.onToggle} style={{ flex: "none", cursor: "pointer" }} />}
+      <div className={nowPlaying === props.uri ? "sai-cover on" : "sai-cover"} onClick={play} title={props.local ? "" : "Play"}>
+        {props.imageUrl ? <img src={props.imageUrl} loading="lazy" alt="" /> : <Icon name="music" size={18} />}
+        {!props.local && <span className="play"><Icon name="play" size={18} /></span>}
+      </div>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span className="title" onClick={play} style={nowPlaying === props.uri ? { color: "var(--spice-button, #1ed760)" } : undefined}>{props.name}</span>
+        {props.badges}
+        <div style={css.muted}>{props.sub}</div>
+      </span>
+      {props.right !== undefined && <span style={{ ...css.muted, flex: "none" }}>{props.right}</span>}
     </div>
   );
 }

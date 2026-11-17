@@ -45,6 +45,7 @@ function toTrack(item: any): Track {
     explicit: !!item.isExplicit,
     playable: item.isPlayable !== false,
     local: !!item.isLocal,
+    imageUrl: imageUrl((item.album?.images ?? []).find((i: any) => i.label === "small")?.url ?? item.album?.images?.[0]?.url),
   };
 }
 
@@ -203,6 +204,7 @@ export async function getRecommendations(playlistUri: string, limit = 50): Promi
   return (items ?? []).filter((i) => typeof i?.uri === "string").map((i) => ({
     uri: i.uri, uid: "", name: i.name ?? "", artists: (i.artists ?? []).map((x: any) => x.name ?? ""), album: i.album?.name ?? "",
     durationMs: typeof i.duration === "number" ? i.duration : 0, addedAt: "", explicit: !!i.explicit, playable: true, local: false,
+    imageUrl: imageUrl(i.album?.imageUrl),
   }));
 }
 
@@ -220,5 +222,13 @@ export async function searchTracks(query: string, limit = 5): Promise<Track[]> {
   return items.map((i) => i?.item?.data).filter((d) => d?.__typename === "Track" && typeof d.uri === "string").slice(0, limit).map((d) => ({
     uri: d.uri, uid: "", name: d.name ?? "", artists: (d.artists?.items ?? []).map((x: any) => x?.profile?.name ?? ""), album: d.albumOfTrack?.name ?? "",
     durationMs: d.duration?.totalMilliseconds ?? 0, addedAt: "", explicit: false, playable: true, local: false,
+    imageUrl: imageUrl((d.albumOfTrack?.coverArt?.sources ?? []).find((x: any) => x.width === 64)?.url ?? d.albumOfTrack?.coverArt?.sources?.[0]?.url),
   }));
+}
+
+/** Starts playing a track right away (the same as double-clicking it in Spotify). */
+export async function playTrack(uri: string): Promise<void> {
+  const player = Spicetify?.Player;
+  if (typeof player?.playUri !== "function") throw new SpotifyApiError("Playback is not available in this client version.");
+  await call("Starting playback", async () => player.playUri(uri));
 }
