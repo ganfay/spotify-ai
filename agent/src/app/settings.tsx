@@ -4,7 +4,7 @@
 
 import { createSession, PROVIDERS, providerOf } from "../llm";
 import { isConfigured, loadSettings, saveSettings, type Settings } from "../settings";
-import { css, hooks } from "./ui";
+import { BackLink, css, hooks, ResultBadge, Spinner } from "./ui";
 
 declare const Spicetify: any;
 
@@ -14,16 +14,17 @@ const label = { fontWeight: 700, fontSize: 14 } as const;
 export function SettingsView({ onBack }: { onBack: () => void }) {
   const { useState } = hooks();
   const [settings, setSettings] = useState(loadSettings());
-  const [status, setStatus] = useState("");
+  const [check, setCheck] = useState(null as null | { ok: boolean; title: string; detail: string });
   const [busy, setBusy] = useState(false);
 
   const update = (patch: Partial<Settings>) => {
     const next = { ...settings, ...patch };
     setSettings(next);
     saveSettings(next);
-    setStatus("");
+    setCheck(null);
   };
   const provider = providerOf(settings);
+  const own = settings.mode === "own-key";
   const pickProvider = (id: string) => {
     const next = PROVIDERS.find((p) => p.id === id) ?? provider;
     update({ provider: next.id, model: next.defaultModel, baseUrl: "" });
@@ -31,21 +32,25 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
 
   const test = async () => {
     setBusy(true);
-    setStatus("Testing…");
+    setCheck(null);
+    const started = performance.now();
     try {
       const session = createSession(settings, { system: "Reply with the single word OK.", tools: [] }, () => crypto.randomUUID());
       const turn = await session.send({ text: "Say OK" });
-      setStatus(turn.text ? `✓ Works. The model answered: “${turn.text.slice(0, 60)}”` : "The model answered with nothing.");
+      const ms = Math.round(performance.now() - started);
+      const who = own ? `${provider.label} · ${settings.model}` : "Shared access";
+      setCheck(turn.text
+        ? { ok: true, title: "Connected", detail: `${who} · ${ms} ms` }
+        : { ok: false, title: "No answer", detail: "The model answered with nothing." });
     } catch (e) {
-      setStatus(`✗ ${(e as Error).message}`);
+      setCheck({ ok: false, title: "Connection failed", detail: (e as Error).message });
     }
     setBusy(false);
   };
 
-  const own = settings.mode === "own-key";
   return (
     <div style={{ marginTop: 20, maxWidth: 560 }}>
-      <p style={{ ...css.muted, cursor: "pointer" }} onClick={onBack}>← All tools</p>
+      <BackLink label="All tools" onClick={onBack} />
       <h2 style={{ fontSize: 20, margin: "6px 0 16px" }}>Settings</h2>
 
       <label style={{ ...css.entry, alignItems: "flex-start" }}>
@@ -101,10 +106,14 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
       </div>
 
       <div style={{ ...css.bar, margin: "8px 0 16px" }}>
-        <button style={css.primary} disabled={busy || !isConfigured(settings)} onClick={test}>Test connection</button>
+        <button style={{ ...css.primary, display: "inline-flex", alignItems: "center", gap: 10, opacity: busy || !isConfigured(settings) ? 0.6 : 1 }}
+                disabled={busy || !isConfigured(settings)} onClick={test}>
+          {busy && <Spinner size={16} />}
+          {busy ? "Testing" : "Test connection"}
+        </button>
         <span style={css.muted}>Changes are saved automatically.</span>
       </div>
-      {status && <p style={status.startsWith("✗") ? css.error : css.muted}>{status}</p>}
+      {check && <ResultBadge ok={check.ok} title={check.title} detail={check.detail} />}
       <p style={css.muted}>
         What is sent to the AI: your request text and the playlists it needs to read (track titles, artists, albums).
         Never your Spotify login. On free AI tiers the provider may use this data to improve its models.

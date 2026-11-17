@@ -9,7 +9,7 @@ import {
 import { isConfigured, loadSettings } from "../settings";
 import { restoreSnapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
-import { css, duration, hooks } from "./ui";
+import { BackLink, css, Dots, duration, hooks, Icon, Spinner } from "./ui";
 
 declare const Spicetify: any;
 
@@ -17,8 +17,21 @@ const port: SpotifyPort = spotify;
 const MAX_ROWS = 300;
 
 const scroll = { maxHeight: 420, overflowY: "auto", margin: "8px 0", paddingRight: 6 } as const;
-const bubble = { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "12px 16px", margin: "10px 0" } as const;
-const mine = { ...bubble, background: "rgba(255,255,255,.1)", marginLeft: 80 } as const;
+const turn = { display: "flex", gap: 12, margin: "18px 0 6px", alignItems: "flex-start" } as const;
+const avatar = {
+  width: 28, height: 28, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center",
+  background: "var(--spice-button, #1ed760)", color: "#000",
+} as const;
+const mine = {
+  background: "rgba(255,255,255,.1)", borderRadius: "18px 18px 4px 18px", padding: "10px 16px", maxWidth: "75%",
+  marginLeft: "auto", whiteSpace: "pre-wrap", lineHeight: 1.45,
+} as const;
+const answer = { whiteSpace: "pre-wrap", lineHeight: 1.5, paddingTop: 3, flex: 1, minWidth: 0 } as const;
+const composer = {
+  display: "flex", alignItems: "center", gap: 8, padding: "6px 6px 6px 18px", borderRadius: 500,
+  background: "var(--spice-card, #181818)", border: "1px solid rgba(255,255,255,.14)", transition: "border-color .15s",
+} as const;
+const composerInput = { flex: 1, minWidth: 0, background: "transparent", border: 0, color: "var(--spice-text, #fff)", fontSize: 15, padding: "8px 0" } as const;
 
 function TrackRows({ tracks, onToggle }: { tracks: ProposedTrack[]; onToggle?: (uid: string) => void }) {
   return (
@@ -188,9 +201,9 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
     const history: Message[] = [...messages, { from: "user", text, proposals: [] }];
     setMessages(history);
     setPrompt("");
-    setProgress("Thinking…");
+    setProgress("Thinking");
     try {
-      const result = await current.run(text, (e) => setProgress(e.type === "tool" ? `${toolLabel(e.name)}…` : "Thinking…"));
+      const result = await current.run(text, (e) => setProgress(e.type === "tool" ? toolLabel(e.name) : "Thinking"));
       setMessages([...history, { from: "agent", text: result.text, proposals: result.proposals }]);
     } catch (e) {
       setMessages([...history, { from: "error", text: (e as Error).message, proposals: [] }]);
@@ -199,42 +212,72 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
     setProgress("");
   };
 
+  const reset = () => {
+    setMessages([]);
+    setAgent(null);
+  };
   return (
     <div style={{ marginTop: 20 }}>
-      <p style={css.muted}>
-        <span style={{ cursor: "pointer" }} onClick={onBack}>← All tools</span>
-        {messages.length > 0 && <span style={{ cursor: "pointer", marginLeft: 20 }} onClick={() => { setMessages([]); setAgent(null); }}>New conversation</span>}
-        <span style={{ cursor: "pointer", marginLeft: 20 }} onClick={onSettings}>⚙ Settings</span>
-      </p>
-      <h2 style={{ fontSize: 20, margin: "6px 0 12px" }}>AI agent</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <BackLink label="All tools" onClick={onBack} />
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {messages.length > 0 && <span className="sai-link" style={{ marginRight: 8 }} onClick={reset}><Icon name="plus" size={14} />New conversation</span>}
+          <button className="sai-iconbtn" title="Settings" onClick={onSettings}><Icon name="settings" size={18} /></button>
+        </span>
+      </div>
 
       {!ready && (
-        <div style={css.notice}>
-          The agent needs access to an AI model.{" "}
+        <div style={{ ...css.notice, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <span>The agent needs access to an AI model.</span>
           <button style={css.primary} onClick={onSettings}>Open Settings</button>
         </div>
       )}
+
       {ready && messages.length === 0 && (
-        <div>
-          <p style={css.muted}>Ask in your own words, in any language. The agent reads your playlists and shows a proposal; nothing changes until you press a button. Examples:</p>
-          {EXAMPLES.map((e) => <div key={e} style={{ ...css.row, cursor: "pointer" }} onClick={() => setPrompt(e)}>{e}</div>)}
+        <div className="sai-in" style={{ textAlign: "center", padding: "48px 0 28px" }}>
+          <div style={{ ...avatar, width: 44, height: 44, margin: "0 auto 14px" }}><Icon name="spark" size={24} /></div>
+          <h2 style={{ fontSize: 22, margin: "0 0 6px" }}>What should I do with your playlists?</h2>
+          <p style={{ ...css.muted, maxWidth: 460, margin: "0 auto 22px" }}>
+            Ask in your own words, in any language. I read your playlists and show a proposal — nothing changes until you press a button.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+            {EXAMPLES.map((e) => <span key={e} className="sai-chip" onClick={() => setPrompt(e)}>{e}</span>)}
+          </div>
         </div>
       )}
 
-      {messages.map((m, i) => (
-        <div key={i}>
-          {m.from === "user" && <div style={mine}>{m.text}</div>}
-          {m.from === "agent" && m.text && <div style={{ ...bubble, whiteSpace: "pre-wrap" }}>{m.text}</div>}
-          {m.from === "error" && <div style={{ ...bubble, color: "#f15e6c" }}>{m.text}</div>}
-          {m.proposals.map((p) => <ProposalCard key={`${i}-${p.id}`} initial={p} />)}
-        </div>
-      ))}
-      {progress && <p style={css.muted}>{progress}</p>}
+      <div>
+        {messages.map((m, i) => (
+          <div key={i} className="sai-in">
+            {m.from === "user" && <div style={{ display: "flex", margin: "18px 0 6px" }}><div style={mine}>{m.text}</div></div>}
+            {m.from !== "user" && (
+              <div style={turn}>
+                <div style={m.from === "error" ? { ...avatar, background: "#f15e6c" } : avatar}>
+                  <Icon name={m.from === "error" ? "cross" : "spark"} size={16} />
+                </div>
+                <div style={m.from === "error" ? { ...answer, color: "#f15e6c" } : answer}>{m.text}</div>
+              </div>
+            )}
+            {m.proposals.length > 0 && <div style={{ marginLeft: 40 }}>{m.proposals.map((p) => <ProposalCard key={`${i}-${p.id}`} initial={p} />)}</div>}
+          </div>
+        ))}
+        {progress && (
+          <div style={turn} className="sai-in">
+            <div style={avatar}><Icon name="spark" size={16} /></div>
+            <div style={{ ...css.muted, display: "flex", alignItems: "center", gap: 10, paddingTop: 6 }}><Dots />{progress}</div>
+          </div>
+        )}
+      </div>
 
-      <form onSubmit={send} style={{ margin: "18px 0 40px" }}>
-        <input style={css.input} value={prompt} disabled={!ready || !!progress}
-               placeholder={messages.length ? "Reply or ask for something else…" : "What should I do with your playlists?"}
-               onChange={(e: any) => setPrompt(e.target.value)} />
+      <form onSubmit={send} style={{ margin: "22px 0 40px" }}>
+        <div className="sai-composer" style={{ ...composer, opacity: ready ? 1 : 0.5 }}>
+          <input style={composerInput} value={prompt} disabled={!ready || !!progress}
+                 placeholder={messages.length ? "Reply or ask for something else" : "Message the agent"}
+                 onChange={(e: any) => setPrompt(e.target.value)} />
+          <button type="submit" className="sai-send" title="Send" disabled={!ready || !!progress || !prompt.trim()}>
+            {progress ? <Spinner size={16} /> : <Icon name="send" size={18} />}
+          </button>
+        </div>
       </form>
     </div>
   );

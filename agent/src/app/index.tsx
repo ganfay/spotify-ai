@@ -8,7 +8,7 @@ import type { EntryRef, Playlist, Track } from "../spotify/types";
 
 import { AgentView } from "./agent";
 import { SettingsView } from "./settings";
-import { css, duration, hooks } from "./ui";
+import { BackLink, css, duration, GlobalStyles, hooks, Icon, Spinner } from "./ui";
 
 declare const Spicetify: any;
 
@@ -85,10 +85,10 @@ function Duplicates({ playlist, onBack }: { playlist: Playlist; onBack: () => vo
 
   return (
     <div>
-      <p style={{ ...css.muted, cursor: "pointer" }} onClick={onBack}>← All playlists</p>
+      <BackLink label="All playlists" onClick={onBack} />
       <h2 style={{ fontSize: 20, margin: "6px 0" }}>Duplicates in “{playlist.name}”</h2>
       {error && <p style={css.error}>{error}</p>}
-      {!tracks && !error && <p style={css.muted}>Reading the playlist…</p>}
+      {!tracks && !error && <p style={{ ...css.muted, display: "flex", gap: 8, alignItems: "center" }}><Spinner size={14} />Reading the playlist</p>}
 
       {done?.type === "copy" && (
         <div style={css.notice}>
@@ -175,7 +175,7 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <div style={css.cards}>
       {FEATURES.map((f) => (
-        <div key={f.id} style={{ ...css.card, cursor: f.ready ? "pointer" : "default", opacity: f.ready ? 1 : 0.55 }}
+        <div key={f.id} className={f.ready ? "sai-card ready" : "sai-card"} style={{ ...css.card, cursor: f.ready ? "pointer" : "default", opacity: f.ready ? 1 : 0.55 }}
              onClick={() => f.ready && onOpen(f.id)}>
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
             {f.title}{!f.ready && <span style={css.badge}>soon</span>}
@@ -196,7 +196,7 @@ function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: 
   }, []);
   return (
     <div>
-      <p style={{ ...css.muted, cursor: "pointer", marginTop: 20 }} onClick={onBack}>← All tools</p>
+      <div style={{ marginTop: 20 }}><BackLink label="All tools" onClick={onBack} /></div>
       <h2 style={{ fontSize: 20, margin: "6px 0 12px" }}>{title} — pick a playlist</h2>
       {error && <p style={css.error}>{error}</p>}
       {!playlists && !error && <p style={css.muted}>Loading…</p>}
@@ -228,12 +228,13 @@ function App() {
     body = (
       <div>
         <Home onOpen={setTool} />
-        <p style={{ ...css.muted, cursor: "pointer", marginTop: 28 }} onClick={() => setTool("settings")}>⚙ Settings — AI access and API key</p>
+        <div style={{ marginTop: 28 }}><span className="sai-link" onClick={() => setTool("settings")}><Icon name="settings" size={16} />Settings — AI access and API key</span></div>
       </div>
     );
   }
   return (
     <section style={css.page}>
+      <GlobalStyles />
       <h1 style={{ marginBottom: 4 }}>AI Playlists</h1>
       <p style={css.muted}>Nothing in your library changes until you confirm it.</p>
       {body}
