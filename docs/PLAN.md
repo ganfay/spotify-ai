@@ -1,8 +1,8 @@
 # Plan
 
-Status: **proposed — waiting for approval.** Based on [RESEARCH.md](RESEARCH.md) (2026-11-17).
+Status: **approved on 2026-11-17** (Q1, Q2, Q5 as recommended; Q3 replaced — see decision 14 in [DECISIONS.md](DECISIONS.md); Q4 still open, needed only in Phase 2). Based on [RESEARCH.md](RESEARCH.md).
 
-## Open decisions (need an answer before Phase 1 starts)
+## Decisions asked before Phase 1 (answers are recorded in DECISIONS.md)
 
 | # | Question | Recommendation | Why |
 |---|---|---|---|
@@ -77,6 +77,8 @@ Order is chosen so that the riskiest unknowns are tested first.
 - **Phase 3 — UI:** side panel or page with conversation, proposals as cards, progress for long jobs, clear error messages.
 - **Phase 4 — settings:** own-key field; ad blocking on/off (with SpotX this means re-running the installer, with adblockify it is a real toggle); telemetry — document exactly what is blocked; a toggle only if technically honest.
 - **Phase 5 — Windows + macOS installers**, README (install, uninstall, credits, privacy note, risk note), tested version set, releases. Needs access to a Windows and a macOS machine (or friends as testers).
+  - Cross-platform check of the variant chosen in Phase 1: the same 60-minute ad test and stats test on each OS (decision 13).
+  - Open point if variant B (no SpotX) wins: how to install a *pinned* Spotify version on Windows/macOS. The official installer always gives the newest client, which Spicetify may not support yet for days or weeks. SpotX solves this itself; without it we need our own answer (to research then).
 
 ## Risks
 
