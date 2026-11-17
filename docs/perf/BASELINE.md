@@ -71,3 +71,15 @@ Stock client (checksums verified) + Spicetify (`inject_css 0`, `replace_colors 0
 | RAM playing | 1160 MB | 1138 MB | 1161 MB |
 
 **Both variants pass all performance criteria**, and they do not differ beyond noise except paused CPU, where B is lower. No ad was detected during B's 5-minute playing test (stock had ads in every window) — a first hint, not the 60-minute test.
+
+## Ad tests — 2026-11-17
+
+Automatic counter (`bench.py adwatch`, reads what Spotify reports as the current item every 3 s).
+
+| Setup | Watched | Ads |
+|---|---|---|
+| `stock` (control) | stopped at ~9 min | first ad at minute 8.2 (also heard by the owner) |
+| B: `spicetify-adblockify` | 18.1 min of continuous playback | **0** |
+| A: `spotx-spicetify` | not run with the counter | owner listened, heard none |
+
+The owner shortened the B test from the planned 60 minutes. Stats check on the phone is pending for both variants (stats appear with a delay of hours).

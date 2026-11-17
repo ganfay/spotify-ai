@@ -382,6 +382,35 @@ def cmd_steady(args: argparse.Namespace) -> None:
         print("  WARNING: playback state changed or an ad played during the test -> marked 'tainted'.")
 
 
+# ----------------------------------------------------------------- adwatch
+
+def cmd_adwatch(args: argparse.Namespace) -> None:
+    """Listen to what Spotify reports as the current item and count ads."""
+    if not spotify_pids():
+        sys.exit("error: Spotify is not running.")
+    print(f"Ad watch '{args.label}': {args.minutes} min. Just let the music play.")
+    t0 = time.monotonic()
+    playing_s = ad_s = 0.0
+    ad_events, in_ad, last = 0, False, t0
+    while time.monotonic() - t0 < args.minutes * 60:
+        time.sleep(args.interval)
+        now = time.monotonic()
+        status, is_ad = playback()
+        if status == "Playing":
+            playing_s += now - last
+            if is_ad:
+                ad_s += now - last
+                if not in_ad:
+                    ad_events += 1
+                    print(f"  ad #{ad_events} at minute {(now - t0) / 60:.1f}")
+        in_ad, last = is_ad, now
+    record = {"kind": "adwatch", "label": args.label, "runs": [],
+              "minutes_playing": round(playing_s / 60, 1), "ad_events": ad_events,
+              "ad_seconds": round(ad_s), **describe(spotify_pids())}
+    save(record)
+    print(f"  played {record['minutes_playing']} min | ads: {ad_events} ({record['ad_seconds']} s)")
+
+
 # ------------------------------------------------------------------ report
 
 def cmd_report(args: argparse.Namespace) -> None:
@@ -471,6 +500,12 @@ def main() -> None:
     p.add_argument("--seconds", type=float, default=60.0)
     p.add_argument("--interval", type=float, default=5.0)
     p.set_defaults(func=cmd_steady)
+
+    p = sub.add_parser("adwatch", help="count audio ads while music plays")
+    p.add_argument("--label", type=label, required=True)
+    p.add_argument("--minutes", type=float, default=60.0)
+    p.add_argument("--interval", type=float, default=3.0)
+    p.set_defaults(func=cmd_adwatch)
 
     p = sub.add_parser("report", help="show medians per label and compare with a baseline")
     p.add_argument("--baseline", type=label)
