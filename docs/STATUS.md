@@ -34,7 +34,8 @@ Last update: 2026-11-17
 3c. Steps 2.8–2.11 done in code (2026-11-18): the agent has `get_track_data` (Spotify's language of performance + mood numbers, cached, 80 tracks in ~7 s), `recommend_tracks`, `search_tracks` and `propose_additions`; all six home cards work (AI ones open the agent with a ready-made request for the chosen playlist). 19 unit tests.
 3d. Live checks with the real model: recommendations for a 9-track playlist returned 5 picks with reasons in 7 s; the owner ran a mood split on a 400-track playlist earlier. **Not yet checked live:** language filter and cleanup after the new data tool, quality of results on big playlists, `Add to playlist` + undo for recommendations (covered by the snapshot test only indirectly).
 3e. Known rough edges: the agent returned 5 recommendations where 10–20 were asked for; taste of mood splits needs tuning (owner's note); the agent stops politely when the model goes in circles (max 16 steps).
-4. `install.sh` does not install the agent app yet (needs a prebuilt bundle, e.g. a GitHub release asset).
+4. `install.sh` installs the agent app too, from the prebuilt copy in `agent/release/` (refresh it with `cd agent && npm run release` and commit).
+4a. UI wishes noted by the owner for Phase 3: icons on the home cards and a nicer (still simple) card animation. Track rows already have covers and click-to-play.
 5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 
 ## Blockers / open questions

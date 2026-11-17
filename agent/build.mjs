@@ -2,6 +2,7 @@
 //
 //   node build.mjs            build the custom app into dist/ai-playlists
 //   node build.mjs --install  build + copy into Spicetify's CustomApps folder
+//   node build.mjs --release  build + refresh agent/release/ (the copy install.sh uses)
 //   node build.mjs --test X   bundle test/X.ts into a script for scripts/dev/cdp-eval.mjs
 
 import { build } from "esbuild";
@@ -62,6 +63,14 @@ await writeFile(
   JSON.stringify({ name: "AI Playlists", icon, "active-icon": icon, subfiles: [], subfiles_extension: [] }, null, 2),
 );
 console.log(`built ${out}`);
+
+// A ready-to-install copy kept in the repository, so the installer needs no Node.js.
+if (process.argv.includes("--release")) {
+  const target = join("release", APP);
+  await rm(target, { recursive: true, force: true });
+  await cp(out, target, { recursive: true });
+  console.log(`copied to agent/${target} (commit it)`);
+}
 
 if (process.argv.includes("--install")) {
   const target = join(homedir(), ".config", "spicetify", "CustomApps", APP);

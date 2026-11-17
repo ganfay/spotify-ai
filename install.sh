@@ -9,7 +9,8 @@
 #   2. lets your user write to the Spotify folder (needed by Spicetify);
 #   3. installs Spicetify at a pinned version into ~/.spicetify;
 #   4. installs the adblockify extension at a pinned commit;
-#   5. applies both to Spotify.
+#   5. installs the AI Playlists app from this repository;
+#   6. applies everything to Spotify.
 # Everything is downloaded from the official repositories and checked by SHA-256.
 
 set -euo pipefail
@@ -23,6 +24,8 @@ SPICETIFY_HOME="${HOME}/.spicetify"
 SPICETIFY="${SPICETIFY_HOME}/spicetify"
 SPICETIFY_CONFIG_DIR="${HOME}/.config/spicetify"
 EXTENSION="adblock.js"
+AGENT_APP="ai-playlists"
+AGENT_SOURCE="${HERE}/agent/release/${AGENT_APP}"
 MPRIS="org.mpris.MediaPlayer2.spotify"
 
 say()  { printf '\n==> %s\n' "$*"; }
@@ -126,6 +129,21 @@ install_adblockify() {
   info "installed"
 }
 
+install_agent() {
+  say "AI Playlists app"
+  [[ -f "${AGENT_SOURCE}/index.js" && -f "${AGENT_SOURCE}/manifest.json" ]] \
+    || die "the app bundle is missing (${AGENT_SOURCE}). Re-download the repository."
+  local target="${SPICETIFY_CONFIG_DIR}/CustomApps/${AGENT_APP}"
+  if [[ -d "${target}" ]] && diff -rq "${AGENT_SOURCE}" "${target}" >/dev/null 2>&1; then
+    info "already installed"
+    return
+  fi
+  rm -rf "${target}"
+  mkdir -p "$(dirname "${target}")"
+  cp -r "${AGENT_SOURCE}" "${target}"
+  info "installed"
+}
+
 configure() {
   say "Configuring Spicetify"
   "${SPICETIFY}" config >/dev/null 2>&1 || true            # creates the config on first run
@@ -135,6 +153,9 @@ configure() {
   "${SPICETIFY}" config inject_css 0 replace_colors 0 >/dev/null
   if ! grep -E '^extensions' "${ini}" | grep -qw "${EXTENSION}"; then
     "${SPICETIFY}" config extensions "${EXTENSION}" >/dev/null
+  fi
+  if ! grep -E '^custom_apps' "${ini}" | grep -qw "${AGENT_APP}"; then
+    "${SPICETIFY}" config custom_apps "${AGENT_APP}" >/dev/null
   fi
   info "ok"
 }
@@ -149,7 +170,8 @@ apply() {
   fi
   "${SPICETIFY}" clear >/dev/null 2>&1 || true
   "${SPICETIFY}" backup apply >/dev/null 2>&1 || die "Spicetify could not patch this Spotify version."
-  [[ -f "${SPOTIFY_DIR}/Apps/xpui/extensions/${EXTENSION}" ]] || die "the extension was not applied."
+  [[ -f "${SPOTIFY_DIR}/Apps/xpui/extensions/${EXTENSION}" ]] || die "the ad-blocking extension was not applied."
+  ls "${SPOTIFY_DIR}/Apps/xpui/" | grep -q "spicetify-routes-${AGENT_APP}" || die "the AI Playlists app was not applied."
   info "done"
 }
 
@@ -177,9 +199,10 @@ main() {
       fix_permissions
       install_spicetify
       install_adblockify
+      install_agent
       configure
       apply
-      say "Done. Start Spotify as usual."
+      say "Done. Start Spotify as usual. The AI Playlists button is in the top bar, left of Home."
       ;;
     *) die "unknown option '$1'. Use no option to install, or --uninstall." ;;
   esac

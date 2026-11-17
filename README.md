@@ -1,6 +1,6 @@
 # spotify-ai (working title)
 
-> **Status: early. Ad blocking installs on Linux; the AI agent is not built yet.**
+> **Status: early. Linux only for now. Ad blocking and the AI Playlists app install with one command.**
 
 A desktop Spotify setup for Windows, macOS and Linux:
 
@@ -13,7 +13,7 @@ It is built from three parts, installed by one command:
 
 1. [Spicetify](https://github.com/spicetify/cli) — mod platform for the Spotify desktop client;
 2. [adblockify](https://github.com/rxri/spicetify-extensions) by rxri — ad-blocking Spicetify extension;
-3. the agent from this repository — a Spicetify custom app *(not built yet)*.
+3. **AI Playlists** from this repository — a Spicetify custom app: duplicate finder and an AI agent that filters by language, splits by mood, cleans up and recommends. It only proposes; nothing changes until you press a button.
 
 Spicetify and adblockify are **not** part of this repository. The installer downloads pinned versions from their official repositories and verifies checksums.
 
