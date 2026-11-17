@@ -57,3 +57,17 @@ Spicetify applied with `inject_css 0`, `replace_colors 0`, no extensions, no cus
 **All performance criteria pass.** The 26–30 % playing CPU seen with SpotX alone did **not** appear here with the identical procedure (fresh start → playback by MPRIS). Why is unknown; possibly Spicetify's preprocessing removes whatever was animating.
 
 Network check of the patched client while running: 7 TCP connections, all to Google Cloud addresses; 6 in the same block as `spclient.wg.spotify.com` / `api-partner.spotify.com`, one (104.199.65.9) not matched to a Spotify hostname. No third-party hosts seen (single snapshot).
+
+## Variant B: Spicetify 2.46.7 + adblockify (`spicetify-adblockify`) — 2026-11-17
+
+Stock client (checksums verified) + Spicetify (`inject_css 0`, `replace_colors 0`) + `adblock.js` at commit `5da6cf1`.
+
+| Metric | `stock` | A: `spotx-spicetify` | B: `spicetify-adblockify` |
+|---|---|---|---|
+| Startup until settled | 6.55 s | 6.27 s | 6.55 s |
+| CPU paused | 1.86 % | 1.78 % | 0.85 % |
+| CPU playing | 4.80 % | 4.10 % | 4.07 % |
+| RAM paused | 1136 MB | 1088 MB | 1117 MB |
+| RAM playing | 1160 MB | 1138 MB | 1161 MB |
+
+**Both variants pass all performance criteria**, and they do not differ beyond noise except paused CPU, where B is lower. No ad was detected during B's 5-minute playing test (stock had ads in every window) — a first hint, not the 60-minute test.

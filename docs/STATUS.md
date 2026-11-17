@@ -23,9 +23,9 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Step 1.7 for variant A: 60-minute ad test and phone stats check (owner).
-2. Step 1.9: variant B (restore stock → Spicetify + adblockify), same tests.
-3. Step 1.10–1.11: choose the variant, installer v0.
+1. Variant B is installed now: 60-minute ad test + phone stats check (owner). Variant A: ads passed (owner listened, no ads); stats check pending (appears with delay).
+2. Step 1.10: choose the variant by decision 13.
+3. Step 1.11: installer v0 for Linux.
 
 ## Blockers / open questions
 
