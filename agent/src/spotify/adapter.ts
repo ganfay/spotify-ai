@@ -48,14 +48,25 @@ function toTrack(item: any): Track {
   };
 }
 
+/** Spotify hands out internal image names; this turns them into normal web addresses. */
+function imageUrl(raw: unknown): string {
+  if (typeof raw !== "string" || !raw) return "";
+  if (raw.startsWith("http")) return raw;
+  const [, kind, ...rest] = raw.split(":");
+  if (kind === "image" && rest[0]) return `https://i.scdn.co/image/${rest[0]}`;
+  if (kind === "mosaic" && rest.length) return `https://mosaic.scdn.co/300/${rest.join("")}`;
+  return "";
+}
+
 function toPlaylist(item: any): Playlist {
   return {
     uri: item.uri,
     name: item.name ?? "",
     description: item.description ?? "",
     ownerName: item.owner?.displayName ?? item.owner?.username ?? "",
-    editable: item.canAdd ?? item.isOwnedBySelf ?? item.isCollaborative ?? false,
+    editable: item.canAdd ?? item.isOwnedBySelf ?? false,
     trackCount: item.totalLength ?? 0,
+    imageUrl: imageUrl(item.images?.[0]?.url),
   };
 }
 

@@ -13,7 +13,7 @@ const track = (i: number, name: string, artist: string): Track => ({
   addedAt: "2026-01-01T00:00:00Z", explicit: false, playable: true, local: false,
 });
 const TRACKS = [track(1, "Обійми", "Океан Ельзи"), track(2, "Кукла колдуна", "Король и Шут"), track(3, "Stay", "Rihanna"), track(4, "Плакала", "KAZKA")];
-const PLAYLIST: Playlist = { uri: "spotify:playlist:a", name: "Mix", description: "", ownerName: "me", editable: true, trackCount: 4 };
+const PLAYLIST: Playlist = { uri: "spotify:playlist:a", name: "Mix", description: "", ownerName: "me", editable: true, trackCount: 4, imageUrl: "" };
 
 function fakeSpotify() {
   const created: { name: string; uris: string[] }[] = [];
@@ -187,4 +187,16 @@ test("Removal as a cleaned copy leaves the original alone", async () => {
   await box.call("propose_removal", { playlist_id: "p1", summary: "s", items: [{ track_id: "t2", reason: "r" }] });
   await applyRemovalAsCopy(port, box.proposals[0] as RemovalProposal);
   assert.deepEqual(created, [{ name: "Mix (cleaned)", uris: ["spotify:track:1", "spotify:track:3", "spotify:track:4"] }]);
+});
+
+test("A model going in circles ends politely instead of failing", async () => {
+  const { port } = fakeSpotify();
+  let n = 0;
+  const loop = (async () => new Response(JSON.stringify({
+    choices: [{ message: { role: "assistant", tool_calls: [{ id: `c${n++}`, type: "function", function: { name: "list_playlists", arguments: "{}" } }] } }],
+  }), { status: 200 })) as unknown as typeof fetch;
+  const result = await new Agent({ ...base, provider: "openai" }, port, loop).run("порадь нові треки");
+  assert.equal(result.incomplete, true);
+  assert.match(result.text, /could not complete/);
+  assert.equal(n, 3); // stopped at the third identical call, not after 16 steps
 });

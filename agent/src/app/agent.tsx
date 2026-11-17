@@ -205,6 +205,7 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
     try {
       const result = await current.run(text, (e) => setProgress(e.type === "tool" ? toolLabel(e.name) : "Thinking"));
       setMessages([...history, { from: "agent", text: result.text, proposals: result.proposals }]);
+      if (result.incomplete) setAgent(null);
     } catch (e) {
       setMessages([...history, { from: "error", text: (e as Error).message, proposals: [] }]);
       setAgent(null); // a failed conversation is not continued
@@ -217,7 +218,7 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
     setAgent(null);
   };
   return (
-    <div style={{ marginTop: 20 }}>
+    <div style={{ ...css.column, marginTop: 20, display: "flex", flexDirection: "column", minHeight: "calc(100vh - 330px)" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <BackLink label="All tools" onClick={onBack} />
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -234,7 +235,7 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
       )}
 
       {ready && messages.length === 0 && (
-        <div className="sai-in" style={{ textAlign: "center", padding: "48px 0 28px" }}>
+        <div className="sai-in" style={{ textAlign: "center", margin: "auto 0", padding: "24px 0" }}>
           <div style={{ ...avatar, width: 44, height: 44, margin: "0 auto 14px" }}><Icon name="spark" size={24} /></div>
           <h2 style={{ fontSize: 22, margin: "0 0 6px" }}>What should I do with your playlists?</h2>
           <p style={{ ...css.muted, maxWidth: 460, margin: "0 auto 22px" }}>
@@ -246,7 +247,7 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
         </div>
       )}
 
-      <div>
+      <div style={{ flex: messages.length ? 1 : "none" }}>
         {messages.map((m, i) => (
           <div key={i} className="sai-in">
             {m.from === "user" && <div style={{ display: "flex", margin: "18px 0 6px" }}><div style={mine}>{m.text}</div></div>}
@@ -269,7 +270,7 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
         )}
       </div>
 
-      <form onSubmit={send} style={{ margin: "22px 0 40px" }}>
+      <form onSubmit={send} style={{ position: "sticky", bottom: 0, padding: "14px 0 18px", background: "linear-gradient(transparent, var(--spice-main, #121212) 30%)" }}>
         <div className="sai-composer" style={{ ...composer, opacity: ready ? 1 : 0.5 }}>
           <input style={composerInput} value={prompt} disabled={!ready || !!progress}
                  placeholder={messages.length ? "Reply or ask for something else" : "Message the agent"}

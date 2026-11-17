@@ -9,6 +9,8 @@ export interface Playlist {
   /** True when the user can add and remove tracks. */
   editable: boolean;
   trackCount: number;
+  /** https URL of the cover, or "" when there is none. */
+  imageUrl: string;
 }
 
 export interface Track {

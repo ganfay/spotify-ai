@@ -16,7 +16,8 @@ declare global {
 }
 
 export const css = {
-  page: { padding: "24px 32px", maxWidth: 860 },
+  page: { padding: "24px 32px" },
+  column: { maxWidth: 820, margin: "0 auto" },
   input: {
     width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid var(--spice-button-disabled, #535353)",
     background: "var(--spice-card, #181818)", color: "var(--spice-text, #fff)", fontSize: 15, boxSizing: "border-box",
@@ -33,7 +34,7 @@ export const css = {
   primary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "#000" },
   secondary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)" },
   danger: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "#e22134", color: "#fff" },
-  cards: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginTop: 24 },
+  cards: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16, marginTop: 24 },
   card: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "18px 20px", minHeight: 96 },
   badge: { fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 8 },
   notice: { background: "rgba(30,215,96,.12)", borderRadius: 8, padding: "12px 14px", margin: "14px 0" },
@@ -69,26 +70,32 @@ export function GlobalStyles() {
       .sai-send { cursor: pointer; width: 36px; height: 36px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; background: var(--spice-button, #1ed760); color: #000; transition: transform .12s, opacity .15s; flex: none; }
       .sai-send:hover:not(:disabled) { transform: scale(1.06); }
       .sai-send:disabled { opacity: .35; cursor: default; }
+      .sai-tile { cursor: pointer; padding: 12px; border-radius: 8px; transition: background .15s; min-width: 0; }
+      .sai-tile:hover { background: rgba(255,255,255,.08); }
+      .sai-tile .cover { width: 100%; aspect-ratio: 1; border-radius: 6px; object-fit: cover; background: rgba(255,255,255,.07); display: flex; align-items: center; justify-content: center; color: var(--spice-subtext, #b3b3b3); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+      .sai-tile .name { font-weight: 700; margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .sai-adv summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; color: var(--spice-subtext, #b3b3b3); font-size: 13px; }
+      .sai-adv summary::-webkit-details-marker { display: none; }
+      .sai-adv summary svg { transition: transform .15s; }
+      .sai-adv[open] summary svg { transform: rotate(90deg); }
       .sai-composer:focus-within { border-color: rgba(255,255,255,.35) !important; }
       .sai-composer input { outline: none; }
     `}</style>
   );
 }
 
-type IconName = "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus";
+type IconName = "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   let body;
   switch (name) {
     case "settings":
-      // A gear: a ring with eight teeth.
+      // A cog drawn with thin lines, like Spotify's own icons.
       body = (
-        <g fill="currentColor">
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
-            <rect key={a} x="10.4" y="1.6" width="3.2" height="5" rx="1.2" transform={`rotate(${a} 12 12)`} />
-          ))}
-          <circle cx="12" cy="12" r="5.6" fill="none" stroke="currentColor" strokeWidth="3.2" />
+        <g {...stroke} strokeWidth={1.7}>
+          <path d="M9.90 5.22L10.47 2.52L13.53 2.52L14.10 5.22L15.31 5.72L17.62 4.22L19.78 6.38L18.28 8.69L18.78 9.90L21.48 10.47L21.48 13.53L18.78 14.10L18.28 15.31L19.78 17.62L17.62 19.78L15.31 18.28L14.10 18.78L13.53 21.48L10.47 21.48L9.90 18.78L8.69 18.28L6.38 19.78L4.22 17.62L5.72 15.31L5.22 14.10L2.52 13.53L2.52 10.47L5.22 9.90L5.72 8.69L4.22 6.38L6.38 4.22L8.69 5.72Z" />
+          <circle cx="12" cy="12" r="3" />
         </g>
       );
       break;
@@ -97,6 +104,9 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     case "cross": body = <path d="M6 6l12 12M18 6L6 18" {...stroke} strokeWidth={2.4} />; break;
     case "send": body = <path d="M12 19V5M5.500 11.500L12 5l6.500 6.500" {...stroke} strokeWidth={2.4} />; break;
     case "plus": body = <path d="M12 5v14M5 12h14" {...stroke} />; break;
+    case "chevron": body = <path d="M9 6l6 6-6 6" {...stroke} />; break;
+    case "lock": body = <g {...stroke} strokeWidth={1.8}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></g>; break;
+    case "music": body = <g {...stroke} strokeWidth={1.8}><path d="M9 18V6l10-2v12" /><circle cx="6.500" cy="18" r="2.500" /><circle cx="16.500" cy="16" r="2.500" /></g>; break;
     case "spark":
       body = <path fill="currentColor" d="M10 2.500l2.200 5.800 5.800 2.200-5.800 2.200L10 18.500l-2.200-5.800L2 10.500l5.800-2.200L10 2.500zm8.500 11.500l1.050 2.700 2.700 1.050-2.700 1.050-1.050 2.700-1.050-2.700-2.700-1.050 2.700-1.050L18.500 14z" />;
       break;

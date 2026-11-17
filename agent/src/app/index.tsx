@@ -200,12 +200,17 @@ function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: 
       <h2 style={{ fontSize: 20, margin: "6px 0 12px" }}>{title} — pick a playlist</h2>
       {error && <p style={css.error}>{error}</p>}
       {!playlists && !error && <p style={css.muted}>Loading…</p>}
-      {playlists?.map((p: Playlist) => (
-        <div key={p.uri} style={css.row} onClick={() => onPick(p)}>
-          <span>{p.name}{!p.editable && <span style={css.muted}> · not yours (a copy can still be made)</span>}</span>
-          <span style={css.muted}>{p.trackCount} tracks</span>
-        </div>
-      ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 8 }}>
+        {playlists?.map((p: Playlist) => (
+          <div key={p.uri} className="sai-tile" onClick={() => onPick(p)} title={p.name}>
+            {p.imageUrl
+              ? <img className="cover" src={p.imageUrl} loading="lazy" alt="" />
+              : <div className="cover"><Icon name="music" size={40} /></div>}
+            <div className="name">{p.name}</div>
+            <div style={css.muted}>{p.trackCount} tracks{!p.editable && " · not yours"}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -217,7 +222,7 @@ function App() {
 
   let body;
   if (tool === "duplicates" && selected) {
-    body = <div style={{ marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
+    body = <div style={{ ...css.column, marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
   } else if (tool === "duplicates") {
     body = <PlaylistPicker title="Find duplicates" onPick={setSelected} onBack={() => setTool("")} />;
   } else if (tool === "agent") {

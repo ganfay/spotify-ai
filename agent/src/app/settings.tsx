@@ -4,7 +4,7 @@
 
 import { createSession, PROVIDERS, providerOf } from "../llm";
 import { isConfigured, loadSettings, saveSettings, type Settings } from "../settings";
-import { BackLink, css, hooks, ResultBadge, Spinner } from "./ui";
+import { BackLink, css, hooks, Icon, ResultBadge, Spinner } from "./ui";
 
 declare const Spicetify: any;
 
@@ -16,6 +16,7 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
   const [settings, setSettings] = useState(loadSettings());
   const [check, setCheck] = useState(null as null | { ok: boolean; title: string; detail: string });
   const [busy, setBusy] = useState(false);
+  const [unlock, setUnlock] = useState("locked" as "locked" | "asking" | "open");
 
   const update = (patch: Partial<Settings>) => {
     const next = { ...settings, ...patch };
@@ -49,7 +50,7 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div style={{ marginTop: 20, maxWidth: 560 }}>
+    <div style={{ ...css.column, marginTop: 20, maxWidth: 600 }}>
       <BackLink label="All tools" onClick={onBack} />
       <h2 style={{ fontSize: 20, margin: "6px 0 16px" }}>Settings</h2>
 
@@ -96,11 +97,34 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
           </div>
         ) : (
           <div>
-            {!settings.proxyUrl && <p style={css.error}>This build has no shared access configured. Use your own API key, or enter a proxy address below.</p>}
-            <div style={label}>Proxy address <span style={css.muted}>(advanced)</span></div>
-            <input style={field} value={settings.proxyUrl} placeholder="https://…workers.dev" onChange={(e: any) => update({ proxyUrl: e.target.value })} />
-            <div style={label}>Invite code <span style={css.muted}>(only if the proxy owner gave you one)</span></div>
-            <input style={field} value={settings.inviteCode} onChange={(e: any) => update({ inviteCode: e.target.value })} />
+            {!settings.proxyUrl && <p style={css.error}>This build has no shared access configured. Use your own API key instead.</p>}
+            <details className="sai-adv">
+              <summary><Icon name="chevron" size={14} />Advanced — for developers only</summary>
+              <div style={{ margin: "12px 0 0 20px" }}>
+                <p style={css.muted}>
+                  These two fields connect the app to its AI server. They are already set correctly.
+                  Change them only if you run your own server — a wrong value makes the AI stop working.
+                </p>
+                {unlock === "locked" && (
+                  <button style={{ ...css.secondary, display: "inline-flex", alignItems: "center", gap: 8, margin: "4px 0 14px" }} onClick={() => setUnlock("asking")}>
+                    <Icon name="lock" size={15} />Unlock editing
+                  </button>
+                )}
+                {unlock === "asking" && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "4px 0 14px" }}>
+                    <span>Are you sure? You normally never need this.</span>
+                    <button style={css.danger} onClick={() => setUnlock("open")}>Yes, let me edit</button>
+                    <button style={css.secondary} onClick={() => setUnlock("locked")}>Cancel</button>
+                  </div>
+                )}
+                <div style={label}>Server address</div>
+                <input style={{ ...field, opacity: unlock === "open" ? 1 : 0.55 }} readOnly={unlock !== "open"} value={settings.proxyUrl}
+                       placeholder="https://example.workers.dev" onChange={(e: any) => update({ proxyUrl: e.target.value })} />
+                <div style={label}>Invite code <span style={css.muted}>(only if the server owner gave you one)</span></div>
+                <input style={{ ...field, opacity: unlock === "open" ? 1 : 0.55 }} readOnly={unlock !== "open"} value={settings.inviteCode}
+                       onChange={(e: any) => update({ inviteCode: e.target.value })} />
+              </div>
+            </details>
           </div>
         )}
       </div>
