@@ -33,6 +33,12 @@ Tool: `scripts/dev/api-probe-write.js` (creates one playlist named "spotify-ai t
 
 Consequences for the agent: precise dedupe is possible (remove exactly the chosen copy), reordering does not destroy "date added", and undo can restore a playlist from a saved list of `{uri, uid, position}`.
 
+## Behaviours found while building undo
+
+- A read right after a write already returns the new state — no waiting needed.
+- `PlaylistAPI.move` with several entries keeps their **relative playlist order**, not the order of the array. Moving all entries at once is a no-op. To reorder, move entries one at a time (undo moves only the entries that are out of place).
+- `PlaylistAPI.add(uri, [tracks], {before: {uri, uid}})` inserts at an exact place and keeps the array order.
+
 ## UI surfaces
 
 `Topbar.Button`, `Playbar.Button`, `PopupModal.display`, `ContextMenu.Item`, `Platform.History.push`, `Spicetify.React` — all present. `Spicetify.Panel` is **missing** on this version → no right side panel through that API; use a custom app page or a modal.
