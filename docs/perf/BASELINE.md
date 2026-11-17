@@ -27,3 +27,15 @@ Spotify 1.3.4.258 (apt), Ubuntu 26.04, 12 CPU threads, 14 GB RAM. Medians of 5 r
 - One `noise-a` startup run out of 15 never settled within 90 s (27 s of CPU instead of 9 s). Cause unknown; watch for repeats.
 - RAM right after start is ~1.1–1.25 GB; a long-running session measured earlier the same day used ~615 MB. Always compare setups at the same age (the protocol does).
 - Spotify ignores SIGTERM for a long time; the tool closes it with the MPRIS `Quit` command.
+
+## SpotX-Bash only (`spotx`) — 2026-11-17
+
+| Metric | `stock` | `spotx` | Verdict |
+|---|---|---|---|
+| Startup until settled | 6.55 s | 6.27 s | pass |
+| CPU paused | 1.86 % | 0.76 % | pass |
+| **CPU playing** | 4.80 % | **26.5 %** | **FAIL** (+21.7 pp) |
+| RAM paused | 1136 MB | 1176 MB | pass (+3.5 %) |
+| RAM playing | 1160 MB | 1222 MB | pass (+5.3 %) |
+
+The extra CPU while playing is in the GPU process (~14 %) and one renderer (~12.5 %), stable in all 5 windows and in a repeat sample. That pattern means something is being drawn continuously (an animation or looping video in the UI), not audio work. Cause not identified yet — needs a look at the screen. Verified in the patched binary: only `gabo-receiver-service/public/…` is disabled, `gabo-receiver-service/v3/events/` is intact.
