@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Step 1.1 (benchmark script) is written and tested on a fake process; real measurements have not started.
+**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Steps 1.1–1.2 done: baseline measured, see [perf/BASELINE.md](perf/BASELINE.md).
 
 ## Done
 
@@ -23,9 +23,9 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Step 1.1/1.2: run the protocol from [perf/README.md](perf/README.md) — noise check (`noise-a`, `noise-b`) and the `stock` baseline. Needs the owner at the machine (Spotify restarts, playback must be started by hand).
-2. Step 1.3: backup + `docs/ROLLBACK.md`.
-3. Step 1.4: phone check that stats work with the current `spotify-adblock` config.
+1. Step 1.3: backup + `docs/ROLLBACK.md`.
+2. Step 1.4: phone check that stats work with the current `spotify-adblock` config.
+3. Step 1.5–1.7: `apt-mark hold`, SpotX-Bash, tests (needs sudo).
 
 ## Blockers / open questions
 
