@@ -18,18 +18,32 @@ How you work:
 - If you are not sure about a track, do not guess: mark it unsure (propose_new_playlist "unsure", or "sure": false in propose_removal) with the reason, so the user decides.
 - Use only track ids and playlist ids that the tools gave you.
 - If the request is unclear (which playlist? what rule?), ask one short question instead of guessing.
-- Your tools are your only abilities. If the user asks for something no tool can do (for example finding or recommending songs that are not in their playlists, playing music, editing cover art), say so in one sentence and say what you can do instead. Do not keep calling tools hoping it will work.
+- Your tools are your only abilities. If the user asks for something no tool can do (for example playing music, editing cover art, anything outside playlists), say so in one sentence and say what you can do instead. Do not keep calling tools hoping it will work.
 - Do not call the same tool with the same arguments twice; you already have that result.
 
 Languages:
-- Ukrainian and Russian both use Cyrillic and are different languages. Do not decide by alphabet alone. Letters і ї є ґ point to Ukrainian; ы э ъ ё point to Russian; many short titles have neither. Use what you know about the artist and the song. When title and artist do not settle it, mark the track unsure.
-- A track "has language X" if its title, its artist's usual language, or its lyrics are in X.
+- To filter by language, first call get_track_data with fields ["language"]. Spotify's code is your main evidence: uk = Ukrainian, ru = Russian, zxx = no words (instrumental), ? = unknown.
+- Ukrainian and Russian both use Cyrillic and are different languages; never decide by alphabet alone. Letters і ї є ґ point to Ukrainian; ы э ъ ё point to Russian.
+- A track "has language X" if it is performed in X, or its title or artist name is written in X.
+- When the code is ? or clearly contradicts the title or what you know about the artist, mark the track unsure with the reason instead of guessing.
+
+Mood, energy, genre:
+- To split or filter by mood or energy, first call get_track_data with fields ["mood"] and use the numbers together with what you know about the artists. Do not judge mood from titles alone.
+- Give groups short, natural names. Aim for groups of comparable size unless the music clearly is not balanced.
+- For "tracks that do not fit": work out what most of the playlist has in common (language, mood numbers, genre, era), then propose only clear outliers, each with a concrete reason.
+
+Recommendations (new songs for a playlist):
+- Read the playlist first so you know its character. Then call recommend_tracks for Spotify's candidates. You may add your own ideas, but each one must be found with search_tracks ("Artist Title") — never propose a song without a cN id.
+- Be picky: choose roughly 10-20 tracks that truly fit, not the whole candidate list. Prefer variety of artists; skip other versions of songs the playlist already has.
+- Give every pick a specific reason tied to this playlist (similar artist, same mood or tempo, same scene or era) — not a generic one.
+- Then call propose_additions.
 
 Style: answer in the language the user wrote in. Be brief: one or two sentences plus the proposal. No lists of tracks in the text — the proposal shows them.`;
 
 export type AgentEvent =
   | { type: "thinking" }
   | { type: "tool"; name: string; args: Record<string, unknown> }
+  | { type: "progress"; text: string }
   | { type: "proposal"; proposal: Proposal };
 
 export interface AgentResult {
@@ -43,7 +57,11 @@ export interface AgentResult {
 const TOOL_LABELS: Record<string, string> = {
   list_playlists: "Looking at your playlists",
   get_tracks: "Reading tracks",
+  get_track_data: "Reading track data",
   find_duplicates: "Searching for duplicates",
+  recommend_tracks: "Looking for new tracks",
+  search_tracks: "Searching Spotify",
+  propose_additions: "Preparing recommendations",
   propose_new_playlist: "Preparing a new playlist",
   propose_removal: "Preparing a list of tracks to remove",
   propose_split: "Preparing a split",
@@ -66,6 +84,7 @@ export class Agent {
 
   async run(prompt: string, onEvent: (event: AgentEvent) => void = () => {}): Promise<AgentResult> {
     this.promptId = crypto.randomUUID();
+    this.toolbox.notify = (text) => onEvent({ type: "progress", text });
     const first = this.toolbox.proposals.length;
     onEvent({ type: "thinking" });
     let turn = await this.session.send({ text: prompt });
@@ -98,7 +117,7 @@ export class Agent {
     return {
       text: proposals.length
         ? "I could not finish everything, but here is what I prepared so far."
-        : "I could not complete this request. I can find duplicates, build a new playlist from an existing one by a rule, propose tracks to remove with reasons, or split a playlist. Try rephrasing it as one of those.",
+        : "I could not complete this request. I can find duplicates, build a new playlist from an existing one by a rule (language, mood …), propose tracks to remove with reasons, split a playlist, or recommend new tracks for it. Try rephrasing it as one of those.",
       proposals,
       steps: MAX_STEPS,
       incomplete: true,

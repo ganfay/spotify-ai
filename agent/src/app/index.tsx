@@ -160,25 +160,25 @@ interface Feature {
   id: string;
   title: string;
   text: string;
-  ready: boolean;
+  /** For AI features: the request the agent starts with; {name} = the chosen playlist. */
+  prompt?: string;
 }
 const FEATURES: Feature[] = [
-  { id: "duplicates", title: "Find duplicates", text: "Exact repeats and different versions of one song.", ready: true },
-  { id: "agent", title: "AI agent", text: "Tell it in your own words what to do with a playlist.", ready: true },
-  { id: "language", title: "Filter by language", text: "For example: everything except Russian, into a new playlist.", ready: false },
-  { id: "split", title: "Split a big playlist", text: "Into smaller ones by mood, genre or energy.", ready: false },
-  { id: "cleanup", title: "Clean up", text: "Tracks that do not fit, each with a reason.", ready: false },
-  { id: "recommend", title: "Recommendations", text: "New songs based on a playlist, with a reason for each.", ready: false },
+  { id: "duplicates", title: "Find duplicates", text: "Exact repeats and different versions of one song. Works without AI." },
+  { id: "agent", title: "AI agent", text: "Tell it in your own words what to do with a playlist." },
+  { id: "language", title: "Filter by language", text: "For example: everything except Russian, into a new playlist.", prompt: "Take “{name}” and make a new playlist without anything in Russian" },
+  { id: "split", title: "Split a big playlist", text: "Into smaller ones by mood, genre or energy.", prompt: "Split “{name}” into 3 playlists by mood" },
+  { id: "cleanup", title: "Clean up", text: "Tracks that do not fit, each with a reason.", prompt: "Which tracks do not fit in “{name}”? Explain why for each" },
+  { id: "recommend", title: "Recommendations", text: "New songs based on a playlist, with a reason for each.", prompt: "Recommend new songs for “{name}” and explain each pick" },
 ];
 
 function Home({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <div style={css.cards}>
       {FEATURES.map((f) => (
-        <div key={f.id} className={f.ready ? "sai-card ready" : "sai-card"} style={{ ...css.card, cursor: f.ready ? "pointer" : "default", opacity: f.ready ? 1 : 0.55 }}
-             onClick={() => f.ready && onOpen(f.id)}>
+        <div key={f.id} className="sai-card ready" style={{ ...css.card, cursor: "pointer" }} onClick={() => onOpen(f.id)}>
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
-            {f.title}{!f.ready && <span style={css.badge}>soon</span>}
+            {f.title}{f.prompt && <span style={css.badge}>AI</span>}
           </div>
           <div style={css.muted}>{f.text}</div>
         </div>
@@ -220,15 +220,23 @@ function App() {
   const [tool, setTool] = useState("" as string);
   const [selected, setSelected] = useState(null as Playlist | null);
 
+  const feature = FEATURES.find((f) => f.id === tool);
+  const home = () => {
+    setTool("");
+    setSelected(null);
+  };
   let body;
   if (tool === "duplicates" && selected) {
     body = <div style={{ ...css.column, marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
-  } else if (tool === "duplicates") {
-    body = <PlaylistPicker title="Find duplicates" onPick={setSelected} onBack={() => setTool("")} />;
   } else if (tool === "agent") {
-    body = <AgentView onBack={() => setTool("")} onSettings={() => setTool("settings")} />;
+    body = <AgentView onBack={home} onSettings={() => setTool("settings")} />;
+  } else if (feature?.prompt && selected) {
+    // An AI feature = the agent, started with a ready-made request the user can edit.
+    body = <AgentView onBack={home} onSettings={() => setTool("settings")} initialPrompt={feature.prompt.replace("{name}", selected.name)} />;
+  } else if (feature && tool !== "settings") {
+    body = <PlaylistPicker title={feature.title} onPick={setSelected} onBack={home} />;
   } else if (tool === "settings") {
-    body = <SettingsView onBack={() => setTool("")} />;
+    body = <SettingsView onBack={home} />;
   } else {
     body = (
       <div>

@@ -34,6 +34,24 @@ export const TOOL_DECLARATIONS: ToolSpec[] = [
     },
   },
   {
+    name: "get_track_data",
+    description:
+      "Facts from Spotify about the tracks of a playlist. fields: 'language' = language of performance as an ISO code " +
+      "(uk Ukrainian, ru Russian, en English …; zxx = no words; ? = unknown) plus popularity 0-100; " +
+      "'mood' = energy (0 calm … 1 intense), valence (0 sad/dark … 1 happy/bright), danceability, tempo (BPM), acousticness. " +
+      "Returns lines 'tN | …'. Use it before filtering by language or splitting by mood/energy — do not guess from titles. " +
+      `At most ${PAGE} tracks per call; use offset for more. Can take up to a minute for a big playlist.`,
+    parameters: {
+      type: "object",
+      properties: {
+        playlist_id: { type: "string" },
+        fields: { type: "array", items: { type: "string", enum: ["language", "mood"] } },
+        offset: { type: "integer" },
+      },
+      required: ["playlist_id", "fields"],
+    },
+  },
+  {
     name: "find_duplicates",
     description:
       "Find duplicate tracks in a playlist with exact rules (same track twice, or different releases of one song). " +
@@ -42,6 +60,42 @@ export const TOOL_DECLARATIONS: ToolSpec[] = [
       type: "object",
       properties: { playlist_id: { type: "string" } },
       required: ["playlist_id"],
+    },
+  },
+  {
+    name: "recommend_tracks",
+    description:
+      "Spotify's own suggestions of NEW tracks for a playlist (not yet in it). Returns candidates as lines 'cN | title | artists | album'. " +
+      "These are raw candidates: choose the ones that really fit.",
+    parameters: { type: "object", properties: { playlist_id: { type: "string" } }, required: ["playlist_id"] },
+  },
+  {
+    name: "search_tracks",
+    description:
+      "Search Spotify's catalogue for a track, e.g. 'Artist Title'. Returns up to 5 matches as 'cN | title | artists | album'. " +
+      "Use it to check that a song you have in mind exists and to get its id.",
+    parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+  },
+  {
+    name: "propose_additions",
+    description:
+      "Propose NEW tracks for a playlist, each with a reason. Only 'cN' ids from recommend_tracks or search_tracks are accepted. " +
+      "Nothing is added until the user approves.",
+    parameters: {
+      type: "object",
+      properties: {
+        playlist_id: { type: "string" },
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { track_id: { type: "string", description: "cN id" }, reason: { type: "string", description: "Why it fits this playlist, in the user's language" } },
+            required: ["track_id", "reason"],
+          },
+        },
+        summary: { type: "string" },
+      },
+      required: ["playlist_id", "items", "summary"],
     },
   },
   {
@@ -132,6 +186,11 @@ export class Toolbox {
   readonly proposals: Proposal[] = [];
   private playlists: Playlist[] | null = null;
   private readonly tracks = new Map<string, Track[]>();
+  /** Tracks found outside the user's playlists: "c1", "c2", … */
+  private readonly catalogue: Track[] = [];
+
+  /** Set by the agent: receives short progress texts of long-running tools. */
+  notify: (text: string) => void = () => {};
 
   constructor(private readonly spotify: SpotifyPort) {}
 
@@ -141,7 +200,11 @@ export class Toolbox {
       switch (name) {
         case "list_playlists": return await this.listPlaylists();
         case "get_tracks": return await this.getTracks(args);
+        case "get_track_data": return await this.getTrackData(args);
         case "find_duplicates": return await this.findDuplicates(args);
+        case "recommend_tracks": return await this.recommendTracks(args);
+        case "search_tracks": return await this.searchTracks(args);
+        case "propose_additions": return await this.proposeAdditions(args);
         case "propose_new_playlist": return await this.proposeNewPlaylist(args);
         case "propose_removal": return await this.proposeRemoval(args);
         case "propose_split": return await this.proposeSplit(args);
@@ -206,6 +269,24 @@ export class Toolbox {
     };
   }
 
+  private async getTrackData(args: Args): Promise<Result> {
+    const { playlist, tracks } = await this.playlist(args.playlist_id);
+    const fields = (Array.isArray(args.fields) ? args.fields : []).filter((f): f is "language" | "mood" => f === "language" || f === "mood");
+    if (fields.length === 0) return { error: "fields must contain 'language' and/or 'mood'." };
+    const offset = Math.max(0, Number(args.offset ?? 0) || 0);
+    const page = tracks.slice(offset, offset + PAGE);
+    const facts = await this.spotify.getTrackData(page.map((t) => t.uri), fields, (done, total) => this.notify(`Reading track data ${done}/${total}`));
+    const num = (v: number | undefined, digits = 2) => (v === undefined ? "?" : v.toFixed(digits));
+    const lines = page.map((t, i) => {
+      const f = facts.get(t.uri) ?? {};
+      const parts = [`t${offset + i + 1}`, clean(t.name), clean(t.artists.join(", "))];
+      if (fields.includes("language")) parts.push(`lang=${f.language || "?"}`, `pop=${f.popularity ?? "?"}`);
+      if (fields.includes("mood")) parts.push(`energy=${num(f.energy)} valence=${num(f.valence)} dance=${num(f.danceability)} tempo=${num(f.tempo, 0)} acoustic=${num(f.acousticness)}`);
+      return parts.join(" | ");
+    });
+    return { playlist: playlist.name, total: tracks.length, offset, returned: page.length, has_more: offset + page.length < tracks.length, tracks: lines.join("\n") };
+  }
+
   private async findDuplicates(args: Args): Promise<Result> {
     const { playlist, tracks } = await this.playlist(args.playlist_id);
     const position = new Map(tracks.map((t, i) => [t.uid, i + 1]));
@@ -222,6 +303,50 @@ export class Toolbox {
         })),
       })),
     };
+  }
+
+  /** Registers found tracks and returns their 'cN | …' lines. */
+  private candidates(found: Track[]): string {
+    return found.map((track) => {
+      let index = this.catalogue.findIndex((t) => t.uri === track.uri);
+      if (index === -1) index = this.catalogue.push(track) - 1;
+      return [`c${index + 1}`, clean(track.name), clean(track.artists.join(", ")), clean(track.album)].join(" | ");
+    }).join("\n");
+  }
+
+  private async recommendTracks(args: Args): Promise<Result> {
+    const { playlist, tracks } = await this.playlist(args.playlist_id);
+    const present = new Set(tracks.map((t) => t.uri));
+    const found = (await this.spotify.getRecommendations(playlist.uri)).filter((t) => !present.has(t.uri));
+    return { playlist: playlist.name, candidates: found.length, tracks: this.candidates(found) };
+  }
+
+  private async searchTracks(args: Args): Promise<Result> {
+    const query = String(args.query ?? "").trim();
+    if (!query) return { error: "query is empty." };
+    const found = await this.spotify.searchTracks(query);
+    return found.length ? { matches: found.length, tracks: this.candidates(found) } : { matches: 0, note: "Nothing found. Try a simpler query or another song." };
+  }
+
+  private async proposeAdditions(args: Args): Promise<Result> {
+    const { playlist, tracks } = await this.playlist(args.playlist_id);
+    const items = Array.isArray(args.items) ? (args.items as { track_id?: unknown; reason?: unknown }[]) : [];
+    const present = new Set(tracks.map((t) => t.uri));
+    const bad: string[] = [];
+    const list: ProposedTrack[] = [];
+    let already = 0;
+    for (const item of items) {
+      const index = typeof item.track_id === "string" && /^c\d+$/.test(item.track_id) ? Number(item.track_id.slice(1)) - 1 : -1;
+      const track = this.catalogue[index];
+      if (!track) bad.push(String(item.track_id));
+      else if (present.has(track.uri)) already++;
+      else if (!list.some((t) => t.track.uri === track.uri)) list.push({ track: { ...track, uid: `new-${index}` }, reason: String(item.reason ?? ""), selected: true });
+    }
+    if (bad.length) return { error: `Unknown ids: ${bad.slice(0, 10).join(", ")}. Only cN ids from recommend_tracks or search_tracks can be proposed.` };
+    if (list.length === 0) return { error: "No new tracks to propose (all are already in the playlist or the list is empty)." };
+    const id = this.newId();
+    this.proposals.push({ id, kind: "additions", playlist, tracks: list, summary: String(args.summary ?? "") });
+    return { ok: true, proposal_id: id, tracks: list.length, skipped_already_in_playlist: already, note: "Shown to the user for approval. Nothing has been added." };
   }
 
   private newId(): string {

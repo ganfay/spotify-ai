@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Agent } from "../src/agent/loop";
-import { applyNewPlaylist, applyRemovalAsCopy, applySplit, type RemovalProposal, type SpotifyPort } from "../src/agent/proposals";
+import { applyAdditionsAsNew, applyNewPlaylist, applyRemovalAsCopy, applySplit, type RemovalProposal, type SpotifyPort } from "../src/agent/proposals";
 import { Toolbox } from "../src/agent/tools";
 import type { Settings } from "../src/settings";
 import type { Playlist, Track } from "../src/spotify/types";
@@ -24,6 +24,17 @@ function fakeSpotify() {
     setPlaylistDetails: async () => {},
     addTracks: async (uri, uris) => void created[Number(uri.slice(-1)) - 1]!.uris.push(...uris),
     removeEntries: async () => {},
+    getRecommendations: async () => [track(3, "Stay", "Rihanna"), track(10, "Вахтерам", "Бумбокс"), track(11, "Shum", "Go_A")],
+    searchTracks: async (q) => (q.includes("ДахаБраха") ? [track(12, "Baby", "ДахаБраха")] : []),
+    getTrackData: async (uris, _fields, onProgress) => {
+      onProgress?.(uris.length, uris.length);
+      const facts: Record<string, object> = {
+        "spotify:track:1": { language: "uk", popularity: 60, energy: 0.4, valence: 0.3, danceability: 0.5, tempo: 96, acousticness: 0.6 },
+        "spotify:track:2": { language: "ru", popularity: 50, energy: 0.9, valence: 0.5, danceability: 0.4, tempo: 150, acousticness: 0.01 },
+        "spotify:track:3": { language: "en", popularity: 90 },
+      };
+      return new Map(uris.map((u) => [u, facts[u] ?? {}]));
+    },
   };
   return { port, created };
 }
@@ -199,4 +210,36 @@ test("A model going in circles ends politely instead of failing", async () => {
   assert.equal(result.incomplete, true);
   assert.match(result.text, /could not complete/);
   assert.equal(n, 3); // stopped at the third identical call, not after 16 steps
+});
+
+test("get_track_data: language codes and mood numbers, unknown shown as ?", async () => {
+  const { port } = fakeSpotify();
+  const box = new Toolbox(port);
+  const progress: string[] = [];
+  box.notify = (t) => progress.push(t);
+  const res = await box.call("get_track_data", { playlist_id: "p1", fields: ["language", "mood"] });
+  const lines = String(res.tracks).split("\n");
+  assert.equal(lines[0], "t1 | Обійми | Океан Ельзи | lang=uk | pop=60 | energy=0.40 valence=0.30 dance=0.50 tempo=96 acoustic=0.60");
+  assert.match(lines[1]!, /lang=ru/);
+  assert.equal(lines[3], "t4 | Плакала | KAZKA | lang=? | pop=? | energy=? valence=? dance=? tempo=? acoustic=?");
+  assert.deepEqual(progress, ["Reading track data 4/4"]);
+  assert.match(String((await box.call("get_track_data", { playlist_id: "p1", fields: ["lyrics"] })).error), /fields must contain/);
+});
+
+test("Recommendations: candidates exclude what is in the playlist; only cN ids can be proposed", async () => {
+  const { port, created } = fakeSpotify();
+  const box = new Toolbox(port);
+  const rec = await box.call("recommend_tracks", { playlist_id: "p1" });
+  assert.equal(rec.candidates, 2); // "Stay" is already in the playlist
+  assert.equal(String(rec.tracks).split("\n")[0], "c1 | Вахтерам | Бумбокс | Album");
+  assert.equal((await box.call("search_tracks", { query: "nothing" })).matches, 0);
+  assert.equal(String((await box.call("search_tracks", { query: "ДахаБраха Baby" })).tracks), "c3 | Baby | ДахаБраха | Album");
+  assert.match(String((await box.call("propose_additions", { playlist_id: "p1", summary: "s", items: [{ track_id: "t1", reason: "" }] })).error), /Only cN ids/);
+  assert.match(String((await box.call("propose_additions", { playlist_id: "p1", summary: "s", items: [{ track_id: "c9", reason: "" }] })).error), /Unknown ids: c9/);
+  const ok = await box.call("propose_additions", { playlist_id: "p1", summary: "Схожий настрій", items: [{ track_id: "c1", reason: "той самий жанр" }, { track_id: "c3", reason: "та сама сцена" }, { track_id: "c1", reason: "двічі" }] });
+  assert.equal(ok.tracks, 2);
+  const proposal = box.proposals[0]!;
+  if (proposal.kind !== "additions") throw new Error("expected additions");
+  await applyAdditionsAsNew(port, proposal);
+  assert.deepEqual(created, [{ name: "Mix — recommendations", uris: ["spotify:track:10", "spotify:track:12"] }]);
 });

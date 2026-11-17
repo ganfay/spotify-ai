@@ -3,17 +3,18 @@
 
 import { Agent, toolLabel } from "../agent/loop";
 import {
-  type Applied, applyNewPlaylist, applyRemovalAsCopy, applyRemovalInPlace, applySplit,
+  type Applied, applyAdditionsAsNew, applyAdditionsInPlace, applyNewPlaylist, applyRemovalAsCopy, applyRemovalInPlace, applySplit,
   type Proposal, type ProposedTrack, type SpotifyPort,
 } from "../agent/proposals";
 import { isConfigured, loadSettings } from "../settings";
 import { restoreSnapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
+import { getTrackData } from "../spotify/facts";
 import { BackLink, css, Dots, duration, hooks, Icon, Spinner } from "./ui";
 
 declare const Spicetify: any;
 
-const port: SpotifyPort = spotify;
+const port: SpotifyPort = { ...spotify, getTrackData, getRecommendations: (uri) => spotify.getRecommendations(uri), searchTracks: (q) => spotify.searchTracks(q) };
 const MAX_ROWS = 300;
 
 const scroll = { maxHeight: 420, overflowY: "auto", margin: "8px 0", paddingRight: 6 } as const;
@@ -43,7 +44,7 @@ function TrackRows({ tracks, onToggle }: { tracks: ProposedTrack[]; onToggle?: (
             {track.name}
             <div style={css.muted}>{track.artists.join(", ")}{reason && <span> — {reason}</span>}</div>
           </span>
-          <span style={css.muted}>{duration(track.durationMs)}</span>
+          {track.durationMs > 0 && <span style={css.muted}>{duration(track.durationMs)}</span>}
         </label>
       ))}
       {tracks.length > MAX_ROWS && <p style={css.muted}>…and {tracks.length - MAX_ROWS} more (they follow their checkbox state too).</p>}
@@ -97,6 +98,14 @@ function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
         <div style={css.muted}>Tracks brought back by undo get today’s “date added”.</div>
       </div>
     );
+  } else if (done?.kind === "added") {
+    const snapshot = done.snapshot;
+    body = (
+      <div style={css.notice}>
+        Added {done.added} tracks to “{done.playlistName}”.{" "}
+        <button style={css.secondary} disabled={!!busy} onClick={() => run("Undoing…", async () => ({ kind: "undone", exact: (await restoreSnapshot(snapshot)).exact }))}>Undo</button>
+      </div>
+    );
   } else if (done?.kind === "undone") {
     body = <div style={css.notice}>{done.exact ? "Undone. The playlist is back to how it was." : "Undo finished, but the playlist does not match the saved state exactly — please check it."}</div>;
   } else if (proposal.kind === "new_playlist") {
@@ -111,6 +120,30 @@ function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
           <button style={css.primary} disabled={!!busy || count === 0 || !proposal.name.trim()} onClick={() => run("Creating…", () => applyNewPlaylist(port, proposal))}>
             Create playlist ({count} tracks)
           </button>
+          {busy && <span style={css.muted}>{busy}</span>}
+        </div>
+      </div>
+    );
+  } else if (proposal.kind === "additions") {
+    const count = proposal.tracks.filter((t) => t.selected).length;
+    body = (
+      <div>
+        <p style={css.muted}>New tracks for “{proposal.playlist.name}”. Ticked = will be added.</p>
+        <TrackRows tracks={proposal.tracks} onToggle={toggle} />
+        <div style={{ ...css.bar, margin: "12px 0 4px" }}>
+          <button style={css.primary} disabled={!!busy || count === 0} onClick={() => run("Creating…", () => applyAdditionsAsNew(port, proposal))}>
+            Save as a new playlist ({count})
+          </button>
+          {proposal.playlist.editable && !confirming && (
+            <button style={css.secondary} disabled={!!busy || count === 0} onClick={() => setConfirming(true)}>Add to “{proposal.playlist.name}”…</button>
+          )}
+          {confirming && (
+            <span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 12 }}>
+              <span style={{ marginRight: 16 }}>Add {count} tracks to “{proposal.playlist.name}”?</span>
+              <button style={{ ...css.primary, marginRight: 12 }} disabled={!!busy} onClick={() => run("Adding…", () => applyAdditionsInPlace(port, proposal))}>Yes, add</button>
+              <button style={css.secondary} onClick={() => setConfirming(false)}>Cancel</button>
+            </span>
+          )}
           {busy && <span style={css.muted}>{busy}</span>}
         </div>
       </div>
@@ -181,14 +214,15 @@ const EXAMPLES = [
   "Take “…” and make a new playlist without anything in Russian",
   "Split “…” into 3 playlists by mood",
   "Which tracks do not fit in “…”? Explain why",
+  "Recommend new songs for “…”",
 ];
 
-export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettings: () => void }) {
+export function AgentView({ onBack, onSettings, initialPrompt = "" }: { onBack: () => void; onSettings: () => void; initialPrompt?: string }) {
   const { useState } = hooks();
   const [settings] = useState(loadSettings());
   const [agent, setAgent] = useState(null as Agent | null);
   const [messages, setMessages] = useState([] as Message[]);
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [progress, setProgress] = useState("");
 
   const ready = isConfigured(settings);
@@ -203,7 +237,11 @@ export function AgentView({ onBack, onSettings }: { onBack: () => void; onSettin
     setPrompt("");
     setProgress("Thinking");
     try {
-      const result = await current.run(text, (e) => setProgress(e.type === "tool" ? toolLabel(e.name) : "Thinking"));
+      const result = await current.run(text, (e) => {
+        if (e.type === "tool") setProgress(toolLabel(e.name));
+        else if (e.type === "progress") setProgress(e.text);
+        else if (e.type === "thinking") setProgress("Thinking");
+      });
       setMessages([...history, { from: "agent", text: result.text, proposals: result.proposals }]);
       if (result.incomplete) setAgent(null);
     } catch (e) {

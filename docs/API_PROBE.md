@@ -47,6 +47,16 @@ Consequences for the agent: precise dedupe is possible (remove exactly the chose
 
 `Platform.PromptedPlaylistsAPI`, `AssistedCurationAPI`, `PlaylistMixingAPI`, `RecentlyPlayedAPI`, `PlayHistoryAPI`, `YourLibraryTagsAPI` exist — worth a look later.
 
+## Bulk facts (probe of 2026-11-18, 80 tracks, 6 requests in parallel)
+
+- `metadata/4/track`: 80 of 80 answered in 6.8 s; `language_of_performance` was present for every track (`en` 65, `ru` 8, `uk` 3, `zxx` 2 = no words, `es` 1, `nl` 1).
+- `audio-features`: 80 of 80 in 7.2 s.
+- `color-lyrics`: 32 of 40 answered (8 × HTTP 404 = no lyrics); it also carries a language code.
+- No throttling seen at this volume.
+- `PlaylistAPI.getRecommendedTracks(uri, 0, 50)` returns 50; an offset other than 0 fails.
+- Playlist cover `images[0].url` is `spotify:image:<id>` or `spotify:mosaic:<id>:<id>:<id>:<id>` → `https://i.scdn.co/image/<id>` / `https://mosaic.scdn.co/300/<ids joined>`.
+- Rootlist items carry `canAdd`, `isOwnedBySelf`, `canEditItems` (booleans).
+
 ## Still to test
 
 - Whether re-adding a removed track (for undo) can restore its original `addedAt` (probably not — to check).

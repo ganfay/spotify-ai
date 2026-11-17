@@ -2,6 +2,7 @@
 // the UI shows it, and only the user's click calls apply*() (decisions 8 and 17).
 
 import { type Snapshot, takeSnapshot } from "../snapshots";
+import type { FactField, TrackFacts } from "../spotify/facts";
 import type { EntryRef, Playlist, Track } from "../spotify/types";
 
 /** The part of the Spotify adapter the agent needs. Lets tests use a fake. */
@@ -12,6 +13,9 @@ export interface SpotifyPort {
   setPlaylistDetails(playlistUri: string, details: { name?: string; description?: string }): Promise<void>;
   addTracks(playlistUri: string, trackUris: string[]): Promise<void>;
   removeEntries(playlistUri: string, entries: EntryRef[]): Promise<void>;
+  getRecommendations(playlistUri: string): Promise<Track[]>;
+  searchTracks(query: string): Promise<Track[]>;
+  getTrackData(uris: string[], fields: FactField[], onProgress?: (done: number, total: number) => void): Promise<Map<string, TrackFacts>>;
 }
 
 export interface ProposedTrack {
@@ -49,11 +53,18 @@ export interface SplitProposal extends Base {
   /** Tracks of the source that are in no group. */
   leftOut: number;
 }
-export type Proposal = NewPlaylistProposal | RemovalProposal | SplitProposal;
+/** Add new tracks (found by recommendation or search) to a playlist. Ticked ones are added. */
+export interface AdditionsProposal extends Base {
+  kind: "additions";
+  playlist: Playlist;
+  tracks: ProposedTrack[];
+}
+export type Proposal = NewPlaylistProposal | RemovalProposal | SplitProposal | AdditionsProposal;
 
 export type Applied =
   | { kind: "created"; playlists: { uri: string; name: string; tracks: number }[] }
-  | { kind: "removed"; removed: number; snapshot: Snapshot };
+  | { kind: "removed"; removed: number; snapshot: Snapshot }
+  | { kind: "added"; added: number; playlistName: string; snapshot: Snapshot };
 
 const playable = (t: Track) => !t.local;
 
@@ -93,4 +104,21 @@ export async function applySplit(spotify: SpotifyPort, p: SplitProposal): Promis
     playlists.unshift({ uri, name: group.name, tracks: uris.length });
   }
   return { kind: "created", playlists };
+}
+
+/** The safe default for recommendations: a separate playlist with the picks. */
+export async function applyAdditionsAsNew(spotify: SpotifyPort, p: AdditionsProposal): Promise<Applied> {
+  const uris = p.tracks.filter((t) => t.selected).map((t) => t.track.uri);
+  const name = `${p.playlist.name} — recommendations`;
+  const uri = await spotify.createPlaylist(name);
+  await spotify.addTracks(uri, uris);
+  return { kind: "created", playlists: [{ uri, name, tracks: uris.length }] };
+}
+
+/** Adds to the playlist itself, at the end. A snapshot is saved first so it can be undone. */
+export async function applyAdditionsInPlace(spotify: SpotifyPort, p: AdditionsProposal): Promise<Applied> {
+  const uris = p.tracks.filter((t) => t.selected).map((t) => t.track.uri);
+  const snapshot = await takeSnapshot(p.playlist.uri, p.playlist.name, p.summary);
+  await spotify.addTracks(p.playlist.uri, uris);
+  return { kind: "added", added: uris.length, playlistName: p.playlist.name, snapshot };
 }

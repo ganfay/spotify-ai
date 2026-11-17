@@ -165,3 +165,60 @@ export async function deletePlaylist(playlistUri: string): Promise<void> {
     throw new SpotifyApiError("Spotify did not delete the playlist.");
   }
 }
+
+// --- per-track facts through the session (verified in docs/API_PROBE.md)
+
+async function spclient(path: string): Promise<any> {
+  const cosmos = Spicetify?.CosmosAsync;
+  if (typeof cosmos?.get !== "function") throw new SpotifyApiError("Spotify's request function is missing in this client version.");
+  const res = await cosmos.get(`https://spclient.wg.spotify.com${path}`);
+  // CosmosAsync does not throw on HTTP errors; it returns { code, error }.
+  if (res && typeof res === "object" && "code" in res && "error" in res) throw new SpotifyApiError(`Spotify answered ${res.code}.`);
+  return res;
+}
+
+const trackId = (uri: string): string => uri.split(":")[2] ?? "";
+
+/** Language of performance ("uk", "ru", "en", "zxx" = no words) and popularity. */
+export async function getTrackInfo(uri: string): Promise<{ language: string; popularity: number }> {
+  const hex = Spicetify?.URI?.idToHex?.(trackId(uri));
+  if (!hex) throw new SpotifyApiError("Cannot convert the track id in this client version.");
+  const meta = await spclient(`/metadata/4/track/${hex}?market=from_token&alt=json`);
+  return { language: meta?.language_of_performance?.[0] ?? "", popularity: meta?.popularity ?? 0 };
+}
+
+/** Spotify's audio numbers for a track. */
+export async function getAudioFeatures(uri: string): Promise<{ energy: number; valence: number; danceability: number; tempo: number; acousticness: number }> {
+  const f = await spclient(`/audio-attributes/v1/audio-features/${trackId(uri)}?format=json`);
+  return { energy: f.energy, valence: f.valence, danceability: f.danceability, tempo: f.tempo, acousticness: f.acousticness };
+}
+
+// --- finding tracks outside the user's playlists
+
+/** Spotify's own "Recommended songs" for a playlist (at most 50). */
+export async function getRecommendations(playlistUri: string, limit = 50): Promise<Track[]> {
+  const items: any[] = await call("Reading recommendations", () =>
+    api("PlaylistAPI", "getRecommendedTracks").getRecommendedTracks(playlistUri, 0, Math.min(limit, 50)),
+  );
+  return (items ?? []).filter((i) => typeof i?.uri === "string").map((i) => ({
+    uri: i.uri, uid: "", name: i.name ?? "", artists: (i.artists ?? []).map((x: any) => x.name ?? ""), album: i.album?.name ?? "",
+    durationMs: typeof i.duration === "number" ? i.duration : 0, addedAt: "", explicit: !!i.explicit, playable: true, local: false,
+  }));
+}
+
+/** Catalogue search; returns only tracks. */
+export async function searchTracks(query: string, limit = 5): Promise<Track[]> {
+  const graphql = Spicetify?.GraphQL;
+  const definition = graphql?.Definitions?.searchModalResults;
+  if (typeof graphql?.Request !== "function" || !definition) throw new SpotifyApiError("Spotify search is missing in this client version.");
+  const res: any = await call("Searching", () => graphql.Request(definition, {
+    searchTerm: query, offset: 0, limit: 10, numberOfTopResults: 10,
+    includeAudiobooks: false, includePreReleases: false, includeArtistHasConcertsField: false, includeAuthors: false,
+  }));
+  if (res?.errors?.length) throw new SpotifyApiError("Spotify search failed.");
+  const items: any[] = res?.data?.searchV2?.topResultsV2?.itemsV2 ?? [];
+  return items.map((i) => i?.item?.data).filter((d) => d?.__typename === "Track" && typeof d.uri === "string").slice(0, limit).map((d) => ({
+    uri: d.uri, uid: "", name: d.name ?? "", artists: (d.artists?.items ?? []).map((x: any) => x?.profile?.name ?? ""), album: d.albumOfTrack?.name ?? "",
+    durationMs: d.duration?.totalMilliseconds ?? 0, addedAt: "", explicit: false, playable: true, local: false,
+  }));
+}
