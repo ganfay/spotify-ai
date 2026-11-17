@@ -23,12 +23,12 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Step 1.4: phone check that stats work with the current `spotify-adblock` config.
-2. Step 1.5: `sudo apt-mark hold spotify-client`.
-3. Step 1.6–1.7: SpotX-Bash at a pinned commit, then ad / stats / performance tests.
+1. Step 1.5: `sudo apt-mark hold spotify-client` (owner runs it).
+2. Step 1.6: SpotX-Bash at the pinned commit (`versions`), flags `--noninteractive -e` (owner runs it, needs sudo).
+3. Step 1.7: ad test (60 min), stats check on the phone, benchmark label `spotx`.
 
 ## Blockers / open questions
 
 - Q4 (how the proxy identifies users) — open, needed only in Phase 2.
-- Stats check on the phone with the current `spotify-adblock` config is still pending (needed as a known-good rollback point).
+- Step 1.4 done: stats work with the current `spotify-adblock` config (known-good rollback point). Tests run on the owner's main account by his decision (ban risk explained and accepted).
 - If variant B wins: how to install a pinned Spotify version on Windows/macOS without SpotX (see PLAN.md, Phase 5).
