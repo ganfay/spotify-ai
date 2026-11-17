@@ -23,7 +23,7 @@ export interface Env {
 
 export const DEFAULTS = {
   MODEL: "gemini-3.5-flash-lite",
-  MAX_OUTPUT_TOKENS: 4096,
+  MAX_OUTPUT_TOKENS: 16384,
   ALLOWED_ORIGINS: "https://xpui.app.spotify.com",
   PROMPTS_PER_HOUR: 5,
   REQUESTS_PER_PROMPT: 40,
