@@ -93,7 +93,7 @@ export function GlobalStyles() {
   );
 }
 
-type IconName = "play" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
+type IconName = "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -113,6 +113,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     case "cross": body = <path d="M6 6l12 12M18 6L6 18" {...stroke} strokeWidth={2.4} />; break;
     case "send": body = <path d="M12 19V5M5.500 11.500L12 5l6.500 6.500" {...stroke} strokeWidth={2.4} />; break;
     case "play": body = <path fill="currentColor" d="M8 5.500v13a.6.6 0 0 0 .92.500l10-6.500a.6.6 0 0 0 0-1l-10-6.500A.6.6 0 0 0 8 5.500z" />; break;
+    case "pause": body = <g fill="currentColor"><rect x="6.500" y="5" width="4" height="14" rx="1" /><rect x="13.500" y="5" width="4" height="14" rx="1" /></g>; break;
     case "plus": body = <path d="M12 5v14M5 12h14" {...stroke} />; break;
     case "chevron": body = <path d="M9 6l6 6-6 6" {...stroke} />; break;
     case "lock": body = <g {...stroke} strokeWidth={1.8}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></g>; break;
@@ -173,13 +174,29 @@ export function ResultBadge({ ok, title, detail }: { ok: boolean; title: string;
   );
 }
 
-/** Which track was started from our lists last (shared by all rows on the page). */
-let nowPlaying = "";
-const listeners = new Set<() => void>();
+// --- what Spotify is playing right now, shared by every track row on the page.
+// Listeners on the player exist only while at least one row is on screen.
+
+const rows = new Set<() => void>();
+const notifyRows = () => rows.forEach((refresh) => refresh());
+const PLAYER_EVENTS = ["songchange", "onplaypause"];
+
+function watchPlayer(refresh: () => void): () => void {
+  if (rows.size === 0) PLAYER_EVENTS.forEach((e) => Spicetify.Player?.addEventListener?.(e, notifyRows));
+  rows.add(refresh);
+  return () => {
+    rows.delete(refresh);
+    if (rows.size === 0) PLAYER_EVENTS.forEach((e) => Spicetify.Player?.removeEventListener?.(e, notifyRows));
+  };
+}
+
+const currentUri = (): string => Spicetify.Player?.data?.item?.uri ?? "";
+const isPlaying = (): boolean => !!Spicetify.Player?.isPlaying?.();
 
 /**
- * One track in a list: optional checkbox, cover (click = play it in Spotify),
- * title, a second line, and something on the right.
+ * One track in a list: optional checkbox, cover, title, a second line, and
+ * something on the right. Clicking the cover or the title plays the track in
+ * Spotify; clicking it again pauses. The icon follows the real player state.
  */
 export function TrackRow(props: {
   uri: string; name: string; imageUrl: string; local?: boolean;
@@ -190,29 +207,24 @@ export function TrackRow(props: {
 }) {
   const { useEffect, useState } = hooks();
   const [, refresh] = useState(0);
-  useEffect(() => {
-    const listener = () => refresh(Math.random());
-    listeners.add(listener);
-    return (() => void listeners.delete(listener)) as unknown as void;
-  }, []);
-  const play = () => {
+  useEffect(() => watchPlayer(() => refresh(Math.random())) as unknown as void, []);
+
+  const current = currentUri() === props.uri;
+  const playing = current && isPlaying();
+  const click = () => {
     if (props.local) return;
-    nowPlaying = props.uri;
-    listeners.forEach((l) => l());
-    props.onPlay(props.uri).catch(() => {
-      nowPlaying = "";
-      listeners.forEach((l) => l());
-    });
+    if (current) Spicetify.Player?.togglePlay?.();
+    else props.onPlay(props.uri).catch(() => {});
   };
   return (
     <div className="sai-trackrow">
       {props.onToggle && <input type="checkbox" checked={!!props.checked} onChange={props.onToggle} style={{ flex: "none", cursor: "pointer" }} />}
-      <div className={nowPlaying === props.uri ? "sai-cover on" : "sai-cover"} onClick={play} title={props.local ? "" : "Play"}>
+      <div className={current ? "sai-cover on" : "sai-cover"} onClick={click} title={props.local ? "" : playing ? "Pause" : "Play"}>
         {props.imageUrl ? <img src={props.imageUrl} loading="lazy" alt="" /> : <Icon name="music" size={18} />}
-        {!props.local && <span className="play"><Icon name="play" size={18} /></span>}
+        {!props.local && <span className="play"><Icon name={playing ? "pause" : "play"} size={18} /></span>}
       </div>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span className="title" onClick={play} style={nowPlaying === props.uri ? { color: "var(--spice-button, #1ed760)" } : undefined}>{props.name}</span>
+        <span className="title" onClick={click} style={current ? { color: "var(--spice-button, #1ed760)" } : undefined}>{props.name}</span>
         {props.badges}
         <div style={css.muted}>{props.sub}</div>
       </span>
