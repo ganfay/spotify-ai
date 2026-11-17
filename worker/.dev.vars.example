@@ -1,0 +1,5 @@
+# Copy this file to `.dev.vars` (which is git-ignored) for `npm run dev`.
+# Never commit real values.
+GEMINI_API_KEY=your-gemini-api-key-here
+ADMIN_TOKEN=choose-a-long-random-string
+IP_SALT=any-random-string

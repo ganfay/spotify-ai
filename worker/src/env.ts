@@ -1,0 +1,58 @@
+import type { Limits } from "./limits";
+
+/** Bindings, vars and secrets. Every var is optional: the code has defaults. */
+export interface Env {
+  LIMITS: DurableObjectNamespace<Limits>;
+
+  // Secrets (set with `wrangler secret put`, or `.dev.vars` locally).
+  GEMINI_API_KEY?: string;
+  ADMIN_TOKEN?: string;
+  IP_SALT?: string;
+
+  // Plain vars (wrangler.jsonc).
+  MODEL?: string;
+  MAX_OUTPUT_TOKENS?: string;
+  ALLOWED_ORIGINS?: string;
+  PROMPTS_PER_HOUR?: string;
+  REQUESTS_PER_PROMPT?: string;
+  NEW_INSTALLS_PER_IP_PER_DAY?: string;
+  GLOBAL_REQUESTS_PER_DAY?: string;
+  REQUIRE_INVITE?: string;
+  KILL_SWITCH?: string;
+}
+
+export const DEFAULTS = {
+  MODEL: "gemini-3.5-flash-lite",
+  MAX_OUTPUT_TOKENS: 4096,
+  ALLOWED_ORIGINS: "https://xpui.app.spotify.com",
+  PROMPTS_PER_HOUR: 5,
+  REQUESTS_PER_PROMPT: 40,
+  NEW_INSTALLS_PER_IP_PER_DAY: 5,
+  GLOBAL_REQUESTS_PER_DAY: 400,
+} as const;
+
+/** Parse a non-negative integer var; anything invalid falls back to the default. */
+export function intVar(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === "") return fallback;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+}
+
+export interface LimitConfig {
+  promptsPerHour: number;
+  requestsPerPrompt: number;
+  newInstallsPerIpPerDay: number;
+  globalRequestsPerDay: number;
+}
+
+export function limitConfig(env: Env): LimitConfig {
+  return {
+    promptsPerHour: intVar(env.PROMPTS_PER_HOUR, DEFAULTS.PROMPTS_PER_HOUR),
+    requestsPerPrompt: intVar(env.REQUESTS_PER_PROMPT, DEFAULTS.REQUESTS_PER_PROMPT),
+    newInstallsPerIpPerDay: intVar(
+      env.NEW_INSTALLS_PER_IP_PER_DAY,
+      DEFAULTS.NEW_INSTALLS_PER_IP_PER_DAY,
+    ),
+    globalRequestsPerDay: intVar(env.GLOBAL_REQUESTS_PER_DAY, DEFAULTS.GLOBAL_REQUESTS_PER_DAY),
+  };
+}

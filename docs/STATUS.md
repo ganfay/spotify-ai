@@ -26,7 +26,12 @@ Last update: 2026-11-17
 1. Owner: check "Recently played" / "Listening stats" on the phone for variant B.
 2. Phase 2, steps 2.1–2.4 done: API probes ([API_PROBE.md](API_PROBE.md)), Spotify adapter (`agent/src/spotify/`), snapshots + undo (`agent/src/snapshots.ts`, live test `agent/test/live-undo.ts` passes 4 scenarios), custom app with a home screen of feature cards (`agent/src/app`); Spicetify adds the top-bar button itself, so the app runs no code at Spotify startup. Build: `cd agent && npm install && npm run install-app`, then `spicetify config custom_apps ai-playlists && spicetify apply`.
 3. Fix the benchmark's playing test (fixed track, fixed panel state) — see the last section of [perf/BASELINE.md](perf/BASELINE.md); agent app idle cost: startup / paused CPU / RAM pass, playing CPU inconclusive (not caused by the agent).
-3a. Step 2.5 done: duplicates feature (`agent/src/features/duplicates.ts`, 7 unit tests, UI with preview / cleaned copy / confirmed removal / undo; end-to-end check on a test playlist passed). Next: 2.6 LLM layer, then 2.7 Worker —  (plain code + preview UI), then 2.6 LLM layer and 2.7 Worker (needs Q4 answer).
+3a. Steps 2.5–2.7 done in code:
+   - duplicates feature (`agent/src/features/duplicates.ts`);
+   - AI agent: provider adapters (`agent/src/llm/`: Gemini via proxy or own key, Anthropic, OpenAI-compatible = OpenAI / xAI Grok / OpenRouter / custom address), tools that only read and propose (`agent/src/agent/tools.ts`), loop (`loop.ts`), proposals applied on click (`proposals.ts`), chat UI + settings (`agent/src/app/`); 16 unit tests; end-to-end run inside Spotify against a scripted local model passed (also proves external `fetch` is not blocked by Spotify);
+   - Cloudflare Worker proxy (`worker/`, 40 tests): fixed model, limits per install id (5 prompts/hour), per-IP new-install cap, global daily cap, kill switch, optional invite mode. **Not deployed** — owner follows `worker/README.md`, then puts the Worker URL into `agent/proxy-url.txt` and rebuilds.
+3b. Not yet verified with a real model: every provider adapter was tested only against scripted responses. First real run = owner enters his own key in Settings.
+3c. Next features for the agent: lyrics / language-of-performance / audio-feature tools (data is available, see API_PROBE.md), recommendations.
 4. `install.sh` does not install the agent app yet (needs a prebuilt bundle, e.g. a GitHub release asset).
 5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 

@@ -6,47 +6,11 @@ import { restoreSnapshot, type Snapshot, takeSnapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
 import type { EntryRef, Playlist, Track } from "../spotify/types";
 
+import { AgentView } from "./agent";
+import { SettingsView } from "./settings";
+import { css, duration, hooks } from "./ui";
+
 declare const Spicetify: any;
-
-interface Hooks {
-  useState<T>(initial: T): [T, (value: T) => void];
-  useEffect(effect: () => void, deps?: unknown[]): void;
-}
-const hooks = (): Hooks => Spicetify.React;
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [tag: string]: any;
-    }
-  }
-}
-
-const css = {
-  page: { padding: "24px 32px", maxWidth: 860 },
-  input: {
-    width: "100%", padding: "12px 14px", borderRadius: 8, border: "1px solid var(--spice-button-disabled, #535353)",
-    background: "var(--spice-card, #181818)", color: "var(--spice-text, #fff)", fontSize: 15, boxSizing: "border-box",
-  },
-  muted: { color: "var(--spice-subtext, #b3b3b3)", fontSize: 13 },
-  row: {
-    display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "8px 10px",
-    borderBottom: "1px solid rgba(255,255,255,.07)", cursor: "pointer", borderRadius: 4,
-  },
-  group: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "14px 18px", margin: "12px 0" },
-  entry: { display: "flex", alignItems: "center", gap: 14, padding: "8px 0", cursor: "pointer" },
-  tag: { fontSize: 11, padding: "1px 7px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 6 },
-  bar: { display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", margin: "28px 0 40px" },
-  primary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "#000" },
-  secondary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)" },
-  danger: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "#e22134", color: "#fff" },
-  cards: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginTop: 24 },
-  card: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "18px 20px", minHeight: 96 },
-  badge: { fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 8 },
-  notice: { background: "rgba(30,215,96,.12)", borderRadius: 8, padding: "12px 14px", margin: "14px 0" },
-  error: { color: "#f15e6c", margin: "10px 0" },
-} as const;
-
-const duration = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
 
 type Done =
   | { type: "copy"; uri: string; name: string; kept: number; removed: number }
@@ -200,7 +164,7 @@ interface Feature {
 }
 const FEATURES: Feature[] = [
   { id: "duplicates", title: "Find duplicates", text: "Exact repeats and different versions of one song.", ready: true },
-  { id: "agent", title: "AI agent", text: "Tell it in your own words what to do with a playlist.", ready: false },
+  { id: "agent", title: "AI agent", text: "Tell it in your own words what to do with a playlist.", ready: true },
   { id: "language", title: "Filter by language", text: "For example: everything except Russian, into a new playlist.", ready: false },
   { id: "split", title: "Split a big playlist", text: "Into smaller ones by mood, genre or energy.", ready: false },
   { id: "cleanup", title: "Clean up", text: "Tracks that do not fit, each with a reason.", ready: false },
@@ -256,8 +220,17 @@ function App() {
     body = <div style={{ marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
   } else if (tool === "duplicates") {
     body = <PlaylistPicker title="Find duplicates" onPick={setSelected} onBack={() => setTool("")} />;
+  } else if (tool === "agent") {
+    body = <AgentView onBack={() => setTool("")} onSettings={() => setTool("settings")} />;
+  } else if (tool === "settings") {
+    body = <SettingsView onBack={() => setTool("")} />;
   } else {
-    body = <Home onOpen={setTool} />;
+    body = (
+      <div>
+        <Home onOpen={setTool} />
+        <p style={{ ...css.muted, cursor: "pointer", marginTop: 28 }} onClick={() => setTool("settings")}>⚙ Settings — AI access and API key</p>
+      </div>
+    );
   }
   return (
     <section style={css.page}>

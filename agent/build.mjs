@@ -5,13 +5,21 @@
 //   node build.mjs --test X   bundle test/X.ts into a script for scripts/dev/cdp-eval.mjs
 
 import { build } from "esbuild";
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 const APP = "ai-playlists";
 const out = join("dist", APP);
-const common = { bundle: true, target: "es2022", logLevel: "warning" };
+// Address of the owner's deployed proxy, baked into the build as the default.
+// Set it in agent/proxy-url.txt (one line) or the PROXY_URL environment variable.
+let proxyUrl = process.env.PROXY_URL ?? "";
+try {
+  proxyUrl ||= (await readFile("proxy-url.txt", "utf8")).trim();
+} catch {
+  // no file -> no default proxy; users can still use their own key
+}
+const common = { bundle: true, target: "es2022", logLevel: "warning", define: { __DEFAULT_PROXY_URL__: JSON.stringify(proxyUrl) } };
 
 const testIndex = process.argv.indexOf("--test");
 if (testIndex !== -1) {
