@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phase 1 — ads + stats on Linux: almost done.** Variant B (Spicetify + adblockify) chosen (decision 22). `install.sh` v0 works: fresh install and repeat run tested. Open: stats check on the phone; `--uninstall` and the sudo steps of the installer are not tested yet.
+**Phase 1 — ads + stats on Linux: almost done.** Variant B (Spicetify + adblockify) chosen (decision 22). `install.sh` v0 works: fresh install and repeat run tested. Full cycle `--uninstall` → install tested by the owner, including the sudo steps. Open: stats check on the phone.
 
 ## Done
 
@@ -23,7 +23,7 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Owner: test `./install.sh --uninstall` then `./install.sh` (covers the sudo steps), and check "Recently played" / "Listening stats" on the phone.
+1. Owner: check "Recently played" / "Listening stats" on the phone for variant B.
 2. Phase 2, step 2.1: API probe of the internal client calls on the real client.
 3. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 
