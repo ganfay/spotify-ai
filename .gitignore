@@ -1,0 +1,32 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+secrets/
+
+# Cloudflare Wrangler
+.wrangler/
+
+# Node / build
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+
+# Local machine data (backups of personal configs, raw measurement dumps)
+backups/
+*.local.*
+tmp/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json
