@@ -17,11 +17,21 @@ Tool: `node scripts/dev/cdp-eval.mjs scripts/dev/api-probe.js` (read-only; repor
 | Search | `GraphQL.Request(Definitions.searchModalResults, {searchTerm, offset, limit, numberOfTopResults, …})` | **works** | `searchTracks` / `searchDesktop` do **not** exist in this client. Result is `searchV2.topResultsV2.itemsV2` (mixed types → filter tracks). `searchSuggestions` also works. |
 | Public Web API | `https://api.spotify.com/v1/me` with the client token | **429**, as expected | Confirms decision 16. |
 
-## Write methods that exist (not called yet)
+## Write calls — tested on a throw-away playlist
 
-- `RootlistAPI`: `createPlaylist`, `createFolder`, `add`, `remove`, `move`, `contains`
-- `PlaylistAPI`: `add`, `remove`, `move`, `setAttributes`, `updateDetails`, `clearAttributes`
-- `LibraryAPI`: `add`, `remove`, `contains`
+Tool: `scripts/dev/api-probe-write.js` (creates one playlist named "spotify-ai test (safe to delete)", deletes it at the end; nothing was left behind).
+
+| Action | Call | Result |
+|---|---|---|
+| Create playlist | `RootlistAPI.createPlaylist(name, {before: "start"})` | **works**, returns the playlist URI as a string |
+| Add tracks | `PlaylistAPI.add(uri, [trackUris], {after: "end"})` | **works**, order kept; duplicates allowed; every entry gets a unique `uid` |
+| Remove one of two identical tracks | `PlaylistAPI.remove(uri, [{uri, uid}])` | **works**: only the entry with that `uid` is removed, the other copy stays |
+| Move to start | `PlaylistAPI.move(uri, [{uri, uid}], {before: "start"})` | **works**; `uid` and **`addedAt` are kept** |
+| Move after another entry | `PlaylistAPI.move(uri, [{uri, uid}], {after: {uri, uid}})` | **works** |
+| Rename / description | `PlaylistAPI.setAttributes(uri, {name, description})` | **works** |
+| Delete playlist | `RootlistAPI.remove([{uri}])` | **works**; `RootlistAPI.contains` confirms it is gone |
+
+Consequences for the agent: precise dedupe is possible (remove exactly the chosen copy), reordering does not destroy "date added", and undo can restore a playlist from a saved list of `{uri, uid, position}`.
 
 ## UI surfaces
 
@@ -33,6 +43,6 @@ Tool: `node scripts/dev/cdp-eval.mjs scripts/dev/api-probe.js` (read-only; repor
 
 ## Still to test
 
-- Write calls on a throw-away test playlist (create, add, remove one of two duplicates by `uid`, move, delete) and whether `addedAt` survives `move`.
+- Whether re-adding a removed track (for undo) can restore its original `addedAt` (probably not — to check).
 - Throttling when calling `metadata/4`, `audio-features` and lyrics for ~1,000 tracks (per-track cost is 0.6–0.9 s → needs batching, a cache and a progress bar).
 - Lyrics cap on a free account.
