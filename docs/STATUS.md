@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Steps 1.1–1.2 done: baseline measured, see [perf/BASELINE.md](perf/BASELINE.md).
+**Phase 1 — ads + stats on Linux.** Plan approved on 2026-11-17. Steps 1.1–1.2 done: baseline measured ([perf/BASELINE.md](perf/BASELINE.md)). Step 1.3 done: backup + [ROLLBACK.md](ROLLBACK.md).
 
 ## Done
 
@@ -23,9 +23,9 @@ Last update: 2026-11-17
 
 ## Next
 
-1. Step 1.3: backup + `docs/ROLLBACK.md`.
-2. Step 1.4: phone check that stats work with the current `spotify-adblock` config.
-3. Step 1.5–1.7: `apt-mark hold`, SpotX-Bash, tests (needs sudo).
+1. Step 1.4: phone check that stats work with the current `spotify-adblock` config.
+2. Step 1.5: `sudo apt-mark hold spotify-client`.
+3. Step 1.6–1.7: SpotX-Bash at a pinned commit, then ad / stats / performance tests.
 
 ## Blockers / open questions
 
