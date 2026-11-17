@@ -24,7 +24,7 @@ Last update: 2026-11-17
 ## Next
 
 1. Owner: check "Recently played" / "Listening stats" on the phone for variant B.
-2. Phase 2, step 2.1: API probe of the internal client calls on the real client.
+2. Phase 2, step 2.1 done ([API_PROBE.md](API_PROBE.md)). Next: write-call probe on a test playlist (needs owner OK), then step 2.2 adapter.
 3. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 
 ## Blockers / open questions
