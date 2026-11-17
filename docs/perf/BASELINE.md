@@ -39,3 +39,5 @@ Spotify 1.3.4.258 (apt), Ubuntu 26.04, 12 CPU threads, 14 GB RAM. Medians of 5 r
 | RAM playing | 1160 MB | 1222 MB | pass (+5.3 %) |
 
 The extra CPU while playing is in the GPU process (~14 %) and one renderer (~12.5 %), stable in all 5 windows and in a repeat sample. That pattern means something is being drawn continuously (an animation or looping video in the UI), not audio work. Cause not identified yet — needs a look at the screen. Verified in the patched binary: only `gabo-receiver-service/public/…` is disabled, `gabo-receiver-service/v3/events/` is intact.
+
+**Follow-up (same day):** the 26–30 % appears right after a fresh start + playback and was reproduced; after the owner interacted with the window it dropped to 3–9 % (normal). The old ad blocker did not show this with the same procedure. Root cause not found. **Owner's decision: not critical, accepted, move on.** Re-check when comparing with variant B.
