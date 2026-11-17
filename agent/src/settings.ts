@@ -40,6 +40,8 @@ export function loadSettings(): Settings {
     // broken JSON -> defaults
   }
   const settings = { ...DEFAULTS, ...saved };
+  // An empty saved address must not hide the proxy that ships with this build.
+  if (!settings.proxyUrl) settings.proxyUrl = DEFAULTS.proxyUrl;
   if (!settings.installId) {
     settings.installId = crypto.randomUUID();
     saveSettings(settings);

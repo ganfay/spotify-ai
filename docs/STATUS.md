@@ -29,8 +29,8 @@ Last update: 2026-11-17
 3a. Steps 2.5–2.7 done in code:
    - duplicates feature (`agent/src/features/duplicates.ts`);
    - AI agent: provider adapters (`agent/src/llm/`: Gemini via proxy or own key, Anthropic, OpenAI-compatible = OpenAI / xAI Grok / OpenRouter / custom address), tools that only read and propose (`agent/src/agent/tools.ts`), loop (`loop.ts`), proposals applied on click (`proposals.ts`), chat UI + settings (`agent/src/app/`); 16 unit tests; end-to-end run inside Spotify against a scripted local model passed (also proves external `fetch` is not blocked by Spotify);
-   - Cloudflare Worker proxy (`worker/`, 40 tests): fixed model, limits per install id (5 prompts/hour), per-IP new-install cap, global daily cap, kill switch, optional invite mode. **Not deployed** — owner follows `worker/README.md`, then puts the Worker URL into `agent/proxy-url.txt` and rebuilds.
-3b. Not yet verified with a real model: every provider adapter was tested only against scripted responses. First real run = owner enters his own key in Settings.
+   - Cloudflare Worker proxy (`worker/`, 40 tests): fixed model, limits per install id (5 prompts/hour), per-IP new-install cap, global daily cap, kill switch, optional invite mode. **Deployed on 2026-11-18** at the address in `agent/proxy-url.txt`; verified with real requests (Gemini answers through it, counter decreases, model override and foreign origins are rejected). `ADMIN_TOKEN` is not set, so admin routes are off.
+3b. Verified with a real model: Gemini with the owner's own key (he ran the agent on a 400-track playlist) and Gemini through the proxy (curl). Anthropic and OpenAI-compatible adapters are still tested only against scripted responses.
 3c. Next features for the agent: lyrics / language-of-performance / audio-feature tools (data is available, see API_PROBE.md), recommendations.
 4. `install.sh` does not install the agent app yet (needs a prebuilt bundle, e.g. a GitHub release asset).
 5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
