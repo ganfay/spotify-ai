@@ -30,6 +30,7 @@ REPO = Path(__file__).resolve().parents[2]
 RESULTS = REPO / "docs" / "perf" / "results.jsonl"
 CLK_TCK = os.sysconf("SC_CLK_TCK")
 MPRIS_NAME = "org.mpris.MediaPlayer2.spotify"
+CPU_WINDOW = 0.25  # seconds; resolution of the "settled" startup time
 
 # Acceptance margins against the baseline (docs/DECISIONS.md, decision 21).
 MARGIN_RAM_PCT = 10.0
@@ -87,26 +88,39 @@ def pss_kb(pids: list[int]) -> int:
     return total
 
 
-def dedicated_cgroup(pids: list[int]) -> Path | None:
-    """The cgroup of Spotify, if (almost) nothing else lives in it."""
-    try:
-        rel = Path(f"/proc/{main_pid(pids)}/cgroup").read_text().strip().split("::", 1)[1]
-        path = Path("/sys/fs/cgroup") / rel.lstrip("/")
-        members = {int(p) for p in (path / "cgroup.procs").read_text().split()}
-    except (OSError, IndexError, ValueError):
-        return None
-    if not rel.endswith(".scope") or os.getpid() in members:
-        return None
-    # One foreign process is tolerated (a launcher wrapper that just waits).
-    return path if len(members - set(pids)) <= 1 else None
+def dedicated_cgroups(pids: list[int]) -> set[Path] | None:
+    """The cgroups Spotify lives in, if (almost) nothing else lives in them.
+
+    The desktop may move the main process into its own scope, so there can be
+    more than one. Returns None when a cgroup is shared with other programs.
+    """
+    paths: set[Path] = set()
+    for pid in pids:
+        try:
+            rel = Path(f"/proc/{pid}/cgroup").read_text().strip().split("::", 1)[1]
+        except (OSError, IndexError):
+            continue
+        if not rel.endswith(".scope"):
+            return None
+        paths.add(Path("/sys/fs/cgroup") / rel.lstrip("/"))
+    for path in paths:
+        try:
+            members = {int(p) for p in (path / "cgroup.procs").read_text().split()}
+        except (OSError, ValueError):
+            return None
+        # One foreign process is tolerated (a launcher wrapper that just waits).
+        if os.getpid() in members or len(members - set(pids)) > 1:
+            return None
+    return paths or None
 
 
 class CpuMeter:
     """Cumulative CPU seconds used by Spotify since the first read()."""
 
-    def __init__(self) -> None:
+    def __init__(self, fresh: bool = False) -> None:
+        self.fresh = fresh  # True when we launched the app ourselves
         self.method: str | None = None
-        self._cgroup: Path | None = None
+        self._usage: dict[Path, float] = {}
         self._base: float | None = None
         self._ticks: dict[int, int] = {}
         self._acc = 0
@@ -117,23 +131,26 @@ class CpuMeter:
         if not pids:
             return self._last
         if self.method is None:
-            self._cgroup = dedicated_cgroup(pids)
-            self.method = "cgroup" if self._cgroup else "proc"
-        value = self._read_cgroup() if self.method == "cgroup" else self._read_proc(pids)
+            self.method = "cgroup" if dedicated_cgroups(pids) else "proc"
+        value = self._read_cgroup(pids) if self.method == "cgroup" else self._read_proc(pids)
         self._last = max(self._last, value)
         return self._last
 
-    def _read_cgroup(self) -> float:
-        try:
-            for line in (self._cgroup / "cpu.stat").read_text().splitlines():
-                if line.startswith("usage_usec"):
-                    now = int(line.split()[1]) / 1e6
-                    if self._base is None:
-                        self._base = now
-                    return now - self._base
-        except OSError:
-            pass
-        return self._last
+    def _read_cgroup(self, pids: list[int]) -> float:
+        # Sum over every cgroup Spotify has been seen in; a cgroup that has
+        # disappeared keeps its last known value.
+        for path in (dedicated_cgroups(pids) or set()) | set(self._usage):
+            try:
+                for line in (path / "cpu.stat").read_text().splitlines():
+                    if line.startswith("usage_usec"):
+                        self._usage[path] = int(line.split()[1]) / 1e6
+            except OSError:
+                pass
+        total = sum(self._usage.values())
+        if self._base is None:
+            # A fresh launch counts from zero; an already running app from now.
+            self._base = 0.0 if self.fresh else total
+        return total - self._base
 
     def _read_proc(self, pids: list[int]) -> float:
         for pid in pids:
@@ -227,10 +244,14 @@ def stop_spotify(timeout: float = 20.0) -> None:
     pids = spotify_pids()
     if not pids:
         return
-    try:
-        os.kill(main_pid(pids), signal.SIGTERM)
-    except OSError:
-        pass
+    # Spotify ignores SIGTERM for a long time; its own "Quit" command works at once.
+    quit_ok = _run(["busctl", "--user", "call", MPRIS_NAME, "/org/mpris/MediaPlayer2",
+                    "org.mpris.MediaPlayer2", "Quit"])
+    if quit_ok is None:
+        try:
+            os.kill(main_pid(pids), signal.SIGTERM)
+        except OSError:
+            pass
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if not spotify_pids():
@@ -252,7 +273,7 @@ def launch(cmd: str, index: int) -> None:
 def startup_once(args: argparse.Namespace, index: int) -> dict:
     stop_spotify()
     time.sleep(args.pause)
-    meter, seen = CpuMeter(), set()
+    meter, seen = CpuMeter(fresh=True), set()
     events: dict[str, float | None] = {"process": None, "window": None, "mpris": None, "settled": None}
     quiet, quiet_start, next_slow = 0, 0.0, 0.0
     pids: list[int] = []
@@ -274,7 +295,7 @@ def startup_once(args: argparse.Namespace, index: int) -> dict:
             if events["mpris"] is None and mpris_ready():
                 events["mpris"] = time.monotonic() - t0
         now = time.monotonic()
-        if now - last_t >= 1.0:
+        if now - last_t >= CPU_WINDOW:
             cpu = meter.read(pids)
             pct = (cpu - last_cpu) / (now - last_t) * 100
             window_start = last_t - t0
@@ -286,7 +307,7 @@ def startup_once(args: argparse.Namespace, index: int) -> dict:
                 quiet += 1
             else:
                 quiet = 0
-            if quiet >= args.quiet_seconds:
+            if quiet * CPU_WINDOW >= args.quiet_seconds:
                 events["settled"] = quiet_start
                 break
         time.sleep(0.02)
@@ -340,8 +361,13 @@ def cmd_steady(args: argparse.Namespace) -> None:
                 sys.exit("error: Spotify exited during the measurement.")
             samples.append(pss_kb(pids))
             status, is_ad = playback()
-            if status != status0 or is_ad:
+            # A failed read (None) is not a state change.
+            if status is not None and status0 is not None and status != status0:
                 tainted = True
+                print(f"  ! playback changed: {status0} -> {status}")
+            if is_ad:
+                tainted = True
+                print("  ! an ad is playing")
         elapsed = time.monotonic() - t0
         run = {"cpu_pct": round((meter.read(pids) - c0) / elapsed * 100, 2),
                "pss_mb": round(statistics.median(samples) / 1024, 1)}

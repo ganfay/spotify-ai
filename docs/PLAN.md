@@ -80,6 +80,21 @@ Order is chosen so that the riskiest unknowns are tested first.
   - Cross-platform check of the variant chosen in Phase 1: the same 60-minute ad test and stats test on each OS (decision 13).
   - Open point if variant B (no SpotX) wins: how to install a *pinned* Spotify version on Windows/macOS. The official installer always gives the newest client, which Spicetify may not support yet for days or weeks. SpotX solves this itself; without it we need our own answer (to research then).
 
+## How subagents are used
+
+Rule: a subagent is used only for work that is independent and can run in parallel, or for a review that should not be biased by the author. Everything that touches the owner's machine or needs his decision stays in the main session.
+
+| Phase | Subagents | For what |
+|---|---|---|
+| 0 | 5 research agents (done) | SpotX, Spicetify, fallback blockers, competitors, Gemini + Cloudflare. |
+| 1 | none | Steps are sequential and run on one machine: measure → patch → test. Parallel work is impossible here. |
+| 2 | 2 builders in parallel | (a) Cloudflare Worker proxy, (b) Spotify adapter + snapshots/undo. They share no files. The agent loop and UI are built in the main session after both exist. |
+| 2 | 1 reviewer per finished step | Independent code review before each feature is accepted: safety (no write without a click), secrets, idle cost. |
+| 2 | 1 test-data agent | Builds test playlists' fixtures (mixed Ukrainian/Russian titles, duplicates in different versions) for repeatable checks. |
+| 3 | 1 reviewer | UI review against the "non-intrusive" goal and the idle-cost rule. |
+| 5 | 2 research + build agents in parallel | Windows installer and macOS installer (different files, different tools). |
+| 5 | 1 reviewer | Secret and personal-data scan of the whole history before the repo becomes public. |
+
 ## Risks
 
 | Risk | Likelihood | Impact | What we do |
