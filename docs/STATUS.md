@@ -25,7 +25,8 @@ Last update: 2026-11-17
 
 1. Owner: check "Recently played" / "Listening stats" on the phone for variant B.
 2. Phase 2, steps 2.1–2.4 done: API probes ([API_PROBE.md](API_PROBE.md)), Spotify adapter (`agent/src/spotify/`), snapshots + undo (`agent/src/snapshots.ts`, live test `agent/test/live-undo.ts` passes 4 scenarios), custom app shell with a top-bar button (`agent/src/app`, `agent/src/extension`). Build: `cd agent && npm install && npm run install-app`, then `spicetify config custom_apps ai-playlists && spicetify apply`.
-3. Next: step 2.5 duplicates feature (plain code + preview UI), then 2.6 LLM layer and 2.7 Worker (needs Q4 answer).
+3. Fix the benchmark's playing test (fixed track, fixed panel state) — see the last section of [perf/BASELINE.md](perf/BASELINE.md); agent app idle cost: startup / paused CPU / RAM pass, playing CPU inconclusive (not caused by the agent).
+3a. Next feature: step 2.5 duplicates (plain code + preview UI), then 2.6 LLM layer and 2.7 Worker (needs Q4 answer).
 4. `install.sh` does not install the agent app yet (needs a prebuilt bundle, e.g. a GitHub release asset).
 5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 

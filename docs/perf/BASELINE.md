@@ -83,3 +83,18 @@ Automatic counter (`bench.py adwatch`, reads what Spotify reports as the current
 | A: `spotx-spicetify` | not run with the counter | owner listened, heard none |
 
 The owner shortened the B test from the planned 60 minutes. Stats check on the phone is pending for both variants (stats appear with a delay of hours).
+
+## Playing-state CPU is not a reliable metric yet — 2026-11-17 (late)
+
+| Run (variant B, fresh start → playback by MPRIS) | CPU playing, per-minute windows |
+|---|---|
+| `spicetify-adblockify` (earlier) | 4.6 / 3.5 / 5.6 / 3.5 / 4.1 % |
+| `b-with-agent-idle` | 14.9 / 22.1 / 21.0 / 11.1 / 3.9 % |
+| `ab-with-agent` | 25 / 47 / 53 / 45 % |
+| `ab-without-agent` (agent app disabled, run right after) | 38 / 26 / 27 / 12 % |
+
+The agent app is **not** the cause: CPU is just as high without it. The load is in the renderer/GPU processes and differs from run to run. Working hypothesis (not proven): it depends on **which track is playing** — the bench resumes "the last track", which changed during the evening, and tracks with a looping Canvas video in the Now Playing panel are redrawn continuously. This would also explain the 26 % seen with SpotX alone.
+
+Consequences:
+- Playing-state numbers recorded so far cannot be used to compare variants. Startup, paused CPU and RAM are unaffected and all pass.
+- To fix the method: play one fixed track (MPRIS `OpenUri`), same Now Playing panel state, and verify the hypothesis by measuring that track with the panel open and closed.
