@@ -22,6 +22,8 @@ SpotX and Spicetify are **not** part of this repository. The installer downloads
 - [docs/IDEA.md](docs/IDEA.md) — what we build and why
 - [docs/DECISIONS.md](docs/DECISIONS.md) — decisions and their reasons
 - [docs/STATUS.md](docs/STATUS.md) — done / next / blockers
+- [docs/RESEARCH.md](docs/RESEARCH.md) — Phase 0 research report
+- [docs/PLAN.md](docs/PLAN.md) — phases, acceptance criteria, risks
 
 ## Disclaimer
 
