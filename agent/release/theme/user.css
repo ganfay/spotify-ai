@@ -57,7 +57,6 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .playlist-playlist-concertsFooter,
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .artist-artistDiscography-headerContainer,
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-view-container__mh-footer-container,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-entryPoints,
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) #Desktop_PanelContainer_Id::before,
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-mainWrapper {
   background-color: transparent !important;
