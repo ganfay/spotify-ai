@@ -111,7 +111,15 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 
 Wanted by the owner, not started — see "Next big things" below.
 
-## Next big things (asked for on 2026-11-18, not started)
+## Appearance: foundation only (2026-11-18, late)
+
+- Written: `agent/src/core/` (the startup extension, 1.1 KB built), `agent/theme/` (`color.ini` with stock colours, `user.css`), build steps that put them into `agent/release/` (decision 30).
+- **Applied by hand on the owner's Linux only** (`current_theme spotify-ai`, `inject_css 1`, `replace_colors 1`, extension added). **The installers do not know about it yet**: a run of `install.sh` switches the colour replacement off again (the extension then does nothing).
+- Checked live: with no look saved, Spotify looks the same as before (library, track list and bars identical in a before/after picture); a trial look applied through the extension recolours the whole client at once and is removed cleanly.
+- **Cost not measured yet.** The owner was listening through the web player; the desktop client then uses about 100 % of one core by itself (renderer and GPU process busy, most likely the looping video in "Now playing"), so the small effect of our change cannot be seen. The reference run recorded under these conditions is labelled `look-before` in `docs/perf/results.jsonl` and is useless for comparison with the baseline. To do with the music stopped: `startup` and `steady --state paused` before/after.
+- Not done: the Appearance page (colour pickers, gradient, presets), the three full themes, the gradient showing through Spotify's panels (they are opaque; the trial gradient was invisible), installers for all three systems, what happens next to a user's own Spicetify theme.
+
+## Next big things (asked for on 2026-11-18)
 
 - **Appearance:** a colour/gradient customiser with presets, and three full themes that restyle Spotify, one of them black and white. This needs code and styles loaded when Spotify starts, which the current design avoids on purpose (decision: nothing runs at startup, `inject_css 0`); the owner must agree to that trade first.
 - **A fairer shuffle** for big playlists (his 1,200-track playlist keeps repeating the same songs).

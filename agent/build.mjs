@@ -55,6 +55,9 @@ await build({
   footer: { js: "function render(){return __aiPlaylists.render();}" },
 });
 
+// The startup extension: applies the saved look. Kept as small as possible (see src/core/index.ts).
+await build({ ...common, entryPoints: ["src/core/index.ts"], outfile: join("dist", "spotify-ai-core.js"), format: "iife", minify: true });
+
 // Spicetify itself puts a link to a custom app into the top bar, using this icon.
 // So the app needs no startup code at all (decision 9).
 const icon = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M10 2.5l2.2 5.8 5.8 2.2-5.8 2.2L10 18.500l-2.2-5.800L2 10.500l5.800-2.200L10 2.500z"/><path d="M18.500 14l1.050 2.700 2.700 1.050-2.700 1.050L18.500 21.500l-1.050-2.700-2.700-1.050 2.700-1.050L18.500 14z"/></svg>';
@@ -69,6 +72,9 @@ if (process.argv.includes("--release")) {
   const target = join("release", APP);
   await rm(target, { recursive: true, force: true });
   await cp(out, target, { recursive: true });
+  await cp(join("dist", "spotify-ai-core.js"), join("release", "spotify-ai-core.js"));
+  await rm(join("release", "theme"), { recursive: true, force: true });
+  await cp("theme", join("release", "theme"), { recursive: true });
   console.log(`copied to agent/${target} (commit it)`);
 }
 
