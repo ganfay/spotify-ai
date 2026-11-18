@@ -74,16 +74,45 @@ On Windows and macOS the installer looks at the Spotify that is already there. I
 
 ### Options
 
-Ad blocking can be switched in AI Playlists → Settings. Installer options are remembered for later runs:
+**Most people need none of these.** Ad blocking can be switched on and off inside the app (AI Playlists → Settings), without the installer.
 
-| Linux / macOS | Windows (`install.ps1`) | What it does |
-|---|---|---|
-| `--adblock off` | `-Adblock off` | do not install the blocker at all |
-| `--block-reports off` | `-BlockReports off` | let Spotify send crash reports and interface logs to its developers again |
-| `--force` (macOS) | `-Force` | try even when Spotify is newer than the tested version |
-| `--clean-spotify yes` / `no` (macOS) | `-CleanSpotify yes` / `no` | replace (or keep) a Spotify changed by another mod without being asked |
+An option is a small addition to the install command. Copy the whole line for your system; your choice is remembered for later runs.
 
-Listening statistics are never blocked. What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
+**Install without the ad blocker**
+
+| System | Command |
+|---|---|
+| Windows (<kbd>Win</kbd>+<kbd>R</kbd>) | `powershell -NoExit -c "$env:SPOTIFY_AI_ADBLOCK='off'; irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 \| iex"` |
+| macOS (Terminal) | `curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh \| bash -s -- --adblock off` |
+| Linux | `./install.sh --adblock off` |
+
+To bring it back, run the same line with `on` instead of `off`.
+
+**Let Spotify send crash reports and interface logs to its developers again** (they are stopped by default; listening statistics are never blocked)
+
+| System | Command |
+|---|---|
+| Windows | `powershell -NoExit -c "$env:SPOTIFY_AI_BLOCK_REPORTS='off'; irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 \| iex"` |
+| macOS | `curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh \| bash -s -- --block-reports off` |
+| Linux | `./install.sh --block-reports off` |
+
+**Try even though Spotify is newer than the tested version**
+
+| System | Command |
+|---|---|
+| Windows | `powershell -NoExit -c "$env:SPOTIFY_AI_FORCE='1'; irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 \| iex"` |
+| macOS | `curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh \| bash -s -- --force` |
+
+**Replace a modified Spotify with a clean one without being asked** (`no` keeps it)
+
+| System | Command |
+|---|---|
+| Windows | `powershell -NoExit -c "$env:SPOTIFY_AI_CLEAN='yes'; irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 \| iex"` |
+| macOS | `curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh \| bash -s -- --clean-spotify yes` |
+
+How it works, if you want to combine options: on macOS and Linux they go at the end of the command, after `bash -s --` (for example `… | bash -s -- --adblock off --force`). On Windows each one is a `$env:NAME='value';` in front of `irm`. With a downloaded copy of the repository on Windows: `.\install.cmd -Adblock off`.
+
+What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 Side effect to know about: the ad blocker switches the client to a "premium" state (for example unlimited skips). Server-side premium features (downloads, higher quality) stay locked.
 

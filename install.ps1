@@ -4,8 +4,9 @@
 # Or paste this into PowerShell:
 #   irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 | iex
 #
-# Pasted that way it takes no options; set $env:SPOTIFY_AI_UNINSTALL = '1' (or
-# SPOTIFY_AI_FORCE) first, or use uninstall.cmd.
+# Pasted that way, options are given before it as variables (ready commands are in the README):
+#   $env:SPOTIFY_AI_UNINSTALL='1'   $env:SPOTIFY_AI_FORCE='1'   $env:SPOTIFY_AI_CLEAN='yes'
+#   $env:SPOTIFY_AI_ADBLOCK='off'   $env:SPOTIFY_AI_BLOCK_REPORTS='off'
 #
 # Options (when run as a file, or through install.cmd):
 #   -Uninstall           return Spotify to its original state
@@ -43,6 +44,8 @@ param(
 # downloaded script block with parameters is a form Windows Defender blocks.)
 if ($env:SPOTIFY_AI_UNINSTALL -eq '1') { $Uninstall = $true }
 if ($env:SPOTIFY_AI_FORCE -eq '1') { $Force = $true }
+if ($env:SPOTIFY_AI_ADBLOCK -eq 'on' -or $env:SPOTIFY_AI_ADBLOCK -eq 'off') { $Adblock = $env:SPOTIFY_AI_ADBLOCK }
+if ($env:SPOTIFY_AI_BLOCK_REPORTS -eq 'on' -or $env:SPOTIFY_AI_BLOCK_REPORTS -eq 'off') { $BlockReports = $env:SPOTIFY_AI_BLOCK_REPORTS }
 if ($env:SPOTIFY_AI_CLEAN -eq 'yes' -or $env:SPOTIFY_AI_CLEAN -eq 'no') { $CleanSpotify = $env:SPOTIFY_AI_CLEAN }
 
 function Install-SpotifyAi {
