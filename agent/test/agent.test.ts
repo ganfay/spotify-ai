@@ -410,3 +410,21 @@ test("looks: every preset and odd choices give readable colours", async () => {
     assert.ok(contrast(hex, back) < 1.08, `${hex} -> ${back}`); // rounding to whole degrees and percent only
   }
 });
+
+test("exclusive themes: readable colours, and every theme has styles and texts", async () => {
+  const { contrast, themeAppearance, THEMES } = await import("../src/app/look");
+  const { readFileSync } = await import("node:fs");
+  // The test runs from agent/ (npm test).
+  const css = readFileSync("theme/user.css", "utf8");
+  const texts = readFileSync("src/app/i18n.ts", "utf8");
+  assert.equal(THEMES.length, 3);
+  for (const theme of THEMES) {
+    const look = themeAppearance(theme);
+    assert.equal(look.theme, theme.id);
+    assert.ok(contrast(look.colors!.text!, theme.background) >= 7, theme.id);
+    assert.ok(contrast(look.colors!.subtext!, theme.background) >= 4.5, theme.id);
+    assert.ok(css.includes(`html[data-sai-theme="${theme.id}"]`), `styles for ${theme.id}`);
+    assert.equal(texts.split(`"look.theme.${theme.id}"`).length - 1, 4, `texts for ${theme.id} in four languages`);
+  }
+  assert.ok(THEMES.some((t) => t.id === "noir"), "a black and white theme exists");
+});

@@ -1,8 +1,210 @@
 /* spotify-ai: styles that only do something when a look is chosen in
-   AI Playlists > Appearance. With nothing chosen, none of these rules match. */
+   AI Playlists > Appearance. With nothing chosen, none of these rules match.
+   Spotify's elements are addressed by the stable names Spicetify gives them
+   (Root__…, main-…, x-…); when Spotify renames something a rule simply stops
+   matching and the rest keeps working. */
 
+/* ---------------------------------------------------------------- gradient */
 /* A gradient over the whole window. spotify-ai-core.js makes the big panels
    see-through (their colours get an alpha value), so it shows behind them. */
 html[data-sai-gradient="on"] body {
   background: var(--sai-gradient) fixed !important;
 }
+
+/* =================================================================== NOIR
+   Black and white. Square corners, hairline frames, serif headlines; pictures
+   lose their colour and get it back under the pointer. */
+html[data-sai-theme="noir"] body { background: #000 !important; }
+html[data-sai-theme="noir"] #main *,
+html[data-sai-theme="noir"] #main *::before,
+html[data-sai-theme="noir"] #main *::after { border-radius: 0 !important; }
+html[data-sai-theme="noir"] img,
+html[data-sai-theme="noir"] video,
+html[data-sai-theme="noir"] .main-image-image,
+html[data-sai-theme="noir"] [style*="background-image"] {
+  filter: grayscale(1) contrast(1.12);
+  transition: filter .45s ease;
+}
+html[data-sai-theme="noir"] img:hover,
+html[data-sai-theme="noir"] .main-image-image:hover,
+html[data-sai-theme="noir"] .main-trackList-trackListRow:hover img,
+html[data-sai-theme="noir"] .main-yourLibraryX-listItem:hover img { filter: none; }
+/* Spotify paints headers in a colour taken from the cover: gone. */
+html[data-sai-theme="noir"] .main-entityHeader-backgroundColor,
+html[data-sai-theme="noir"] .main-actionBarBackground-background,
+html[data-sai-theme="noir"] .main-topBar-background,
+html[data-sai-theme="noir"] .main-entityHeader-shadow { background: transparent !important; background-image: none !important; box-shadow: none !important; }
+html[data-sai-theme="noir"] .main-nowPlayingView-section { background: transparent !important; border: 1px solid rgba(255,255,255,.16); }
+/* Hairline frames around the panels. */
+html[data-sai-theme="noir"] .Root__nav-bar,
+html[data-sai-theme="noir"] .Root__main-view,
+html[data-sai-theme="noir"] .Root__right-sidebar { outline: 1px solid rgba(255,255,255,.16); outline-offset: -1px; }
+html[data-sai-theme="noir"] .Root__now-playing-bar { border-top: 1px solid rgba(255,255,255,.16); }
+/* Headlines. */
+html[data-sai-theme="noir"] .main-entityHeader-title,
+html[data-sai-theme="noir"] .main-entityHeader-title *,
+html[data-sai-theme="noir"] .main-nowPlayingView-container a[href*="/track/"],
+html[data-sai-theme="noir"] h1 {
+  font-family: "Playfair Display", "Bodoni 72", Didot, Georgia, "Times New Roman", serif !important;
+  font-weight: 400 !important;
+  font-style: italic;
+  letter-spacing: -.01em !important;
+}
+html[data-sai-theme="noir"] .main-trackList-trackListHeaderRow,
+html[data-sai-theme="noir"] .main-nowPlayingView-sectionHeaderText,
+html[data-sai-theme="noir"] .main-yourLibraryX-header { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; }
+/* A row under the pointer turns into its negative. */
+html[data-sai-theme="noir"] .main-trackList-trackListRow:hover { background: #fff !important; }
+html[data-sai-theme="noir"] .main-trackList-trackListRow:hover *:not(img) { color: #000 !important; fill: #000 !important; }
+html[data-sai-theme="noir"] .main-trackList-trackListRow { border-bottom: 1px solid rgba(255,255,255,.07); transition: background .12s; }
+/* Controls. */
+html[data-sai-theme="noir"] [class*="button-primary__inner"] { background: #fff !important; color: #000 !important; box-shadow: none !important; }
+html[data-sai-theme="noir"] .x-progressBar-progressBarBg { height: 2px !important; background: rgba(255,255,255,.22) !important; }
+html[data-sai-theme="noir"] .x-progressBar-fillColor { background: #fff !important; }
+
+/* =================================================================== GLASS
+   The cover of the playing song, blurred, fills the window; the panels float
+   on it as frosted glass. (Blur is work for the graphics card.) */
+html[data-sai-theme="glass"] {
+  --spice-main: rgba(18,18,26,.38) !important;
+  --spice-sidebar: rgba(10,10,16,.30) !important;
+  --spice-player: rgba(18,18,26,.38) !important;
+  --spice-card: rgba(255,255,255,.10) !important;
+  --spice-main-elevated: rgba(40,40,56,.72) !important;
+  --spice-highlight: rgba(255,255,255,.08) !important;
+  --spice-highlight-elevated: rgba(255,255,255,.14) !important;
+  --spice-tab-active: rgba(255,255,255,.14) !important;
+}
+/* The base colour sits on <html> and <body> is clear: layers placed behind the
+   content with z-index -1 would otherwise be covered by the body's own background. */
+html[data-sai-theme="glass"] { background: #07070b !important; }
+html[data-sai-theme="glass"] body { background: transparent !important; }
+/* Two layers behind everything: a soft aurora that is always there, and the cover
+   of the playing song on top of it. The cover only ADDS light ("screen"), so a
+   black cover leaves the aurora and a colourful one takes over. */
+html[data-sai-theme="glass"] body::before,
+html[data-sai-theme="glass"] body::after {
+  content: "";
+  position: fixed;
+  inset: -110px;
+  z-index: -1;
+  pointer-events: none;
+}
+html[data-sai-theme="glass"] body::before {
+  background:
+    radial-gradient(60% 55% at 18% 22%, #5b3fd6 0%, transparent 70%),
+    radial-gradient(55% 60% at 86% 30%, #0e7fa8 0%, transparent 70%),
+    radial-gradient(65% 60% at 55% 96%, #a8327e 0%, transparent 70%),
+    #0b0b14;
+  filter: blur(40px) brightness(.78);
+}
+html[data-sai-theme="glass"] body::after {
+  background-image: var(--sai-cover, none);
+  background-size: cover;
+  background-position: center;
+  filter: blur(70px) saturate(1.9) brightness(.85);
+  mix-blend-mode: screen;
+  opacity: .9;
+  transition: background-image 1.4s ease;
+}
+html[data-sai-theme="glass"] .Root__top-container { background: transparent !important; }
+html[data-sai-theme="glass"] .Root__globalNav { background: transparent !important; }
+html[data-sai-theme="glass"] .Root__nav-bar,
+html[data-sai-theme="glass"] .Root__main-view,
+html[data-sai-theme="glass"] .Root__right-sidebar > *,
+html[data-sai-theme="glass"] .Root__now-playing-bar {
+  -webkit-backdrop-filter: blur(26px) saturate(1.5);
+  backdrop-filter: blur(26px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 12px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08);
+  border-radius: 20px !important;
+  overflow: hidden;
+}
+html[data-sai-theme="glass"] .Root__now-playing-bar { margin: 0 8px 8px; }
+html[data-sai-theme="glass"] .Root__right-sidebar { background: transparent !important; }
+html[data-sai-theme="glass"] .main-entityHeader-backgroundColor,
+html[data-sai-theme="glass"] .main-actionBarBackground-background { opacity: .28; }
+html[data-sai-theme="glass"] .main-nowPlayingView-section { border-radius: 16px !important; border: 1px solid rgba(255,255,255,.08); }
+html[data-sai-theme="glass"] .main-trackList-trackListRow { border-radius: 12px !important; }
+html[data-sai-theme="glass"] .main-image-image,
+html[data-sai-theme="glass"] .main-trackList-rowImage { border-radius: 10px !important; }
+html[data-sai-theme="glass"] .main-entityHeader-image { border-radius: 18px !important; box-shadow: 0 18px 50px rgba(0,0,0,.5) !important; }
+html[data-sai-theme="glass"] .main-nowPlayingWidget-coverArt img { border-radius: 12px !important; }
+html[data-sai-theme="glass"] [class*="button-primary__inner"] { box-shadow: 0 8px 26px rgba(0,0,0,.4) !important; }
+html[data-sai-theme="glass"] .main-connectBar-connectBar { background: rgba(255,255,255,.14) !important; color: #fff !important; border-radius: 0 0 20px 20px; }
+html[data-sai-theme="glass"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }
+
+/* ==================================================================== NEON
+   Night city: pink and cyan light on deep violet, glowing controls. */
+html[data-sai-theme="neon"] {
+  --sai-pink: #ff3ea5;
+  --sai-cyan: #22d3ee;
+  --sai-violet: #7c3aed;
+  --spice-main: rgba(16,8,36,.50) !important;
+  --spice-sidebar: rgba(8,4,20,.46) !important;
+  --spice-player: rgba(12,6,28,.56) !important;
+  --spice-card: rgba(255,62,165,.10) !important;
+  --spice-highlight: rgba(255,62,165,.10) !important;
+  --spice-highlight-elevated: rgba(124,58,237,.30) !important;
+  --spice-tab-active: rgba(255,62,165,.22) !important;
+}
+html[data-sai-theme="neon"] body { background: transparent !important; }
+html[data-sai-theme="neon"] {
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(255,62,165,.42), transparent 62%),
+    radial-gradient(1000px 720px at 104% 108%, rgba(34,211,238,.32), transparent 60%),
+    radial-gradient(700px 500px at 60% 40%, rgba(124,58,237,.22), transparent 70%),
+    linear-gradient(180deg, #170a34, #06030e) fixed !important;
+}
+/* A faint horizon grid at the bottom of the window. */
+html[data-sai-theme="neon"] body::after {
+  content: "";
+  position: fixed;
+  left: -20%; right: -20%; bottom: 0; height: 46vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,62,165,.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,211,238,.45) 1px, transparent 1px);
+  background-size: 100% 34px, 56px 100%;
+  transform: perspective(420px) rotateX(62deg);
+  transform-origin: bottom;
+  opacity: .22;
+  -webkit-mask-image: linear-gradient(transparent, #000 70%);
+  mask-image: linear-gradient(transparent, #000 70%);
+}
+html[data-sai-theme="neon"] .Root__top-container,
+html[data-sai-theme="neon"] .Root__globalNav { background: transparent !important; }
+html[data-sai-theme="neon"] .Root__nav-bar,
+html[data-sai-theme="neon"] .Root__main-view,
+html[data-sai-theme="neon"] .Root__right-sidebar > * {
+  border-radius: 14px !important;
+  box-shadow: inset 0 0 0 1px rgba(255,62,165,.30), 0 0 28px rgba(255,62,165,.10), 0 0 60px rgba(34,211,238,.06);
+}
+html[data-sai-theme="neon"] .Root__now-playing-bar { box-shadow: 0 -1px 0 rgba(34,211,238,.35), 0 -14px 40px rgba(124,58,237,.18); }
+html[data-sai-theme="neon"] .main-entityHeader-backgroundColor { background: linear-gradient(135deg, rgba(255,62,165,.40), rgba(124,58,237,.30) 55%, rgba(34,211,238,.22)) !important; }
+html[data-sai-theme="neon"] .main-actionBarBackground-background { background: linear-gradient(180deg, rgba(124,58,237,.22), transparent) !important; }
+html[data-sai-theme="neon"] .main-entityHeader-title,
+html[data-sai-theme="neon"] .main-entityHeader-title * {
+  background: linear-gradient(92deg, #ffffff 10%, #ffb3dc 45%, #8be9f7 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(255,62,165,.45));
+}
+html[data-sai-theme="neon"] [class*="button-primary__inner"] {
+  background: linear-gradient(135deg, var(--sai-pink), var(--sai-violet) 55%, var(--sai-cyan)) !important;
+  color: #fff !important;
+  box-shadow: 0 0 22px rgba(255,62,165,.65), 0 0 46px rgba(34,211,238,.25) !important;
+}
+html[data-sai-theme="neon"] .x-progressBar-fillColor {
+  background: linear-gradient(90deg, var(--sai-pink), var(--sai-cyan)) !important;
+  box-shadow: 0 0 12px rgba(255,62,165,.8);
+}
+html[data-sai-theme="neon"] .main-trackList-trackListRow { border-radius: 10px !important; transition: box-shadow .18s, background .18s; }
+html[data-sai-theme="neon"] .main-trackList-trackListRow:hover { box-shadow: inset 3px 0 0 var(--sai-pink), inset 0 0 0 1px rgba(255,62,165,.22), 0 0 22px rgba(255,62,165,.12); }
+html[data-sai-theme="neon"] .main-nowPlayingView-section { border-radius: 12px !important; box-shadow: inset 0 0 0 1px rgba(34,211,238,.25); }
+html[data-sai-theme="neon"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgba(255,62,165,.5), 0 0 46px rgba(255,62,165,.35), 0 0 90px rgba(34,211,238,.18) !important; border-radius: 10px !important; }
+html[data-sai-theme="neon"] .main-nowPlayingWidget-coverArt img { box-shadow: 0 0 18px rgba(255,62,165,.55); border-radius: 8px !important; }
+html[data-sai-theme="neon"] .main-connectBar-connectBar { background: linear-gradient(90deg, var(--sai-pink), var(--sai-violet), var(--sai-cyan)) !important; color: #fff !important; }
+html[data-sai-theme="neon"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }

@@ -118,3 +118,29 @@ export const PRESETS: Preset[] = [
   preset("graphite", "Graphite", "16181c", "9fb3c8"),
   preset("mono", "Mono", "000000", "ffffff"),
 ];
+
+/** A full theme: its own colours plus styles in agent/theme/user.css that restyle Spotify. */
+export interface Theme {
+  id: string;
+  /** A proper name, the same in every language. */
+  name: string;
+  background: string;
+  accent: string;
+  /** Colours that differ from what the two base colours would give. */
+  colors?: Partial<Record<ColorName, string>>;
+  cover?: boolean;
+}
+export const THEMES: Theme[] = [
+  { id: "noir", name: "Noir", background: "000000", accent: "ffffff", colors: { subtext: "a8a8a8", sidebar: "000000", player: "000000", card: "111111", "main-elevated": "0d0d0d", "tab-active": "262626" } },
+  { id: "glass", name: "Glass", background: "12121a", accent: "ffffff", colors: { subtext: "cfcfdc", "main-elevated": "2a2a3a" }, cover: true },
+  { id: "neon", name: "Neon", background: "0e0620", accent: "ff3ea5", colors: { subtext: "c7b8e6", "button-active": "ff7cc4", "main-elevated": "1c0f3a" } },
+];
+/** The preset name stored for a theme, so the page can show which one is on. */
+export const themeMark = (id: string): string => `theme:${id}`;
+
+export const themeAppearance = (theme: Theme): Appearance => ({
+  colors: { ...buildColors(theme.background, theme.accent), ...theme.colors },
+  theme: theme.id,
+  ...(theme.cover ? { cover: true } : {}),
+  base: { background: theme.background, accent: theme.accent, preset: themeMark(theme.id) },
+});

@@ -4,7 +4,8 @@
 
 import { APPEARANCE_KEY, applyAppearance, loadAppearance } from "../core/appearance";
 import { t } from "./i18n";
-import { type Choice, fromAppearance, hexToHsl, hslToHex, PRESETS, STOCK, toAppearance } from "./look";
+import { type Choice, fromAppearance, hexToHsl, hslToHex, PRESETS, STOCK, type Theme, themeAppearance, themeMark, THEMES, toAppearance } from "./look";
+import type { Key } from "./i18n";
 import { BackLink, css, hooks, Icon } from "./ui";
 
 declare const Spicetify: any;
@@ -89,6 +90,13 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
     setChoice(next);
     setSaved(true);
   };
+  const useTheme = (theme: Theme) => {
+    const look = themeAppearance(theme);
+    localStorage.setItem(APPEARANCE_KEY, JSON.stringify(look));
+    applyAppearance(look);
+    setChoice({ background: theme.background, accent: theme.accent, gradient: null, preset: themeMark(theme.id) });
+    setSaved(true);
+  };
   /** A change made by hand is no longer "the preset". */
   const edit = (patch: Partial<Choice>) => {
     const { preset: _preset, ...rest } = { ...choice, ...patch };
@@ -114,6 +122,17 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
           <div key={p.preset} className={`sai-look${saved && choice.preset === p.preset ? " on" : ""}`} onClick={() => use(p)}>
             <div className="pic" style={{ background: preview(p) }}><span className="dot" style={{ background: `#${p.accent}` }} /></div>
             <div className="name">{p.name}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={section}>{t("look.exclusive")} <span style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>{t("look.fps")}</span></div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 12 }}>
+        {THEMES.map((theme) => (
+          <div key={theme.id} className={`sai-look sai-theme${saved && choice.preset === themeMark(theme.id) ? " on" : ""}`} onClick={() => useTheme(theme)}>
+            <div className={`pic sai-theme-${theme.id}`}><span className="word">{theme.name}</span></div>
+            <div className="name">{theme.name}</div>
+            <div style={{ ...css.muted, fontSize: 12, padding: "0 2px 4px", lineHeight: 1.35 }}>{t(`look.theme.${theme.id}` as Key)}</div>
           </div>
         ))}
       </div>

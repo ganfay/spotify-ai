@@ -17,6 +17,8 @@ export interface Appearance {
   gradient?: { colors: string[]; angle: number; intensity: number };
   /** A full theme (extra styles in user.css are switched on by this name). */
   theme?: string;
+  /** The theme uses the cover of the playing song as its backdrop. */
+  cover?: boolean;
   /** What the Appearance page built the colours from, so it can be edited again. */
   base?: { background: string; accent: string; preset?: string };
 }
@@ -35,9 +37,39 @@ export function loadAppearance(): Appearance | null {
 
 const HEX = /^[0-9a-fA-F]{6}$/;
 
+/** Stops following the playing song's cover (set while a theme that uses it is on). */
+let stopCover: (() => void) | null = null;
+
+/** Keeps --sai-cover pointing at the cover of the playing song. Runs only for themes that ask for it. */
+function followCover(root: HTMLElement): () => void {
+  const player = () => (window as unknown as { Spicetify?: any }).Spicetify?.Player;
+  const set = () => {
+    const meta = player()?.data?.item?.metadata;
+    const raw: unknown = meta?.image_xlarge_url || meta?.image_url;
+    if (typeof raw !== "string" || !raw) return;
+    const url = raw.startsWith("http") ? raw : `https://i.scdn.co/image/${raw.split(":").pop()}`;
+    if (/^https:\/\/[a-z0-9.-]+\/[A-Za-z0-9/_.-]+$/.test(url)) root.style.setProperty("--sai-cover", `url(${url})`);
+  };
+  // Spotify's player object appears a moment after start.
+  let tries = 0;
+  const timer = setInterval(() => {
+    if (player()?.addEventListener) {
+      clearInterval(timer);
+      player().addEventListener("songchange", set);
+      set();
+    } else if (++tries > 120) clearInterval(timer);
+  }, 500);
+  return () => {
+    clearInterval(timer);
+    player()?.removeEventListener?.("songchange", set);
+  };
+}
+
 /** Puts a look on the page, or removes ours completely when given null. */
 export function applyAppearance(look: Appearance | null): void {
   const root = document.documentElement;
+  stopCover?.();
+  stopCover = null;
   // Remove whatever an earlier call set.
   for (const name of Array.from(root.style)) {
     if (name.startsWith("--spice-") || name.startsWith("--sai-")) root.style.removeProperty(name);
@@ -64,5 +96,8 @@ export function applyAppearance(look: Appearance | null): void {
     }
     root.setAttribute("data-sai-gradient", "on");
   }
-  if (look.theme && /^[a-z0-9-]{1,30}$/.test(look.theme)) root.setAttribute("data-sai-theme", look.theme);
+  if (look.theme && /^[a-z0-9-]{1,30}$/.test(look.theme)) {
+    root.setAttribute("data-sai-theme", look.theme);
+    if (look.cover) stopCover = followCover(root);
+  }
 }
