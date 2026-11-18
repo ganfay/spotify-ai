@@ -1,49 +1,58 @@
 # Status
 
-Last update: 2026-11-17
+Last update: 2026-11-18
 
-## Current phase
+A new chat should read this file first, then [DECISIONS.md](DECISIONS.md) and [PLAN.md](PLAN.md).
 
-**Phases 0–4 done (2026-11-18).** Linux only. Next: Phase 5 (Windows, macOS, security review, going public).
+## Where we are
 
-## Done
+**Phases 0–4 are done. Linux only. Phase 5 is in progress** (Windows, macOS, security review, going public).
 
-- Repo skeleton: `README.md`, `docs/IDEA.md`, `docs/DECISIONS.md`, `docs/STATUS.md`, `.gitignore`.
-- Private GitHub repo `ganfay/spotify-ai` created; commits use the GitHub no-reply address.
-- Phase 0 research → [RESEARCH.md](RESEARCH.md).
-- Plan → [PLAN.md](PLAN.md), approved; decisions 12–21 recorded in [DECISIONS.md](DECISIONS.md).
-- MIT `LICENSE` added.
-- Benchmark tool `scripts/bench/bench.py` + protocol in [perf/README.md](perf/README.md).
-- Local facts checked on the Linux dev machine:
-  - Spotify `1.3.4.258` from the official apt repo, installed in `/usr/share/spotify` (root-owned).
-  - No flatpak and no snap Spotify is installed (only a leftover flatpak config folder).
-  - Spicetify is not installed.
-  - Current ad blocker: `abba23/spotify-adblock` via `LD_PRELOAD`, with a user config that does not block `gabo-receiver-service`.
-  - cgroup v2 is available and Spotify runs in its own scope → performance can be measured without extra tools.
+The repository `ganfay/spotify-ai` is still **private**.
 
-## Next
+## What exists and works (Linux, Spotify 1.3.4.258 from apt)
 
-1. Owner: check "Recently played" / "Listening stats" on the phone for variant B.
-2. Phase 2, steps 2.1–2.4 done: API probes ([API_PROBE.md](API_PROBE.md)), Spotify adapter (`agent/src/spotify/`), snapshots + undo (`agent/src/snapshots.ts`, live test `agent/test/live-undo.ts` passes 4 scenarios), custom app with a home screen of feature cards (`agent/src/app`); Spicetify adds the top-bar button itself, so the app runs no code at Spotify startup. Build: `cd agent && npm install && npm run install-app`, then `spicetify config custom_apps ai-playlists && spicetify apply`.
-3. Fix the benchmark's playing test (fixed track, fixed panel state) — see the last section of [perf/BASELINE.md](perf/BASELINE.md); agent app idle cost: startup / paused CPU / RAM pass, playing CPU inconclusive (not caused by the agent).
-3a. Steps 2.5–2.7 done in code:
-   - duplicates feature (`agent/src/features/duplicates.ts`);
-   - AI agent: provider adapters (`agent/src/llm/`: Gemini via proxy or own key, Anthropic, OpenAI-compatible = OpenAI / xAI Grok / OpenRouter / custom address), tools that only read and propose (`agent/src/agent/tools.ts`), loop (`loop.ts`), proposals applied on click (`proposals.ts`), chat UI + settings (`agent/src/app/`); 16 unit tests; end-to-end run inside Spotify against a scripted local model passed (also proves external `fetch` is not blocked by Spotify);
-   - Cloudflare Worker proxy (`worker/`, 40 tests): fixed model, limits per install id (5 prompts/hour), per-IP new-install cap, global daily cap, kill switch, optional invite mode. **Deployed on 2026-11-18** at the address in `agent/proxy-url.txt`; verified with real requests (Gemini answers through it, counter decreases, model override and foreign origins are rejected). `ADMIN_TOKEN` is not set, so admin routes are off.
-3b. Verified with a real model: Gemini with the owner's own key (he ran the agent on a 400-track playlist) and Gemini through the proxy (curl). Anthropic and OpenAI-compatible adapters are still tested only against scripted responses.
-3c. Steps 2.8–2.11 done in code (2026-11-18): the agent has `get_track_data` (Spotify's language of performance + mood numbers, cached, 80 tracks in ~7 s), `recommend_tracks`, `search_tracks` and `propose_additions`; all six home cards work (AI ones open the agent with a ready-made request for the chosen playlist). 19 unit tests.
-3d. Live checks with the real model: recommendations for a 9-track playlist returned 5 picks with reasons in 7 s; the owner ran a mood split on a 400-track playlist earlier. **Not yet checked live:** language filter and cleanup after the new data tool, quality of results on big playlists, `Add to playlist` + undo for recommendations (covered by the snapshot test only indirectly).
-3e. Known rough edges: the agent returned 5 recommendations where 10–20 were asked for; taste of mood splits needs tuning (owner's note); the agent stops politely when the model goes in circles (max 16 steps).
-4. `install.sh` installs the agent app too, from the prebuilt copy in `agent/release/` (refresh it with `cd agent && npm run release` and commit).
-4a. Phase 3 done: interface in English, Ukrainian, Russian and German (`agent/src/app/i18n.ts`, 163 texts each; default = Spotify's language, changeable in Settings); home cards with icons and a staggered entrance + hover animation; proposal cards with a kind label, select all / none, and a split editor (rename groups, move tracks between groups); progress bar for long reads; Stop button; covers and click-to-play with a pause state that follows the real player. 23 unit tests + end-to-end checks in the client.
-4b. Phase 4 done: `./install.sh --adblock on|off` and `--block-reports on|off` (choices are remembered in `~/.config/spotify-ai/options`); Settings shows whether ad blocking is applied and the command to change it; Spicetify's own update check is turned off (pinned versions); [PRIVACY.md](PRIVACY.md) says what goes where. Ad blocking also has a switch in the app's Settings with an "Apply now" button that reloads Spotify's window (verified both ways; after a reload without the blocker Spotify's audio ad manager is enabled again): the installer installs adblockify wrapped in a flag check as `spotify-ai-adblock.js`.
-4c. Home screen: Settings button in the header, cards in up to 3 columns, and a "Recent changes" list with Undo for every saved undo point. The translation test now checks every text in every language.
-4d. Findings: `Platform.LifecycleAPI.restart()` closes Spotify on Linux without reopening it (tested twice) — not used. With adblockify active the client still reports product state `ads=1`, `type=free`: on this client version the "premium state" override does not take effect, ads are stopped by disabling the ad managers and slots.
-4e. Small things left: the track count on a playlist tile can differ from the real count by 1–2 (Spotify's cached number); Spotify adapter error texts and provider key hints are English only; the agent's taste for mood splits and the number of recommendations still need tuning.
-5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
+| Part | Where | State |
+|---|---|---|
+| Installer | `install.sh`, `versions` | One command. Holds the apt package, installs Spicetify 2.46.7, the ad blocker (adblockify at a pinned commit, checksum-verified, wrapped in a flag check) and the AI Playlists app. Re-running repairs. `--uninstall`, `--adblock on\|off`, `--block-reports on\|off`. Full cycle tested by the owner. |
+| AI Playlists app | `agent/` (TypeScript, esbuild), prebuilt copy in `agent/release/` | Home with six cards, duplicate finder (no AI), AI agent with five features (duplicates, language filter, split by mood, clean-up, recommendations), Settings, "Recent changes" with Undo. Interface in English, Ukrainian, Russian, German. 23 unit tests. No code runs at Spotify startup. |
+| Proxy | `worker/` (Cloudflare Worker, 40 tests) | Deployed by the owner; address in `agent/proxy-url.txt`. Holds the Gemini key as a secret. Limits: 5 prompts/hour per install id, cap on new installs per IP, global daily cap, kill switch. Invite mode exists, off. `ADMIN_TOKEN` not set → admin routes off. |
+| Measuring tools | `scripts/bench/bench.py`, `scripts/dev/` | Performance and ad counter; helpers that run checks inside the live client through a debugging port. |
 
-## Blockers / open questions
+Design rules that must not be broken (see DECISIONS.md): the model has no tool that changes data; every change needs a click and saves an undo point; only internal client APIs, all in `agent/src/spotify/`; listening statistics are never blocked; every new text is translated into all four languages in the same change (a test enforces it).
 
-- Q4 (how the proxy identifies users) — open, needed only in Phase 2.
-- Step 1.4 done: stats work with the current `spotify-adblock` config (known-good rollback point). Tests run on the owner's main account by his decision (ban risk explained and accepted).
-- If variant B wins: how to install a pinned Spotify version on Windows/macOS without SpotX (see PLAN.md, Phase 5).
+## Evidence so far
+
+- **Performance:** startup, paused CPU and RAM are within the agreed margins for the chosen setup ([perf/BASELINE.md](perf/BASELINE.md)). CPU while playing is not a usable metric yet — it depends on which track plays.
+- **Ads:** unmodified client showed an ad at minute 8.2. With the blocker: 0 ads in 35 minutes of counted playback (`perf/results.jsonl`, label `spicetify-adblockify`).
+- **Stats:** the owner sees listening minutes growing; a full check is still his to do.
+- **Agent with a real model:** Gemini with the owner's key and through the proxy. The owner filtered a 1,200-track playlist by language (about 580 kept, about 8 doubtful) and split a 400-track one by mood. Recommendations returned picks with reasons in 7 s.
+
+## Not verified yet
+
+- Whether ads audibly return after the blocker is switched off in Settings (the ad manager is enabled again — verified; a 4-minute count showed nothing, too short).
+- The language filter on a playlist of more than 1,000 tracks **after** the "must read every track" guard was added.
+- Anthropic and OpenAI-compatible adapters with real keys (tested against scripted responses only).
+- "Add to playlist" and its Undo for recommendations on a real playlist; Undo from the "Recent changes" list on a real change.
+- Automatic interface language on a non-English Spotify.
+- Russian and German texts were not proofread by native speakers.
+
+## Known rough edges
+
+- The agent sometimes returns 5 recommendations where 10–20 are asked for; its taste for mood splits needs tuning.
+- The track count on a playlist tile can differ from the real count by 1–2 (Spotify's cached number).
+- Spotify adapter error texts and provider key hints are English only.
+- `Platform.LifecycleAPI.restart()` closes Spotify on Linux without reopening it — not used; "Apply now" reloads the window instead.
+
+## Phase 5 — in progress
+
+1. Research: how to install on Windows and macOS without SpotX (pinned Spotify version, unattended Spicetify, update blocking). *Running.*
+2. Security review by an independent reviewer (secrets in history, Worker, client, prompt injection, installer, dependencies, honesty of the docs). *Running.*
+3. Fix what the review finds.
+4. Write `install.ps1` (Windows) and the macOS branch of the installer. **Needs testers with a Windows and a Mac machine** — none yet.
+5. Final README, last check of the history, then make the repository public — only after the owner says yes.
+
+## Waiting on the owner
+
+- Testers for Windows and macOS.
+- The three checks listed under "Not verified yet" that only he can do (ads after switching off, language filter on the big playlist, stats on the phone).
