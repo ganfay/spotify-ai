@@ -8,6 +8,7 @@ import * as spotify from "../spotify/adapter";
 import type { EntryRef, Playlist, Track } from "../spotify/types";
 
 import { AgentView } from "./agent";
+import { AppearanceView, looksReady } from "./appearance";
 import { count, type Key, language, setLanguage, t } from "./i18n";
 import { SettingsView } from "./settings";
 import { Tour, tourSeen } from "./tour";
@@ -243,10 +244,10 @@ function LikedToPlaylist({ onBack }: { onBack: () => void }) {
   );
 }
 
-type FeatureId = "duplicates" | "agent" | "liked" | "language" | "split" | "cleanup" | "recommend";
+type FeatureId = "duplicates" | "agent" | "liked" | "language" | "split" | "cleanup" | "recommend" | "look";
 interface Feature {
   id: FeatureId;
-  icon: "copy" | "spark" | "globe" | "split" | "funnel" | "compass" | "heart";
+  icon: "copy" | "spark" | "globe" | "split" | "funnel" | "compass" | "heart" | "palette";
   /** AI features start the agent with a ready-made request for the chosen playlist. */
   ai: boolean;
 }
@@ -258,12 +259,14 @@ const FEATURES: Feature[] = [
   { id: "split", icon: "split", ai: true },
   { id: "cleanup", icon: "funnel", ai: true },
   { id: "recommend", icon: "compass", ai: true },
+  { id: "look", icon: "palette", ai: false },
 ];
 
 function Home({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <div style={css.cards} data-tour="cards">
-      {FEATURES.map((f, i) => (
+      {/* The Appearance card appears only where the installer has set Spotify up for looks. */}
+      {FEATURES.filter((f) => f.id !== "look" || looksReady()).map((f, i) => (
         <div key={f.id} className="sai-card" data-tour={f.id} style={{ ...css.card, animationDelay: `${i * 55}ms` }} onClick={() => onOpen(f.id)}>
           <div className="ico"><Icon name={f.icon} size={22} /></div>
           <div style={{ minWidth: 0 }}>
@@ -417,6 +420,8 @@ function App() {
     body = <div style={{ ...css.column, marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
   } else if (tool === "agent") {
     body = <AgentView onBack={home} onSettings={() => setTool("settings")} />;
+  } else if (tool === "look") {
+    body = <AppearanceView onBack={home} />;
   } else if (tool === "liked") {
     body = <LikedToPlaylist onBack={home} />;
   } else if (feature?.ai && selected) {

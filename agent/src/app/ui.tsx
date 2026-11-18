@@ -69,6 +69,19 @@ export function GlobalStyles() {
       .sai-link:hover { color: var(--spice-text, #fff); }
       .sai-chatrow { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background .15s; }
       .sai-chatrow:hover { background: rgba(255,255,255,.07); }
+      .sai-range { -webkit-appearance: none; appearance: none; flex: 1; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.18); outline: none; cursor: pointer; }
+      .sai-range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); transition: transform .12s; }
+      .sai-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
+      .sai-swatch { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); cursor: pointer; transition: transform .12s; }
+      .sai-swatch:hover { transform: scale(1.08); }
+      .sai-hex { width: 92px; background: rgba(255,255,255,.07); color: var(--spice-text, #fff); border: 1px solid transparent; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: ui-monospace, monospace; }
+      .sai-hex:focus { border-color: var(--spice-button, #1ed760); outline: none; }
+      .sai-look { cursor: pointer; border-radius: 10px; padding: 6px; background: rgba(255,255,255,.05); border: 2px solid transparent; transition: transform .15s, background .15s, border-color .15s; }
+      .sai-look:hover { transform: translateY(-2px); background: rgba(255,255,255,.1); }
+      .sai-look.on { border-color: var(--spice-button, #1ed760); }
+      .sai-look .pic { position: relative; height: 64px; border-radius: 6px; }
+      .sai-look .dot { position: absolute; right: 8px; bottom: 8px; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+      .sai-look .name { font-size: 13px; font-weight: 700; padding: 7px 2px 2px; }
       .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }
       .sai-tour-btn:hover { background: rgba(255,255,255,.18); transform: scale(1.03); }
       .sai-tour-btn.primary { background: var(--spice-button, #1ed760); color: #000; }
@@ -119,7 +132,7 @@ export function GlobalStyles() {
   );
 }
 
-type IconName = "copy" | "globe" | "split" | "funnel" | "compass" | "stop" | "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music" | "heart";
+type IconName = "copy" | "globe" | "split" | "funnel" | "compass" | "stop" | "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music" | "heart" | "palette";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -147,6 +160,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     case "play": body = <path fill="currentColor" d="M8 5.500v13a.6.6 0 0 0 .92.500l10-6.500a.6.6 0 0 0 0-1l-10-6.500A.6.6 0 0 0 8 5.500z" />; break;
     case "pause": body = <g fill="currentColor"><rect x="6.500" y="5" width="4" height="14" rx="1" /><rect x="13.500" y="5" width="4" height="14" rx="1" /></g>; break;
     case "heart": body = <path d="M12 20s-7.500-4.700-7.500-10.200A4.300 4.300 0 0 1 12 7.300a4.300 4.300 0 0 1 7.500 2.500C19.500 15.300 12 20 12 20z" {...stroke} />; break;
+    case "palette": body = <g {...stroke}><path d="M12 3.500a8.500 8.500 0 1 0 0 17c1.300 0 2-.900 2-1.900 0-1.300-1-1.600-1-2.600 0-.900.700-1.500 1.600-1.500h2.200a3.700 3.700 0 0 0 3.700-3.700C20.500 6.700 16.700 3.500 12 3.500z" /><circle cx="8" cy="11" r="1" /><circle cx="11" cy="7.500" r="1" /><circle cx="15.500" cy="8.500" r="1" /></g>; break;
     case "plus": body = <path d="M12 5v14M5 12h14" {...stroke} />; break;
     case "chevron": body = <path d="M9 6l6 6-6 6" {...stroke} />; break;
     case "lock": body = <g {...stroke} strokeWidth={1.8}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></g>; break;

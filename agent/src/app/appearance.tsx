@@ -1,0 +1,151 @@
+// The Appearance page: ready-made looks, your own colours, a gradient. Every
+// change is shown at once and saved; the small startup extension applies the
+// saved look when Spotify starts (src/core).
+
+import { APPEARANCE_KEY, applyAppearance, loadAppearance } from "../core/appearance";
+import { t } from "./i18n";
+import { type Choice, fromAppearance, hexToHsl, hslToHex, PRESETS, STOCK, toAppearance } from "./look";
+import { BackLink, css, hooks, Icon } from "./ui";
+
+declare const Spicetify: any;
+
+const HEX = /^[0-9a-fA-F]{6}$/;
+const section = { ...css.muted, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 700, fontSize: 11, margin: "26px 0 10px" } as const;
+const row = { display: "flex", alignItems: "center", gap: 12, margin: "10px 0" } as const;
+const labelStyle = { width: 130, flex: "none", fontSize: 14, fontWeight: 700 } as const;
+
+/** Whether this Spotify was set up for looks (colour replacement on, startup extension present). */
+export function looksReady(): boolean {
+  const colours = getComputedStyle(document.documentElement).getPropertyValue("--spice-main").trim() !== "";
+  const extension = (Spicetify?.Config?.extensions ?? []).includes("spotify-ai-core.js");
+  return colours && extension;
+}
+
+function Slider({ value, min, max, onChange, background }: { value: number; min: number; max: number; onChange: (v: number) => void; background?: string }) {
+  return (
+    <input type="range" className="sai-range" min={min} max={max} value={value}
+           style={background ? { background } : undefined}
+           onChange={(e: any) => onChange(Number(e.target.value))} />
+  );
+}
+
+/** A colour: a swatch and its code; a click opens three sliders. */
+function ColorField({ value, onChange, onRemove }: { value: string; onChange: (hex: string) => void; onRemove?: () => void; key?: string }) {
+  const { useState } = hooks();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(value);
+  const [h, s, l] = hexToHsl(value);
+  const set = (hex: string) => {
+    setText(hex);
+    onChange(hex);
+  };
+  const typed = (raw: string) => {
+    const clean = raw.replace(/^#/, "").trim();
+    setText(clean);
+    if (HEX.test(clean)) onChange(clean.toLowerCase());
+  };
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <button className="sai-swatch" style={{ background: `#${value}` }} onClick={() => setOpen(!open)} title={`#${value}`} />
+        <input className="sai-hex" value={text === value || !HEX.test(text) ? text : value} maxLength={7} spellCheck={false}
+               onChange={(e: any) => typed(e.target.value)} onBlur={() => setText(value)} />
+        {onRemove && <span className="sai-link" title={t("look.removeColor")} onClick={onRemove}><Icon name="cross" size={12} /></span>}
+      </div>
+      {open && (
+        <div className="sai-in" style={{ margin: "10px 0 4px", display: "grid", gap: 8, maxWidth: 320 }}>
+          <Slider value={h} min={0} max={360} onChange={(v) => set(hslToHex(v, s, l))}
+                  background="linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)" />
+          <Slider value={s} min={0} max={100} onChange={(v) => set(hslToHex(h, v, l))}
+                  background={`linear-gradient(90deg,#${hslToHex(h, 0, l)},#${hslToHex(h, 100, l)})`} />
+          <Slider value={l} min={0} max={100} onChange={(v) => set(hslToHex(h, s, v))}
+                  background={`linear-gradient(90deg,#000,#${hslToHex(h, s, 50)},#fff)`} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const preview = (c: Choice): string =>
+  c.gradient ? `linear-gradient(${c.gradient.angle}deg, ${c.gradient.colors.map((x) => `#${x}`).join(", ")})` : `#${c.background}`;
+
+export function AppearanceView({ onBack }: { onBack: () => void }) {
+  const { useState } = hooks();
+  const [saved, setSaved] = useState(loadAppearance() !== null);
+  const [choice, setChoice] = useState(fromAppearance(loadAppearance()));
+  const works = looksReady();
+
+  const use = (next: Choice | null) => {
+    if (next === null) {
+      localStorage.removeItem(APPEARANCE_KEY);
+      applyAppearance(null);
+      setChoice({ ...STOCK });
+      setSaved(false);
+      return;
+    }
+    const look = toAppearance(next);
+    localStorage.setItem(APPEARANCE_KEY, JSON.stringify(look));
+    applyAppearance(look);
+    setChoice(next);
+    setSaved(true);
+  };
+  /** A change made by hand is no longer "the preset". */
+  const edit = (patch: Partial<Choice>) => {
+    const { preset: _preset, ...rest } = { ...choice, ...patch };
+    use(rest);
+  };
+  const gradient = choice.gradient;
+  const setGradient = (patch: Partial<NonNullable<Choice["gradient"]>>) => gradient && edit({ gradient: { ...gradient, ...patch } });
+
+  return (
+    <div style={{ ...css.column, marginTop: 20, maxWidth: 640 }}>
+      <BackLink label={t("back.tools")} onClick={onBack} />
+      <h2 style={{ fontSize: 20, margin: "6px 0 4px" }}>{t("f.look.title")}</h2>
+      <p style={{ ...css.muted, margin: 0 }}>{t("look.note")}</p>
+      {!works && <p style={{ ...css.notice, marginTop: 16 }}>{t("look.missing")}</p>}
+
+      <div style={section}>{t("look.presets")}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(132px, 1fr))", gap: 10 }}>
+        <div className={`sai-look${saved ? "" : " on"}`} onClick={() => use(null)}>
+          <div className="pic" style={{ background: "#121212" }}><span className="dot" style={{ background: "#1db954" }} /></div>
+          <div className="name">Spotify</div>
+        </div>
+        {PRESETS.map((p) => (
+          <div key={p.preset} className={`sai-look${saved && choice.preset === p.preset ? " on" : ""}`} onClick={() => use(p)}>
+            <div className="pic" style={{ background: preview(p) }}><span className="dot" style={{ background: `#${p.accent}` }} /></div>
+            <div className="name">{p.name}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={section}>{t("look.custom")}</div>
+      <div style={row}><div style={labelStyle}>{t("look.accent")}</div><ColorField key={`a${choice.preset ?? ""}`} value={choice.accent} onChange={(hex) => edit({ accent: hex })} /></div>
+      <div style={row}><div style={labelStyle}>{t("look.background")}</div><ColorField key={`b${choice.preset ?? ""}`} value={choice.background} onChange={(hex) => edit({ background: hex })} /></div>
+
+      <div style={section}>{t("look.gradient")}</div>
+      <label style={{ ...row, cursor: "pointer" }}>
+        <input type="checkbox" checked={!!gradient}
+               onChange={() => edit({ gradient: gradient ? null : { colors: [choice.accent, choice.background], angle: 160, intensity: 0.5 } })} />
+        <span>{t("look.gradientOn")}</span>
+      </label>
+      {gradient && (
+        <div className="sai-in">
+          {gradient.colors.map((color, i) => (
+            <div key={`${i}-${gradient.colors.length}-${choice.preset ?? ""}`} style={row}>
+              <div style={labelStyle}>{t("look.color", { n: i + 1 })}</div>
+              <ColorField value={color} onChange={(hex) => setGradient({ colors: gradient.colors.map((c, j) => (j === i ? hex : c)) })}
+                          {...(gradient.colors.length > 2 ? { onRemove: () => setGradient({ colors: gradient.colors.filter((_, j) => j !== i) }) } : {})} />
+            </div>
+          ))}
+          {gradient.colors.length < 4 && (
+            <p style={{ margin: "4px 0 12px" }}><span className="sai-link" onClick={() => setGradient({ colors: [...gradient.colors, choice.background] })}><Icon name="plus" size={14} />{t("look.addColor")}</span></p>
+          )}
+          <div style={row}><div style={labelStyle}>{t("look.direction")}</div><Slider value={gradient.angle} min={0} max={360} onChange={(v) => setGradient({ angle: v })} /><span style={{ ...css.muted, width: 44, textAlign: "right" }}>{gradient.angle}°</span></div>
+          <div style={row}><div style={labelStyle}>{t("look.strength")}</div><Slider value={Math.round(gradient.intensity * 100)} min={0} max={100} onChange={(v) => setGradient({ intensity: v / 100 })} /><span style={{ ...css.muted, width: 44, textAlign: "right" }}>{Math.round(gradient.intensity * 100)}%</span></div>
+        </div>
+      )}
+
+      <p style={{ margin: "28px 0 0" }}><button style={css.secondary} disabled={!saved} onClick={() => use(null)}>{t("look.reset")}</button></p>
+    </div>
+  );
+}

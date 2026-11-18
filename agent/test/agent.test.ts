@@ -389,3 +389,24 @@ test("a key whose project has no free tier gets its own message, not 'wrong key'
   assert.equal(failed.code, "no_free_tier");
   assert.equal(agent.canResume(failed), false);
 });
+
+test("looks: every preset and odd choices give readable colours", async () => {
+  const { buildColors, contrast, hexToHsl, hslToHex, PRESETS, STOCK, toAppearance, fromAppearance } = await import("../src/app/look");
+  const choices = [STOCK, ...PRESETS, { background: "f3f1ec", accent: "1a1a1a", gradient: null }, { background: "101010", accent: "111111", gradient: null }, { background: "ffffff", accent: "ffffff", gradient: null }];
+  for (const choice of choices) {
+    const c = buildColors(choice.background, choice.accent);
+    for (const value of Object.values(c)) assert.match(value, /^[0-9a-f]{6}$/);
+    assert.ok(contrast(c.text, c.main) >= 7, `text on main: ${choice.background}`);
+    assert.ok(contrast(c.subtext, c.main) >= 4, `subtext on main: ${choice.background}`);
+    assert.ok(contrast(c.button, c.main) >= 1.8, `button visible: ${choice.background}/${choice.accent}`);
+    assert.ok(contrast(c.text, c.card) >= 5, `text on card: ${choice.background}`);
+  }
+  // A saved look can be opened for editing again.
+  const violet = PRESETS[0]!;
+  assert.deepEqual(fromAppearance(JSON.parse(JSON.stringify(toAppearance(violet)))), { background: violet.background, accent: violet.accent, gradient: violet.gradient, preset: violet.preset });
+  assert.deepEqual(fromAppearance(null), STOCK);
+  for (const hex of ["1db954", "b45cff", "000000", "ffffff", "7f7f7f"]) {
+    const back = hslToHex(...hexToHsl(hex));
+    assert.ok(contrast(hex, back) < 1.08, `${hex} -> ${back}`); // rounding to whole degrees and percent only
+  }
+});

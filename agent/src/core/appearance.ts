@@ -17,7 +17,12 @@ export interface Appearance {
   gradient?: { colors: string[]; angle: number; intensity: number };
   /** A full theme (extra styles in user.css are switched on by this name). */
   theme?: string;
+  /** What the Appearance page built the colours from, so it can be edited again. */
+  base?: { background: string; accent: string; preset?: string };
 }
+
+/** Stock colours of the panels that become see-through under a gradient. */
+const PANELS: Record<string, string> = { main: "121212", sidebar: "000000", player: "181818" };
 
 export function loadAppearance(): Appearance | null {
   try {
@@ -48,8 +53,15 @@ export function applyAppearance(look: Appearance | null): void {
   }
   const gradient = look.gradient;
   if (gradient && gradient.colors.length >= 2 && gradient.colors.every((c) => HEX.test(c))) {
+    const strength = Math.max(0, Math.min(1, Number(gradient.intensity) || 0));
     root.style.setProperty("--sai-gradient", `linear-gradient(${Number(gradient.angle) || 0}deg, ${gradient.colors.map((c) => `#${c}`).join(", ")})`);
-    root.style.setProperty("--sai-gradient-strength", String(Math.max(0, Math.min(1, Number(gradient.intensity) || 0))));
+    // The gradient is painted on the page itself (user.css); the big panels become
+    // see-through so that it shows. The stronger the gradient, the thinner the panels.
+    const alpha = Math.max(0.2, 1 - strength * 0.8).toFixed(2);
+    for (const [name, stock] of Object.entries(PANELS)) {
+      const hex = look.colors?.[name as ColorName] ?? stock;
+      if (HEX.test(hex)) root.style.setProperty(`--spice-${name}`, `rgba(${[0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(",")},${alpha})`);
+    }
     root.setAttribute("data-sai-gradient", "on");
   }
   if (look.theme && /^[a-z0-9-]{1,30}$/.test(look.theme)) root.setAttribute("data-sai-theme", look.theme);

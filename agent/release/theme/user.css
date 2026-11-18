@@ -1,13 +1,8 @@
 /* spotify-ai: styles that only do something when a look is chosen in
    AI Playlists > Appearance. With nothing chosen, none of these rules match. */
 
-/* A gradient over the whole window, under the content. */
-html[data-sai-gradient="on"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: var(--sai-gradient);
-  opacity: var(--sai-gradient-strength, 0.5);
+/* A gradient over the whole window. spotify-ai-core.js makes the big panels
+   see-through (their colours get an alpha value), so it shows behind them. */
+html[data-sai-gradient="on"] body {
+  background: var(--sai-gradient) fixed !important;
 }
