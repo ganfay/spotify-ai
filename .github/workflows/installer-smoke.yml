@@ -148,6 +148,8 @@ jobs:
         run: |
           /bin/bash install.sh --uninstall
           codesign --verify --deep --strict /Applications/Spotify.app && echo "after uninstall: signature valid" || echo "after uninstall: signature NOT valid"
+          codesign --verify --deep --strict --verbose=4 /Applications/Spotify.app 2>&1 | grep -v '^--' | tail -20 || true
+          ls -la /Applications/Spotify.app/Contents/Resources/Apps | head -20
           /bin/bash install.sh --clean-spotify no ${{ inputs.force && '--force' || '' }} | tee again.log
           grep -E 'ok: signed by Spotify|NOT the original|keeping the modified' again.log
           sleep 3; pkill -x Spotify || true
