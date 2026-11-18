@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=dist/tests --log-level=warning && node --test dist/tests/",
+    "test": "esbuild test/*.test.ts --bundle --platform=node --format=esm --outdir=dist/tests --log-level=warning && node --test dist/tests/*.js",
     "install-app": "node build.mjs --install",
     "release": "npm run typecheck && npm test && node build.mjs --release"
   },

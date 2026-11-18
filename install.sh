@@ -244,7 +244,7 @@ apply() {
   else
     [[ ! -f "${SPOTIFY_DIR}/Apps/xpui/extensions/${EXTENSION}" ]] || die "the ad-blocking extension is still applied."
   fi
-  ls "${SPOTIFY_DIR}/Apps/xpui/" | grep -q "spicetify-routes-${AGENT_APP}" || die "the AI Playlists app was not applied."
+  compgen -G "${SPOTIFY_DIR}/Apps/xpui/spicetify-routes-${AGENT_APP}*" >/dev/null || die "the AI Playlists app was not applied."
   info "done"
 }
 
