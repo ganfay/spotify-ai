@@ -35,7 +35,7 @@ export interface Env {
 
 export const DEFAULTS = {
   MODEL: "gemini-3.5-flash-lite",
-  FALLBACK_MODELS: "gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash",
+  FALLBACK_MODELS: "gemini-3.1-flash-lite",
   RETRY_DELAY_MS: 1200,
   /** Free models with tool calling and a context window big enough for a 1,200-track playlist. */
   OPENROUTER_MODELS: "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free,openrouter/free",

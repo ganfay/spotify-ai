@@ -22,6 +22,8 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     GEMINI_API_KEY: FAKE_KEY,
     ADMIN_TOKEN: ADMIN,
     RETRY_DELAY_MS: "0",
+    // The tests exercise a chain of several models, whatever the shipped default is.
+    FALLBACK_MODELS: "gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash",
     // Tests never reach a real provider: no Workers AI binding unless a test gives a fake one.
     AI: undefined,
     ...overrides,

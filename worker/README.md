@@ -88,7 +88,7 @@ Open `wrangler.jsonc`, edit the values under `"vars"`, then run
 | `NEW_INSTALLS_PER_IP_PER_DAY` | `5` | New install ids one IP may register per day (UTC) |
 | `GLOBAL_REQUESTS_PER_DAY` | `400` | All requests from everybody per day (UTC) |
 | `MODEL` | `gemini-3.5-flash-lite` | Gemini model. The client cannot choose it |
-| `FALLBACK_MODELS` | `gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash` | Comma-separated models tried in order when `MODEL` is overloaded (HTTP 500/503, after one repeat) or out of quota (429). Empty = no fallback. These extra tries do not count against the user's limits. A user may pick any model of `MODEL` + this list in the app (header `x-model`); nothing outside the list is accepted |
+| `FALLBACK_MODELS` | `gemini-3.1-flash-lite` | Comma-separated models tried in order when `MODEL` is overloaded (HTTP 500/503, after one repeat) or out of quota (429). Empty = no fallback. These extra tries do not count against the user's limits. A user may pick any model of `MODEL` + this list in the app (header `x-model`); nothing outside the list is accepted |
 | `MAX_OUTPUT_TOKENS` | `16384` | Maximum answer size. The client cannot choose it |
 | `ALLOWED_ORIGINS` | `https://xpui.app.spotify.com` | Web origins allowed to call the Worker, comma-separated |
 | `REQUIRE_INVITE` | `false` | `true` = an invite code is needed |
