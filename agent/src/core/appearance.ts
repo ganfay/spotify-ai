@@ -23,8 +23,6 @@ export interface Appearance {
   base?: { background: string; accent: string; preset?: string };
 }
 
-/** Stock colours of the panels that become see-through under a gradient. */
-const PANELS: Record<string, string> = { main: "121212", sidebar: "000000", player: "181818" };
 
 export function loadAppearance(): Appearance | null {
   try {
@@ -76,7 +74,9 @@ export function applyAppearance(look: Appearance | null): void {
   }
   root.removeAttribute("data-sai-theme");
   root.removeAttribute("data-sai-gradient");
+  root.removeAttribute("data-sai-look");
   if (!look) return;
+  root.setAttribute("data-sai-look", "on");
 
   for (const [name, hex] of Object.entries(look.colors ?? {})) {
     if (!hex || !HEX.test(hex)) continue;
@@ -87,13 +87,10 @@ export function applyAppearance(look: Appearance | null): void {
   if (gradient && gradient.colors.length >= 2 && gradient.colors.every((c) => HEX.test(c))) {
     const strength = Math.max(0, Math.min(1, Number(gradient.intensity) || 0));
     root.style.setProperty("--sai-gradient", `linear-gradient(${Number(gradient.angle) || 0}deg, ${gradient.colors.map((c) => `#${c}`).join(", ")})`);
-    // The gradient is painted on the page itself (user.css); the big panels become
-    // see-through so that it shows. The stronger the gradient, the thinner the panels.
-    const alpha = Math.max(0.2, 1 - strength * 0.8).toFixed(2);
-    for (const [name, stock] of Object.entries(PANELS)) {
-      const hex = look.colors?.[name as ColorName] ?? stock;
-      if (HEX.test(hex)) root.style.setProperty(`--spice-${name}`, `rgba(${[0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(",")},${alpha})`);
-    }
+    // The gradient is painted behind everything and the big panels become see-through
+    // (both in user.css). The colours stay solid: Spotify also uses them for icons
+    // and for the fade of long titles. The stronger the gradient, the thinner the panels.
+    root.style.setProperty("--sai-panel", Math.max(0.2, 1 - strength * 0.8).toFixed(2));
     root.setAttribute("data-sai-gradient", "on");
   }
   if (look.theme && /^[a-z0-9-]{1,30}$/.test(look.theme)) {

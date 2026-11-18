@@ -5,10 +5,72 @@
    matching and the rest keeps working. */
 
 /* ---------------------------------------------------------------- gradient */
-/* A gradient over the whole window. spotify-ai-core.js makes the big panels
-   see-through (their colours get an alpha value), so it shows behind them. */
-html[data-sai-gradient="on"] body {
-  background: var(--sai-gradient) fixed !important;
+/* A gradient over the whole window. The colours themselves stay solid (Spotify
+   also uses them for icons and for the fade of long titles); only the big panels
+   below get a see-through background, of the strength --sai-panel (0.2 … 1). */
+html[data-sai-gradient="on"] { background: var(--sai-gradient) fixed !important; }
+html[data-sai-gradient="on"] body { background: transparent !important; }
+
+/* ------------------------------------------------------- see-through panels
+   Used by the gradient and by the Glass and Neon themes. Everything outside the
+   panels (top bar, gaps) is clear, so the backdrop is one seamless surface; the
+   panels are a tint of the background colour. */
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__top-container,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__globalNav,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__nav-bar,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__right-sidebar,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-libraryContainer,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .playlist-playlist-playlistContent,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-testid="artist-page"] > div > div,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) #Desktop_PanelContainer_Id,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-npv-root] {
+  background-color: transparent !important;
+}
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-library,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__right-sidebar-peek,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__now-playing-bar {
+  background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
+}
+
+/* ------------------------------------------------------------- any look on
+   Things Spotify colours by itself (from the cover of what is open) or leaves
+   plain grey. They follow the chosen look instead. */
+/* Top bar: round buttons and the search field as tinted glass, not grey. */
+html[data-sai-look] .Root__globalNav button[class*="legacy-button-tertiary"],
+html[data-sai-look] .Root__globalNav input {
+  background-color: rgba(var(--spice-rgb-text), .09) !important;
+  transition: background-color .15s;
+}
+html[data-sai-look] .Root__globalNav button[class*="legacy-button-tertiary"]:hover,
+html[data-sai-look] .Root__globalNav input:hover,
+html[data-sai-look] .Root__globalNav input:focus { background-color: rgba(var(--spice-rgb-text), .16) !important; }
+/* The back and forward arrows are bare icons in Spotify; they stay bare. */
+html[data-sai-look] .Root__globalNav .main-globalNav-historyButtons button { background-color: transparent !important; }
+/* Playlist, album and artist headers: the cover's colour stays as a soft glow that fades out. */
+html[data-sai-look] .main-entityHeader-backgroundColor,
+html[data-sai-look] .main-home-homeHeader {
+  opacity: .5;
+  -webkit-mask-image: linear-gradient(#000 30%, transparent);
+  mask-image: linear-gradient(#000 30%, transparent);
+}
+html[data-sai-look] .main-actionBarBackground-background { opacity: 0; }
+/* Bars that stay in place while the page scrolls under them: frosted, in the look's colour. */
+html[data-sai-look] .main-home-filterChipsSection { background-color: transparent !important; background-image: none !important; }
+html[data-sai-look] .main-topBar-background {
+  background-color: rgba(var(--spice-rgb-main), .45) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  backdrop-filter: blur(22px) saturate(1.4);
+}
+html[data-sai-look] .main-topBar-overlay { background-color: transparent !important; }
+/* The column titles of a track list stick too. Spotify only marks the "stuck" state
+   with a name that changes between versions, so this one is frosted all the time:
+   with nothing under it (page not scrolled) that is almost invisible. */
+html[data-sai-look] .main-trackList-trackListHeader {
+  background-color: rgba(var(--spice-rgb-main), .28) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  backdrop-filter: blur(22px) saturate(1.4);
 }
 
 /* =================================================================== NOIR
@@ -66,9 +128,8 @@ html[data-sai-theme="noir"] .x-progressBar-fillColor { background: #fff !importa
    The cover of the playing song, blurred, fills the window; the panels float
    on it as frosted glass. (Blur is work for the graphics card.) */
 html[data-sai-theme="glass"] {
-  --spice-main: rgba(18,18,26,.38) !important;
-  --spice-sidebar: rgba(10,10,16,.30) !important;
-  --spice-player: rgba(18,18,26,.38) !important;
+  --sai-panel-rgb: 18,18,26;
+  --sai-panel: .36;
   --spice-card: rgba(255,255,255,.10) !important;
   --spice-main-elevated: rgba(40,40,56,.72) !important;
   --spice-highlight: rgba(255,255,255,.08) !important;
@@ -107,11 +168,9 @@ html[data-sai-theme="glass"] body::after {
   opacity: .9;
   transition: background-image 1.4s ease;
 }
-html[data-sai-theme="glass"] .Root__top-container { background: transparent !important; }
-html[data-sai-theme="glass"] .Root__globalNav { background: transparent !important; }
-html[data-sai-theme="glass"] .Root__nav-bar,
+html[data-sai-theme="glass"] .main-yourLibraryX-library,
 html[data-sai-theme="glass"] .Root__main-view,
-html[data-sai-theme="glass"] .Root__right-sidebar > *,
+html[data-sai-theme="glass"] .Root__right-sidebar-peek,
 html[data-sai-theme="glass"] .Root__now-playing-bar {
   -webkit-backdrop-filter: blur(26px) saturate(1.5);
   backdrop-filter: blur(26px) saturate(1.5);
@@ -121,7 +180,6 @@ html[data-sai-theme="glass"] .Root__now-playing-bar {
   overflow: hidden;
 }
 html[data-sai-theme="glass"] .Root__now-playing-bar { margin: 0 8px 8px; }
-html[data-sai-theme="glass"] .Root__right-sidebar { background: transparent !important; }
 html[data-sai-theme="glass"] .main-entityHeader-backgroundColor,
 html[data-sai-theme="glass"] .main-actionBarBackground-background { opacity: .28; }
 html[data-sai-theme="glass"] .main-nowPlayingView-section { border-radius: 16px !important; border: 1px solid rgba(255,255,255,.08); }
@@ -140,9 +198,8 @@ html[data-sai-theme="neon"] {
   --sai-pink: #ff3ea5;
   --sai-cyan: #22d3ee;
   --sai-violet: #7c3aed;
-  --spice-main: rgba(16,8,36,.50) !important;
-  --spice-sidebar: rgba(8,4,20,.46) !important;
-  --spice-player: rgba(12,6,28,.56) !important;
+  --sai-panel-rgb: 14,7,32;
+  --sai-panel: .50;
   --spice-card: rgba(255,62,165,.10) !important;
   --spice-highlight: rgba(255,62,165,.10) !important;
   --spice-highlight-elevated: rgba(124,58,237,.30) !important;
@@ -173,11 +230,9 @@ html[data-sai-theme="neon"] body::after {
   -webkit-mask-image: linear-gradient(transparent, #000 70%);
   mask-image: linear-gradient(transparent, #000 70%);
 }
-html[data-sai-theme="neon"] .Root__top-container,
-html[data-sai-theme="neon"] .Root__globalNav { background: transparent !important; }
-html[data-sai-theme="neon"] .Root__nav-bar,
+html[data-sai-theme="neon"] .main-yourLibraryX-library,
 html[data-sai-theme="neon"] .Root__main-view,
-html[data-sai-theme="neon"] .Root__right-sidebar > * {
+html[data-sai-theme="neon"] .Root__right-sidebar-peek {
   border-radius: 14px !important;
   box-shadow: inset 0 0 0 1px rgba(255,62,165,.30), 0 0 28px rgba(255,62,165,.10), 0 0 60px rgba(34,211,238,.06);
 }
