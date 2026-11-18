@@ -63,6 +63,8 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
   };
 
   const locked = unlock !== "open";
+  // adblockify is a Spicetify extension; this is how the client tells us whether it was applied.
+  const adblock = (Spicetify?.Config?.extensions ?? []).includes("adblock.js");
   return (
     <div style={{ ...css.column, marginTop: 20, maxWidth: 600 }}>
       <BackLink label={t("back.tools")} onClick={onBack} />
@@ -157,6 +159,17 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
       </div>
       {check && <ResultBadge ok={check.ok} title={check.title} detail={check.detail} />}
       <p style={css.muted}>{t("set.privacy")}</p>
+
+      <div style={section}>{t("set.client")}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: adblock ? "var(--spice-button, #1ed760)" : "var(--spice-subtext, #b3b3b3)" }} />
+        <span style={label}>{t("set.adblock")}: {t(adblock ? "set.on" : "set.off")}</span>
+      </div>
+      <p style={css.muted}>{t("set.clientHow")}</p>
+      <code style={{ display: "block", padding: "10px 12px", borderRadius: 6, background: "var(--spice-card, #181818)", fontSize: 13, userSelect: "all" }}>
+        ./install.sh --adblock {adblock ? "off" : "on"}
+      </code>
+      <p style={{ ...css.muted, marginBottom: 40 }}>{t("set.statsNote")}</p>
     </div>
   );
 }
