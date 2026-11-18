@@ -174,23 +174,45 @@ wait_prefs() { # seconds
   return 1
 }
 
+# NOTE for this whole file: never write "command | grep -q" — the script runs with
+# pipefail, grep -q stops reading at the first match, the command before it is then
+# killed by the closed pipe, and the whole test counts as FAILED on some machines.
+# Read the output into a variable, or let grep read to the end (>/dev/null).
+
+# True when the app carries Spotify's own developer signature.
+signed_by_spotify() { # path to Spotify.app
+  local details
+  details="$(codesign -dv --verbose=2 "$1" 2>&1 || true)"
+  [[ "${details}" == *"Authority=Developer ID Application: Spotify"* ]]
+}
+
+# Puts a fresh Spotify from Spotify's server into Applications. An existing copy is
+# replaced only after the new one has been downloaded, checked and copied.
 install_spotify_macos() {
   say "Installing Spotify"
   local name="Spotify.dmg"
   [[ "${ARCH}" == "arm64" ]] && name="SpotifyARM64.dmg"
-  local dmg="${WORK}/Spotify.dmg" mount="${WORK}/spotify-dmg"
+  local dmg="${WORK}/Spotify.dmg" mount="${WORK}/spotify-dmg" fresh="/Applications/Spotify.spotify-ai-new.app"
   info "downloading https://download.scdn.co/${name}"
-  curl -fSL --progress-bar -o "${dmg}" "https://download.scdn.co/${name}" || die "could not download Spotify."
-  hdiutil attach "${dmg}" -nobrowse -readonly -quiet -mountpoint "${mount}" || die "could not open the Spotify disk image."
-  local ok=1
-  codesign --verify --deep --strict "${mount}/Spotify.app" >/dev/null 2>&1 || ok=0
-  codesign -dv --verbose=2 "${mount}/Spotify.app" 2>&1 | grep -q '^Authority=Developer ID Application: Spotify' || ok=0
-  if [[ "${ok}" == 1 ]]; then
-    ditto "${mount}/Spotify.app" "${SPOTIFY_APP}" || ok=2
+  curl -fSL --progress-bar -o "${dmg}" "https://download.scdn.co/${name}" || die "could not download Spotify. Nothing was changed."
+  hdiutil attach "${dmg}" -nobrowse -readonly -quiet -mountpoint "${mount}" || die "could not open the Spotify disk image. Nothing was changed."
+  local problem=""
+  problem="$(codesign --verify --deep --strict "${mount}/Spotify.app" 2>&1)" || problem="${problem:-signature check failed}"
+  if [[ -z "${problem}" ]] && ! signed_by_spotify "${mount}/Spotify.app"; then
+    problem="it is not signed with Spotify's developer certificate"
+  fi
+  if [[ -z "${problem}" ]]; then
+    rm -rf "${fresh}"
+    ditto "${mount}/Spotify.app" "${fresh}" || problem="copy"
   fi
   hdiutil detach "${mount}" -quiet || true
-  [[ "${ok}" != 0 ]] || die "the downloaded Spotify is not signed by Spotify — refusing to install it."
-  [[ "${ok}" != 2 ]] || die "could not copy Spotify into Applications. Install it from https://www.spotify.com/download and run this again."
+  if [[ "${problem}" == "copy" ]]; then
+    rm -rf "${fresh}"
+    die "could not copy Spotify into Applications. Nothing was changed. Install it from https://www.spotify.com/download and run this again."
+  fi
+  [[ -z "${problem}" ]] || die "the downloaded Spotify did not pass the signature check, so it was not installed and nothing was changed. Reason: ${problem}"
+  rm -rf "${SPOTIFY_APP}"
+  mv "${fresh}" "${SPOTIFY_APP}" || die "could not put the new Spotify in place. It is in ${fresh}: rename it to Spotify.app."
   info "Spotify installed"
 }
 
@@ -228,8 +250,7 @@ check_version_macos() {
 
 # True when the app is exactly what Spotify shipped: signed by Spotify, nothing changed inside.
 spotify_is_original() {
-  codesign --verify --deep --strict "${SPOTIFY_APP}" >/dev/null 2>&1 \
-    && codesign -dv --verbose=2 "${SPOTIFY_APP}" 2>&1 | grep -q '^Authority=Developer ID Application: Spotify'
+  codesign --verify --deep --strict "${SPOTIFY_APP}" >/dev/null 2>&1 && signed_by_spotify "${SPOTIFY_APP}"
 }
 
 # Asks a yes/no question in the terminal (Enter = yes). With --clean-spotify the
@@ -240,8 +261,10 @@ ask_yes() {
     return
   fi
   local answer=""
-  # The script itself may be arriving on standard input (curl | bash), so the keyboard is read directly.
-  { read -r -p "    $1 [Y/n] " answer < /dev/tty; } 2>/dev/null || return 1
+  # The script itself may be arriving on standard input (curl | bash), so the
+  # question is written to, and the answer read from, the terminal directly.
+  { printf '    %s [Y/n] ' "$1" > /dev/tty; } 2>/dev/null || return 1
+  { read -r answer < /dev/tty; } 2>/dev/null || return 1
   case "${answer}" in
     n|N|no|No|NO) return 1 ;;
     *) return 0 ;;
@@ -260,21 +283,18 @@ ensure_clean_spotify() {
     info "ok: signed by Spotify, nothing changed"
     return 0
   fi
-  info "This Spotify is NOT the original: its files were changed (by another mod such as"
-  info "SpotX, by a modified copy from the internet, or by something that was installed before)."
-  info "Replace it with a clean copy from Spotify's own server? Your account, playlists and"
-  info "likes are not touched, and you stay logged in."
-  info "(If you keep the modified one: ad blocking or the AI Playlists button may not work,"
-  info " Spotify may open as an empty window, and uninstalling will return Spotify to this"
-  info " modified state, not to the original.)"
-  if ! ask_yes "Replace Spotify with a clean copy?"; then
+  local why
+  why="$(codesign --verify --deep --strict "${SPOTIFY_APP}" 2>&1 | head -n 2 | tr '\n' ' ' || true)"
+  info "This Spotify was modified (another mod, or a cracked copy). ${why:+[${why}]}"
+  info "A clean one from Spotify can replace it: you stay logged in, playlists are safe."
+  info "(Keeping it: ads may stay, AI Playlists may not appear, Spotify may open empty.)"
+  if ! ask_yes "Replace it with a clean Spotify?"; then
     info "WARNING: keeping the modified Spotify. If something does not work, run this again and answer yes."
     return 0
   fi
   local tool
   for tool in hdiutil codesign ditto; do need "${tool}"; done
   stop_spotify
-  rm -rf "${SPOTIFY_APP}" || die "could not remove the old Spotify. Move it to the Trash yourself and run this again."
   install_spotify_macos
   # Let the new copy start once, so that it records its own version.
   open "${SPOTIFY_APP}" || true
@@ -323,7 +343,7 @@ hold_updates() {
     fi
     return
   fi
-  if apt-mark showhold | grep -qx spotify-client; then
+  if apt-mark showhold | grep -x spotify-client >/dev/null; then
     info "already on hold"
   else
     sudo apt-mark hold spotify-client >/dev/null
@@ -343,7 +363,7 @@ fix_permissions() {
     die "macOS does not let this terminal change apps. Open System Settings > Privacy & Security > App Management, switch on the terminal app you are using (Terminal), close the terminal completely, open it again and run the installer again."
   fi
   if [[ -w "${SPOTIFY_DIR}" && -w "${SPOTIFY_DIR}/Apps" ]] \
-     && ! find "${SPOTIFY_DIR}/Apps" ! -writable -print -quit | grep -q .; then
+     && [[ -z "$(find "${SPOTIFY_DIR}/Apps" ! -writable -print -quit)" ]]; then
     info "already writable by ${ME}"
   else
     # Only this user gets write access (narrower than the usual 'chmod a+wr').
@@ -456,11 +476,11 @@ configure() {
   "${SPICETIFY}" config inject_css 0 replace_colors 0 >/dev/null
   # We ship pinned versions, so Spicetify's own update check would only add a request at startup.
   "${SPICETIFY}" config check_spicetify_update 0 >/dev/null
-  if grep -E '^extensions' "${ini}" | tr '|=' '  ' | grep -qw "${OLD_EXTENSION}"; then
+  if grep -E '^extensions' "${ini}" | tr '|=' '  ' | grep -w "${OLD_EXTENSION}" >/dev/null; then
     "${SPICETIFY}" config extensions "${OLD_EXTENSION}-" >/dev/null   # replaced by the switchable one
   fi
   local has_ext=0
-  grep -E '^extensions' "${ini}" | grep -qF "${EXTENSION}" && has_ext=1
+  grep -E '^extensions' "${ini}" | grep -F "${EXTENSION}" >/dev/null && has_ext=1
   if [[ "${ADBLOCK}" == "on" && "${has_ext}" == 0 ]]; then
     "${SPICETIFY}" config extensions "${EXTENSION}" >/dev/null
   elif [[ "${ADBLOCK}" == "off" && "${has_ext}" == 1 ]]; then
@@ -470,7 +490,7 @@ configure() {
   [[ "${BLOCK_REPORTS}" == "off" ]] && reports=0
   "${SPICETIFY}" config disable_sentry "${reports}" disable_ui_logging "${reports}" >/dev/null
   info "ad blocking: ${ADBLOCK}; crash reports and interface logs to Spotify blocked: ${BLOCK_REPORTS}"
-  if ! grep -E '^custom_apps' "${ini}" | grep -qw "${AGENT_APP}"; then
+  if ! grep -E '^custom_apps' "${ini}" | grep -w "${AGENT_APP}" >/dev/null; then
     "${SPICETIFY}" config custom_apps "${AGENT_APP}" >/dev/null
   fi
   info "ok"

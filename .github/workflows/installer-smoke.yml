@@ -79,7 +79,7 @@ jobs:
           Set-Content "$env:APPDATA\Spotify\dpapi.dll" 'left by another mod'
           powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch -CleanSpotify yes @force | Tee-Object -FilePath clean.log
           if ($LASTEXITCODE -ne 0) { throw 'install failed' }
-          if (-not (Select-String -Path clean.log -SimpleMatch 'does NOT look original' -Quiet)) { throw 'the modified Spotify was not noticed' }
+          if (-not (Select-String -Path clean.log -SimpleMatch 'This Spotify was modified' -Quiet)) { throw 'the modified Spotify was not noticed' }
           if (Test-Path "$env:APPDATA\Spotify\dpapi.dll") { throw 'the foreign file is still there' }
           if (-not (Test-Path "$env:APPDATA\Spotify\Apps\xpui\spicetify-routes-ai-playlists*")) { throw 'app missing' }
           if (-not (Test-Path "$env:APPDATA\Spotify\prefs")) { throw 'the login settings were removed' }
@@ -140,7 +140,7 @@ jobs:
           pkill -x Spotify || true
           touch /Applications/Spotify.app/Contents/Resources/left-by-another-mod.txt
           /bin/bash install.sh --clean-spotify yes ${{ inputs.force && '--force' || '' }} | tee clean.log
-          grep -q 'NOT the original' clean.log
+          grep -q 'This Spotify was modified' clean.log
           test ! -e /Applications/Spotify.app/Contents/Resources/left-by-another-mod.txt
           ls /Applications/Spotify.app/Contents/Resources/Apps/xpui | grep spicetify-routes-ai-playlists
           sleep 3; pkill -x Spotify || true

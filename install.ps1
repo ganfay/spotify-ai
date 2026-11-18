@@ -228,14 +228,11 @@ function Install-SpotifyAi {
     Say 'Checking that Spotify is original'
     $signs = @(Get-ModSigns)
     if ($signs.Count -eq 0) { Info 'ok: signed by Spotify, no traces of other mods'; return }
-    Info 'This Spotify does NOT look original:'
+    Info 'This Spotify was modified (another mod, or a cracked copy):'
     foreach ($sign in $signs) { Info "  - $sign" }
-    Info 'Replace it with a clean copy from the Spotify server? Your account, playlists and'
-    Info 'likes are not touched, and you stay logged in.'
-    Info '(If you keep the modified one: ad blocking or the AI Playlists button may not work,'
-    Info ' Spotify may open as an empty window, and uninstalling will return Spotify to this'
-    Info ' modified state, not to the original.)'
-    if (-not (Confirm-Yes 'Replace Spotify with a clean copy?')) {
+    Info 'A clean one from Spotify can replace it: you stay logged in, playlists are safe.'
+    Info '(Keeping it: ads may stay, AI Playlists may not appear, Spotify may open empty.)'
+    if (-not (Confirm-Yes 'Replace it with a clean Spotify?')) {
       Info 'WARNING: keeping the modified Spotify. If something does not work, run this again and answer yes.'
       return
     }
