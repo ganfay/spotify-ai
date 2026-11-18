@@ -65,6 +65,8 @@ export function GlobalStyles() {
       .sai-in { animation: sai-in .22s ease-out both; }
       .sai-link { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--spice-subtext, #b3b3b3); font-size: 13px; transition: color .15s; }
       .sai-link:hover { color: var(--spice-text, #fff); }
+      .sai-chatrow { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background .15s; }
+      .sai-chatrow:hover { background: rgba(255,255,255,.07); }
       .sai-iconbtn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: var(--spice-subtext, #b3b3b3); transition: background .15s, color .15s; }
       .sai-iconbtn:hover { background: rgba(255,255,255,.1); color: var(--spice-text, #fff); }
       .sai-chip { cursor: pointer; padding: 8px 14px; border-radius: 500px; background: rgba(255,255,255,.07); font-size: 13px; transition: background .15s; }

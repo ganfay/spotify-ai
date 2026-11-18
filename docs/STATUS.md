@@ -75,6 +75,15 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 - **Agent:** a failed request leaves the conversation untouched; one automatic repeat after 3 s; then the chat shows the error with a **Try again** button that sends the same request again — tracks already read, tool results and proposals are kept, and the proxy sees the same prompt id (no new prompt is counted). Kept in memory only: leaving the chat or sending a new message drops it. Checked live on Linux with a simulated 503 (own-key mode). 26 tests.
 - Still open: paid key or other providers in the shared mode, if overloads stay frequent.
 
+## Model choice and saved chats (2026-11-18)
+
+- **Proxy:** two free fallback models (`gemini-3.6-flash`, `gemini-3.8-flash`). A user may pick any model of the proxy's own list (header `x-model`, list published by `/v1/status`); the others follow as fallbacks; anything outside the list is refused. 52 tests. **Not deployed yet — the owner must run `npx wrangler deploy` in `worker/`.** Until then the app shows no model choice in shared mode (it only appears when the proxy publishes its list).
+- **Settings:** shared mode has a "Model" select: Automatic (recommended) or one of the proxy's models. Seen live only with a simulated proxy answer.
+- **Chats:** the last 5 chats are kept on this computer (messages and proposals; capped at about 1.5 MB, the oldest goes first). "Recent chats" on the agent's start screen reopens or deletes them; chats started from a playlist card are listed only there. A reopened chat is continued with a short text recap — the model does not remember the details; proposals stay usable, and ones already applied are marked. Checked live on Linux. 28 tests.
+- **Full check the same day:** unit tests green; `installer-smoke` green on Windows and macOS without the force option; the agent run inside Spotify on Linux with real models, through the proxy and with the owner's key (duplicates, language filter on 131 tracks) — all four runs fine.
+- Seen in that check, not fixed: the model sometimes answers in another language than the request and may mention an internal id like `t32` in its text; Settings shows the Linux command for "block reports" on every system.
+- Not done, wanted by the owner: an in-app tutorial (a short guided tour) — after the macOS test.
+
 ## Phase 5 — in progress
 
 1. Research: how to install on Windows and macOS without SpotX — done. Result: versioned installers cannot be downloaded from Spotify's servers (signed links); the installer will accept the current official Spotify, check it against the supported ceiling (1.3.9 for Spicetify 2.46.7) and stop with a clear message if it is newer (expected gap 0–6 days). Update blocking: `chflags uchg` on the Update folder (macOS), a locked `Update` file (Windows); Spicetify's own command is broken on Windows. Asset names and checksums for Spicetify 2.46.7 on both systems are known.

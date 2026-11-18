@@ -47,7 +47,7 @@ It does **not** store or log your requests or the AI's answers.
 
 ## What stays on your computer
 
-Settings (including an API key you entered), undo points for playlists you changed, and a cache of track facts. They live in the Spotify app's local storage and are not uploaded.
+Settings (including an API key you entered), undo points for playlists you changed, a cache of track facts, and your last 5 chats with the agent (what was on the screen: your messages, the answers and the proposals with their track lists; you can delete each chat in the list). They live in the Spotify app's local storage and are not uploaded.
 
 **About your own API key:** it is stored unencrypted in the Spotify app's local storage. Other Spicetify extensions or themes you install, and any program running under your user account, could read it. It is sent only to the provider selected in Settings, and it is cleared when you switch to another provider. Uninstalling does not delete it — remove it in Settings first. Use a key you can revoke, and set a spending limit at the provider.
 

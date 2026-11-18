@@ -31,12 +31,18 @@ function limitsStub(env: Env): DurableObjectStub<Limits> {
 }
 
 const modelName = (env: Env): string => env.MODEL || DEFAULTS.MODEL;
-/** Other models to try, in order, when the main one is overloaded or out of quota. */
-const fallbackModels = (env: Env): string[] =>
-  (env.FALLBACK_MODELS ?? DEFAULTS.FALLBACK_MODELS)
+/**
+ * Every model this proxy may call: the main one, then the fallbacks in order.
+ * The fallbacks take over when a model is overloaded or out of quota; a user may
+ * also ask for one of this list by name, never for anything else.
+ */
+const allowedModels = (env: Env): string[] => [
+  modelName(env),
+  ...(env.FALLBACK_MODELS ?? DEFAULTS.FALLBACK_MODELS)
     .split(",")
     .map((name) => name.trim())
-    .filter((name) => /^[a-z0-9.-]{1,60}$/.test(name) && name !== modelName(env));
+    .filter((name, i, all) => /^[a-z0-9.-]{1,60}$/.test(name) && name !== modelName(env) && all.indexOf(name) === i),
+];
 const inviteRequired = (env: Env): boolean => env.REQUIRE_INVITE === "true";
 
 export default {
@@ -89,6 +95,7 @@ async function status(request: Request, env: Env): Promise<Response> {
   return json({
     ok: true,
     model: modelName(env),
+    models: allowedModels(env),
     promptsLeftThisHour: left,
     promptsPerHour: limits.promptsPerHour,
     inviteRequired: inviteRequired(env),
@@ -110,6 +117,12 @@ async function generate(request: Request, env: Env): Promise<Response> {
   const contentType = request.headers.get("content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("application/json")) {
     return errorResponse(400, "bad_request", 'Header "content-type" must be application/json.');
+  }
+
+  // Optional: the user's pick from the proxy's own list. It goes first, the rest follow.
+  const wanted = request.headers.get("x-model");
+  if (wanted !== null && !allowedModels(env).includes(wanted)) {
+    return errorResponse(400, "bad_request", 'Header "x-model" is not one of this proxy\'s models.');
   }
 
   const requireInvite = inviteRequired(env);
@@ -173,7 +186,8 @@ async function generate(request: Request, env: Env): Promise<Response> {
   // 4. Call Gemini. An overloaded model (500/503) is tried once more after a short
   // wait, then the next model in the list takes over; a model that is out of quota
   // (429) is skipped at once. These extra tries are not counted against the user.
-  const models = [modelName(env), ...fallbackModels(env)];
+  const models = allowedModels(env);
+  if (wanted !== null) models.unshift(...models.splice(models.indexOf(wanted), 1));
   const delayMs = intVar(env.RETRY_DELAY_MS, DEFAULTS.RETRY_DELAY_MS);
   const started = Date.now();
   let upstream: Response | null = null;

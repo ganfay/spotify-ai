@@ -116,9 +116,13 @@ export class Agent {
     return !(error instanceof LlmError && FINAL_ERRORS.has(error.code));
   }
 
-  async run(prompt: string, onEvent: (event: AgentEvent) => void = () => {}): Promise<AgentResult> {
+  /** earlier: a text recap of a reopened chat; the model has no other memory of it. */
+  async run(prompt: string, onEvent: (event: AgentEvent) => void = () => {}, earlier = ""): Promise<AgentResult> {
     this.promptId = crypto.randomUUID();
-    return this.advance({ input: { text: prompt }, step: 0, seen: new Map(), first: this.toolbox.proposals.length }, onEvent);
+    const text = earlier
+      ? `Earlier in this conversation (context only; playlist and track ids from back then are no longer valid, read things again when you need them):\n${earlier}\n\nNew message from the user:\n${prompt}`
+      : prompt;
+    return this.advance({ input: { text }, step: 0, seen: new Map(), first: this.toolbox.proposals.length }, onEvent);
   }
 
   /** Continues a run that stopped on a failed request (see canResume). Same prompt id: the proxy does not count a new prompt. */

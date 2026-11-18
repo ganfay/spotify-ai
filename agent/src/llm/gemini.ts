@@ -90,6 +90,7 @@ export function geminiViaProxy(settings: Settings, options: SessionOptions, prom
   return new GeminiSession(options, async (body) => {
     const headers: Record<string, string> = { "x-install-id": settings.installId, "x-prompt-id": promptId() };
     if (settings.inviteCode) headers["x-invite-code"] = settings.inviteCode;
+    if (settings.proxyModel) headers["x-model"] = settings.proxyModel;
     const { res, json } = await postJson(fetchFn, `${settings.proxyUrl.replace(/\/+$/, "")}/v1/generate`, headers, body, "the AI proxy");
     if (!res.ok) {
       const raw = typeof json.error === "string" ? json.error : "http";

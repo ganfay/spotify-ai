@@ -73,7 +73,7 @@ export function withCors(response: Response, check: OriginCheck): Response {
     out.headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
     out.headers.set(
       "access-control-allow-headers",
-      "content-type, x-install-id, x-prompt-id, x-invite-code",
+      "content-type, x-install-id, x-prompt-id, x-invite-code, x-model",
     );
     out.headers.set("access-control-max-age", "86400");
   }

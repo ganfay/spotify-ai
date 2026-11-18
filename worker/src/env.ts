@@ -28,7 +28,7 @@ export interface Env {
 
 export const DEFAULTS = {
   MODEL: "gemini-3.5-flash-lite",
-  FALLBACK_MODELS: "gemini-3.6-flash",
+  FALLBACK_MODELS: "gemini-3.6-flash,gemini-3.8-flash",
   RETRY_DELAY_MS: 1200,
   MAX_OUTPUT_TOKENS: 16384,
   ALLOWED_ORIGINS: "https://xpui.app.spotify.com",

@@ -39,7 +39,7 @@ function fakeSpotify() {
   return { port, created };
 }
 
-const base: Settings = { mode: "own-key", proxyUrl: "https://proxy.example", provider: "gemini", apiKey: "KEY", baseUrl: "", installId: "11111111-1111-4111-8111-111111111111", inviteCode: "", model: "m", language: "en" };
+const base: Settings = { mode: "own-key", proxyUrl: "https://proxy.example", provider: "gemini", apiKey: "KEY", baseUrl: "", installId: "11111111-1111-4111-8111-111111111111", inviteCode: "", model: "m", proxyModel: "", language: "en" };
 
 // The same four model turns, written in each provider's wire format.
 const STEPS = [
@@ -338,4 +338,45 @@ test("errors that a repeat cannot fix are not offered for continuing", async () 
   const failed = await agent.run("x").catch((e) => e);
   assert.equal(failed.code, "bad_key");
   assert.equal(agent.canResume(failed), false);
+});
+
+test("shared mode sends the picked model to the proxy, and nothing when the choice is automatic", async () => {
+  for (const proxyModel of ["", "gemini-3.8-flash"]) {
+    const { fetchFn, calls } = scripted(() => gemini(null));
+    await new Agent({ ...base, mode: "proxy", proxyModel }, fakeSpotify().port, fetchFn).run("x");
+    assert.equal(calls[0]!.headers["x-model"], proxyModel || undefined);
+  }
+});
+
+test("a reopened chat is continued with a recap; saved chats are capped and filtered by playlist", async () => {
+  const data = new Map<string, string>();
+  (globalThis as any).localStorage = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k) };
+  const { deleteChat, listChats, MAX_CHATS, recap, saveChat } = await import("../src/chats");
+
+  for (let i = 0; i < MAX_CHATS + 2; i++) {
+    saveChat({ id: `c${i}`, title: `chat ${i}`, updatedAt: "2026-11-18T10:00:00Z", messages: [{ from: "user", text: `q${i}`, proposals: [] }, { from: "error", text: "boom", proposals: [], retry: true }] });
+  }
+  saveChat({ id: "p", title: "tied", updatedAt: "2026-11-18T10:00:00Z", playlistUri: "spotify:playlist:a", messages: [{ from: "user", text: "q", proposals: [] }] });
+  const free = listChats();
+  assert.equal(free.length, MAX_CHATS - 1); // the newest five overall: four free ones and the tied one
+  assert.equal(free[0]!.id, `c${MAX_CHATS + 1}`);
+  assert.equal(free[0]!.messages[1]!.retry, undefined); // "Try again" is never offered for a saved chat
+  assert.deepEqual(listChats("spotify:playlist:a").map((c) => c.id), ["p"]);
+  saveChat({ ...free[2]!, title: "renamed" }); // saving again moves a chat to the top, no copy
+  assert.equal(listChats()[0]!.title, "renamed");
+  assert.equal(listChats().length, MAX_CHATS - 1);
+  deleteChat("p");
+  assert.equal(listChats("spotify:playlist:a").length, 0);
+
+  // A chat too big for the store keeps its text and loses the proposals.
+  const big = { kind: "removal", id: "x", blob: "y".repeat(2_000_000) } as any;
+  saveChat({ id: "big", title: "big", updatedAt: "2026-11-18T11:00:00Z", messages: [{ from: "user", text: "q", proposals: [] }, { from: "agent", text: "a", proposals: [big] }] });
+  assert.deepEqual(listChats().map((c) => [c.id, c.messages[1]!.proposals.length]), [["big", 0]]);
+
+  const text = recap([{ from: "user", text: "прибери російське", proposals: [] }, { from: "note", text: "Stopped.", proposals: [] }, { from: "agent", text: "Готово", proposals: [{ kind: "removal" } as any] }]);
+  assert.equal(text, "User: прибери російське\nAssistant: Готово [prepared a proposal: removal]");
+  const { fetchFn, calls } = scripted(() => gemini(null));
+  await new Agent(base, fakeSpotify().port, fetchFn).run("а тепер ще й німецьке", () => {}, text);
+  const sent: string = calls[0]!.body.contents[0].parts[0].text;
+  assert.match(sent, /Earlier in this conversation[\s\S]*User: прибери російське[\s\S]*New message from the user:\nа тепер ще й німецьке$/);
 });

@@ -125,7 +125,7 @@ describe("CORS", () => {
     expect(res.headers.get("vary")).toContain("Origin");
     expect(res.headers.get("access-control-allow-methods")).toBe("GET, POST, OPTIONS");
     expect(res.headers.get("access-control-allow-headers")).toBe(
-      "content-type, x-install-id, x-prompt-id, x-invite-code",
+      "content-type, x-install-id, x-prompt-id, x-invite-code, x-model",
     );
   });
 
@@ -370,7 +370,7 @@ describe("retries and the fallback model", () => {
     const res = await generate();
     expect(res.status).toBe(502);
     expect((await errOf(res)).status).toBe(503);
-    expect(upstreamCalls).toHaveLength(4);
+    expect(upstreamCalls).toHaveLength(6); // three models, two tries each
   });
 
   it("does not repeat a request the provider rejects (400), and counts one request", async () => {
@@ -379,6 +379,27 @@ describe("retries and the fallback model", () => {
     const res = await generate({ install });
     expect(res.status).toBe(502);
     expect(upstreamCalls).toHaveLength(1);
+  });
+
+  it("lets the user pick a model from the proxy's list, and only from it", async () => {
+    const res = await generate({ headers: { "x-model": "gemini-3.8-flash" } });
+    expect(res.status).toBe(200);
+    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.8-flash"]);
+
+    upstreamCalls = [];
+    upstreamReply = overloaded;
+    await generate({ headers: { "x-model": "gemini-3.8-flash" } });
+    expect([...new Set(upstreamCalls.map(modelOf))]).toEqual(["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash"]);
+
+    upstreamCalls = [];
+    const refused = await generate({ headers: { "x-model": "gemini-4-carbon" } });
+    expect(refused.status).toBe(400);
+    expect(upstreamCalls).toHaveLength(0);
+  });
+
+  it("status lists the models a user may pick", async () => {
+    const body = (await (await status(uuid())).json()) as { models: string[] };
+    expect(body.models).toEqual(["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"]);
   });
 
   it("FALLBACK_MODELS empty switches the fallback off", async () => {
@@ -519,6 +540,7 @@ describe("/v1/status", () => {
       expect(await res.json()).toEqual({
         ok: true,
         model: "gemini-3.5-flash-lite",
+        models: ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"],
         promptsLeftThisHour: 5,
         promptsPerHour: 5,
         inviteRequired: false,

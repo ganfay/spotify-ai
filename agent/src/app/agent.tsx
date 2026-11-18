@@ -11,8 +11,9 @@ import { safeRestore, type Snapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
 import { getTrackData } from "../spotify/facts";
 import type { Playlist, Track } from "../spotify/types";
-import { count, type Key, t } from "./i18n";
+import { count, type Key, language, t } from "./i18n";
 import { errorText } from "./settings";
+import { type ChatMessage, deleteChat, listChats, MAX_CHATS, recap, saveChat, type SavedChat } from "../chats";
 import { BackLink, css, Dots, duration, hooks, Icon, ProgressBar, Spinner, TrackRow } from "./ui";
 
 declare const Spicetify: any;
@@ -108,7 +109,7 @@ function SplitEditor({ proposal, onChange }: { proposal: SplitProposal; onChange
 
 type Outcome = Applied | { kind: "undone"; exact: boolean };
 
-function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
+function ProposalCard({ initial, onApplied }: { initial: Proposal; onApplied?: () => void; key?: string }) {
   const { useState } = hooks();
   const [proposal, setProposal] = useState(initial);
   const [busy, setBusy] = useState("");
@@ -120,7 +121,9 @@ function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
     setBusy(text);
     setError("");
     try {
-      setDone(await job());
+      const outcome = await job();
+      setDone(outcome);
+      if (outcome.kind !== "undone") onApplied?.();
     } catch (e) {
       setError(errorText(e));
     }
@@ -269,13 +272,7 @@ function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
   );
 }
 
-interface Message {
-  from: "user" | "agent" | "error" | "note";
-  text: string;
-  proposals: Proposal[];
-  /** An error after which the run can go on from where it stopped. */
-  retry?: boolean;
-}
+type Message = ChatMessage;
 interface Progress {
   text: string;
   done?: number;
@@ -299,6 +296,37 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
   // A run that stopped on a failed request to the model and can go on from there.
   const [stalled, setStalled] = useState(null as Agent | null);
 
+  // Recent chats (this computer only). chatId is empty until the first answer is saved.
+  const chatId = useRef("");
+  const [chats, setChats] = useState(listChats(playlist?.uri));
+  const [reopened, setReopened] = useState(false);
+  const latest = useRef(messages);
+  latest.current = messages;
+  /** Shows the messages and saves the chat. */
+  const keep = (all: Message[]) => {
+    setMessages(all);
+    const title = all.find((m) => m.from === "user")?.text.slice(0, 80);
+    if (!title) return;
+    if (!chatId.current) chatId.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    saveChat({ id: chatId.current, title, updatedAt: new Date().toISOString(), ...(playlist ? { playlistUri: playlist.uri } : {}), messages: all });
+    setChats(listChats(playlist?.uri));
+  };
+  const markApplied = (index: number, proposalId: string) =>
+    keep(latest.current.map((m, i) => (i === index ? { ...m, applied: [...(m.applied ?? []), proposalId] } : m)));
+  const openChat = (chat: SavedChat) => {
+    chatId.current = chat.id;
+    setMessages(chat.messages);
+    setAgent(null);
+    setStalled(null);
+    setReopened(true);
+  };
+  const removeChat = (event: { stopPropagation(): void }, id: string) => {
+    event.stopPropagation();
+    deleteChat(id);
+    setChats(listChats(playlist?.uri));
+  };
+  const when = (iso: string) => new Date(iso).toLocaleString(language(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
   /** Runs one request (new, or a continued one) and puts the outcome on the screen. */
   const drive = async (current: Agent, history: Message[], start: (onEvent: (e: AgentEvent) => void) => Promise<AgentResult>) => {
     const id = ++runId.current;
@@ -316,12 +344,12 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
       });
       if (!mine()) return;
       const reply = result.incomplete ? t(result.proposals.length ? "ag.partial" : "ag.failed") : result.text;
-      setMessages([...history, { from: "agent", text: reply, proposals: result.proposals }]);
+      keep([...history, { from: "agent", text: reply, proposals: result.proposals }]);
       setAgent(result.incomplete ? null : current);
     } catch (e) {
       if (!mine()) return;
       const retry = current.canResume(e);
-      setMessages([...history, { from: "error", text: errorText(e), proposals: [], retry }]);
+      keep([...history, { from: "error", text: errorText(e), proposals: [], retry }]);
       // A new message starts a fresh conversation; "Try again" continues this one.
       setAgent(null);
       if (retry) setStalled(current);
@@ -335,7 +363,10 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
     if (!text || progress || !ready) return;
     const current = agent ?? new Agent(settings, port, undefined, playlist?.uri);
     setPrompt("");
-    void drive(current, [...messages, { from: "user", text, proposals: [] }], (onEvent) => current.run(text, onEvent));
+    // A fresh model session knows nothing of what is on the screen (a reopened chat,
+    // or one that ended with an error): it gets a short recap.
+    const earlier = agent ? "" : recap(messages);
+    void drive(current, [...messages, { from: "user", text, proposals: [] }], (onEvent) => current.run(text, onEvent, earlier));
   };
 
   const retry = () => {
@@ -354,6 +385,9 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
     setMessages([...messages, { from: "note", text: t("ag.stopped"), proposals: [] }]);
   };
   const reset = () => {
+    chatId.current = "";
+    setReopened(false);
+    setChats(listChats(playlist?.uri));
     setMessages([]);
     setAgent(null);
     setStalled(null);
@@ -383,6 +417,19 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
             {EXAMPLES.map((key) => <span key={key} className="sai-chip" onClick={() => setPrompt(t(key))}>{t(key)}</span>)}
           </div>
+          {chats.length > 0 && (
+            <div style={{ maxWidth: 520, margin: "30px auto 0", textAlign: "left" }}>
+              <div style={{ ...css.muted, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 700, fontSize: 11, margin: "0 12px 6px" }}>{t("ag.recent")}</div>
+              {chats.map((c) => (
+                <div key={c.id} className="sai-chatrow" onClick={() => openChat(c)}>
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</span>
+                  <span style={{ ...css.muted, fontSize: 12, flex: "none" }}>{when(c.updatedAt)}</span>
+                  <span className="sai-link" title={t("ag.deleteChat")} onClick={(e: any) => removeChat(e, c.id)}><Icon name="cross" size={12} /></span>
+                </div>
+              ))}
+              <p style={{ ...css.muted, fontSize: 12, margin: "8px 12px 0" }}>{t("ag.recentHint", { n: MAX_CHATS })}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -405,7 +452,16 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
                 <span style={css.muted}>{t("ag.kept")}</span>
               </div>
             )}
-            {m.proposals.length > 0 && <div style={{ marginLeft: 40 }}>{m.proposals.map((p) => <ProposalCard key={`${i}-${p.id}`} initial={p} />)}</div>}
+            {m.proposals.length > 0 && (
+              <div style={{ marginLeft: 40 }}>
+                {m.proposals.map((p) => (
+                  <div key={`${chatId.current}-${i}-${p.id}`}>
+                    {reopened && m.applied?.includes(p.id) && <p style={{ ...css.muted, margin: "10px 0 -4px" }}>{t("pr.appliedBefore")}</p>}
+                    <ProposalCard initial={p} onApplied={() => markApplied(i, p.id)} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {progress && (

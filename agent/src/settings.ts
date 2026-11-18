@@ -18,6 +18,8 @@ export interface Settings {
   installId: string;
   inviteCode: string;
   model: string;
+  /** Shared mode: a model picked from the proxy's own list; "" = the proxy decides. */
+  proxyModel: string;
   /** Interface language: "auto" = the language of Spotify itself. */
   language: "auto" | "en" | "uk" | "ru" | "de";
 }
@@ -34,6 +36,7 @@ const DEFAULTS: Settings = {
   installId: "",
   inviteCode: "",
   model: "gemini-3.5-flash-lite",
+  proxyModel: "",
   language: "auto",
 };
 

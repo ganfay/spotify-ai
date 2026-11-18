@@ -27,7 +27,7 @@ export function errorText(e: unknown): string {
 }
 
 export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLanguage: (choice: Settings["language"]) => void }) {
-  const { useState } = hooks();
+  const { useEffect, useState } = hooks();
   const [settings, setSettings] = useState(loadSettings());
   const [check, setCheck] = useState(null as null | { ok: boolean; title: string; detail: string });
   const [busy, setBusy] = useState(false);
@@ -65,6 +65,20 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
     }
     setBusy(false);
   };
+
+  // Shared mode: the models the proxy offers (an older proxy offers none: no choice is shown).
+  const [models, setModels] = useState([] as string[]);
+  useEffect(() => {
+    if (own || !settings.proxyUrl) return;
+    let alive = true;
+    fetch(`${settings.proxyUrl.replace(/\/+$/, "")}/v1/status`, { headers: { "x-install-id": settings.installId } })
+      .then((res) => res.json())
+      .then((json) => {
+        if (alive && Array.isArray(json?.models)) setModels(json.models.filter((m: unknown) => typeof m === "string").slice(0, 10));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [own, settings.proxyUrl]);
 
   const locked = unlock !== "open";
   // The ad blocker is a Spicetify extension wrapped by our installer: it runs at
@@ -134,6 +148,17 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
         ) : (
           <div>
             {!settings.proxyUrl && <p style={css.error}>{t("set.noProxy")}</p>}
+            {models.length > 1 && (
+              <div>
+                <div style={label}>{t("set.model")}</div>
+                <select style={{ ...field, marginBottom: 6 }} value={models.includes(settings.proxyModel) ? settings.proxyModel : ""}
+                        onChange={(e: any) => update({ proxyModel: e.target.value })}>
+                  <option value="">{t("set.modelAuto")}</option>
+                  {models.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+                <p style={{ ...css.muted, margin: "0 0 14px" }}>{t("set.modelFallback")}</p>
+              </div>
+            )}
             <details className="sai-adv">
               <summary><Icon name="chevron" size={14} />{t("set.adv")}</summary>
               <div style={{ margin: "12px 0 0 20px" }}>
