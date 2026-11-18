@@ -101,7 +101,7 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 - My live tests used up the owner's 5 prompts per hour again. Live tests of the shared mode need a separate test allowance (for example an invite/admin switch), not the owner's own.
 
 
-## Done on 2026-11-19
+## Done on 2026-11-18 (late)
 
 - **Guided tour** (`agent/src/app/tour.tsx`): four steps on the home page (tools, AI agent, Recent changes, Settings), each lights up its element; shown once on the first visit, "Show the short tour again" in Settings; Esc/Enter/arrows work; four languages. Checked live on Linux. The owner's own Spotify had the tour marked as seen after my test, so he sees it only from Settings.
 - **Newer Spotify:** instead of stopping, both installers explain and ask "Try anyway?" (Enter = yes); `--force` / `-Force` skips the question; with nobody to ask they stop as before.
@@ -111,7 +111,7 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 
 Wanted by the owner, not started — see "Next big things" below.
 
-## Next big things (asked for on 2026-11-19, not started)
+## Next big things (asked for on 2026-11-18, not started)
 
 - **Appearance:** a colour/gradient customiser with presets, and three full themes that restyle Spotify, one of them black and white. This needs code and styles loaded when Spotify starts, which the current design avoids on purpose (decision: nothing runs at startup, `inject_css 0`); the owner must agree to that trade first.
 - **A fairer shuffle** for big playlists (his 1,200-track playlist keeps repeating the same songs).
