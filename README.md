@@ -68,6 +68,10 @@ git clone https://github.com/ganfay/spotify-ai.git && cd spotify-ai && ./install
 
 Remove everything: `./install.sh --uninstall`. The installer asks for `sudo` twice on the first run: to stop Spotify auto-updates (`apt-mark hold`) and to let your user write to `/usr/share/spotify`.
 
+### Already have a modified Spotify?
+
+On Windows and macOS the installer looks at the Spotify that is already there. If it was changed by another mod (SpotX, BlockTheSpot, a "cracked" copy …), it says what it found and offers to put a clean copy from Spotify's own server in its place. You stay logged in; playlists and likes live on Spotify's servers. If you keep the modified one, ad blocking or the AI Playlists button may not work, Spotify may open as an empty window, and uninstalling returns Spotify to that modified state. A Spotify that already has Spicetify is not replaced: your Spicetify is kept and only our parts are added (your theme is switched off).
+
 ### Options
 
 Ad blocking can be switched in AI Playlists → Settings. Installer options are remembered for later runs:
@@ -77,6 +81,7 @@ Ad blocking can be switched in AI Playlists → Settings. Installer options are 
 | `--adblock off` | `-Adblock off` | do not install the blocker at all |
 | `--block-reports off` | `-BlockReports off` | let Spotify send crash reports and interface logs to its developers again |
 | `--force` (macOS) | `-Force` | try even when Spotify is newer than the tested version |
+| `--clean-spotify yes` / `no` (macOS) | `-CleanSpotify yes` / `no` | replace (or keep) a Spotify changed by another mod without being asked |
 
 Listening statistics are never blocked. What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
 
