@@ -380,3 +380,12 @@ test("a reopened chat is continued with a recap; saved chats are capped and filt
   const sent: string = calls[0]!.body.contents[0].parts[0].text;
   assert.match(sent, /Earlier in this conversation[\s\S]*User: прибери російське[\s\S]*New message from the user:\nа тепер ще й німецьке$/);
 });
+
+test("a key whose project has no free tier gets its own message, not 'wrong key'", async () => {
+  const { port } = fakeSpotify();
+  const noFreeTier = (async () => new Response(JSON.stringify({ error: { code: 403, message: "The Gemini API free tier is not available for this project. To use the Gemini API, please set up billing.", status: "PERMISSION_DENIED" } }), { status: 403 })) as unknown as typeof fetch;
+  const agent = new Agent(base, port, noFreeTier);
+  const failed = await agent.run("x").catch((e) => e);
+  assert.equal(failed.code, "no_free_tier");
+  assert.equal(agent.canResume(failed), false);
+});

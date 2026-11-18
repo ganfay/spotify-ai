@@ -77,10 +77,31 @@ function location(position: Position): Record<string, unknown> {
   return position;
 }
 
-/** All playlists of the user, folders flattened. */
+/**
+ * Liked Songs are not a playlist for Spotify. Here they are offered as one that
+ * cannot be edited, so every tool can read them and build new playlists from them.
+ */
+export const LIKED_URI = "spotify:collection:tracks";
+export const LIKED_NAME = "Liked Songs";
+
+async function likedAsPlaylist(): Promise<Playlist | null> {
+  try {
+    // The API's own "totalLength" is 0 in this client, so the entries are counted.
+    const res: any = await api("LibraryAPI", "getTracks").getTracks({ limit: ALL });
+    const total = Array.isArray(res?.items) ? res.items.length : 0;
+    if (!total) return null;
+    return { uri: LIKED_URI, name: LIKED_NAME, description: "", ownerName: "", editable: false, trackCount: total, imageUrl: "" };
+  } catch {
+    return null; // the playlist list must not fail because of this extra entry
+  }
+}
+
+/** All playlists of the user, folders flattened. Liked Songs come first, as a read-only entry. */
 export async function listPlaylists(): Promise<Playlist[]> {
   const root: any = await call("Reading the playlist list", () => api("RootlistAPI", "getContents").getContents());
   const out: Playlist[] = [];
+  const liked = await likedAsPlaylist();
+  if (liked) out.push(liked);
   const walk = (items: any[]): void => {
     for (const item of items ?? []) {
       if (item.type === "folder") walk(item.items);
@@ -93,6 +114,7 @@ export async function listPlaylists(): Promise<Playlist[]> {
 
 /** Every entry of a playlist, in playlist order. */
 export async function getTracks(playlistUri: string): Promise<Track[]> {
+  if (playlistUri === LIKED_URI) return getLikedTracks();
   const res: any = await call("Reading playlist tracks", () =>
     api("PlaylistAPI", "getContents").getContents(playlistUri, { limit: ALL }),
   );
@@ -101,7 +123,8 @@ export async function getTracks(playlistUri: string): Promise<Track[]> {
 
 export async function getLikedTracks(): Promise<Track[]> {
   const res: any = await call("Reading Liked Songs", () => api("LibraryAPI", "getTracks").getTracks({ limit: ALL }));
-  return (res.items ?? []).map(toTrack);
+  // Liked Songs have no entry ids; the interface needs a distinct one per row.
+  return (res.items ?? []).filter((i: any) => typeof i.uri === "string").map(toTrack).map((track: Track, i: number) => ({ ...track, uid: track.uid || `liked-${i}` }));
 }
 
 /** Creates an empty playlist at the top of the library and returns its URI. */
@@ -198,6 +221,7 @@ export async function getAudioFeatures(uri: string): Promise<{ energy: number; v
 
 /** Spotify's own "Recommended songs" for a playlist (at most 50). */
 export async function getRecommendations(playlistUri: string, limit = 50): Promise<Track[]> {
+  if (playlistUri === LIKED_URI) throw new SpotifyApiError("Spotify gives no recommendations for Liked Songs. Use search_tracks with your own ideas instead.");
   const items: any[] = await call("Reading recommendations", () =>
     api("PlaylistAPI", "getRecommendedTracks").getRecommendedTracks(playlistUri, 0, Math.min(limit, 50)),
   );

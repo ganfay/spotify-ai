@@ -85,6 +85,19 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 - **Fallback models measured with the owner's free key (2026-11-18 evening), same tool-call request:** `gemini-3.5-flash-lite` 200 in 8 s; `gemini-3.1-flash-lite` 200 in 25 s; `gemini-3.6-flash`, `gemini-3.8-flash`, `gemini-4-hydrogen` all 503 "high demand". So on the free tier only the lite models answer; the list is now `gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash`. The proxy no longer gives up when a model times out (45 s) or is unavailable, and reports `x-tried` (model=status). 54 tests. **The last change of the list is not deployed yet.**
 - Lesson: my own test requests used up the daily "new installs per address" cap (5) and the owner's 5 prompts/hour — the limits work, and tests should reuse one install id.
 - **Other providers as fallbacks (decision 29):** OpenRouter free models and Cloudflare Workers AI are in the proxy's chain, with a request/answer translator. 60 tests. Deployed by the owner with his OpenRouter key (2026-11-18) and tested from inside Spotify by picking each entry: all three OpenRouter models and the Workers AI model completed a three-step tool loop (2–11 s). The real agent's language filter on a 131-track playlist gave the correct proposal (130 tracks, the one Russian track left out) through `or:nvidia/nemotron-3.5-lightning:free` (47 s) and through `cf:@cf/zai-org/glm-4.7-flash` (30 s) — `agent/test/live-fallback.ts`. Not tested: a 1,200-track playlist through a fallback; an automatic switch during a real Google overload.
+
+## Liked Songs (2026-11-18)
+
+- Liked Songs are offered to every tool as a playlist that cannot be edited (`LIKED_URI` in the adapter): the playlist picker shows them first, the duplicate finder and the agent can read them and build new playlists from them. Spotify reports their count as 0, so the entries are counted.
+- New card "Liked Songs to a playlist" (no AI): name, order (newest or oldest first), one click; local files and unplayable songs are skipped and counted; the result can be opened or deleted. Texts in four languages (the Ukrainian, Russian and German names of "Liked Songs" may differ from Spotify's own wording — not checked).
+- Checked live on Linux: 965 of 966 liked songs copied in the right order in half a second, then deleted through the app; the picker and the duplicate finder work on Liked Songs (36 groups found).
+- **Not verified: the agent on Liked Songs with a real model.** The test stopped on the two things below.
+
+## Found the same evening
+
+- **The owner's own Gemini key lost its free tier during testing:** Google answered 403 "The Gemini API free tier is not available for this project… set up billing". Earlier the same day the key worked. Not known: whether it is temporary, whether my test volume played a part, and whether the proxy's key (if it is the same Google project) is affected — the hourly limit prevented checking. If it is, the shared mode now lives on the fallbacks (403 moves on to OpenRouter and Workers AI). The app now explains this case in its own words instead of "wrong key".
+- My live tests used up the owner's 5 prompts per hour again. Live tests of the shared mode need a separate test allowance (for example an invite/admin switch), not the owner's own.
+
 - Not done, wanted by the owner: an in-app tutorial (a short guided tour) — after the macOS test.
 
 ## Phase 5 — in progress

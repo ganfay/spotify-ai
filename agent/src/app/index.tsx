@@ -155,16 +155,104 @@ function Duplicates({ playlist, onBack }: { playlist: Playlist; onBack: () => vo
   );
 }
 
-type FeatureId = "duplicates" | "agent" | "language" | "split" | "cleanup" | "recommend";
+/** Liked Songs are shown under their name in the interface language. */
+const shownName = (p: Playlist): string => (p.uri === spotify.LIKED_URI ? t("liked.name") : p.name);
+
+/** Copies Liked Songs into a normal playlist. No AI. */
+function LikedToPlaylist({ onBack }: { onBack: () => void }) {
+  const { useEffect, useState } = hooks();
+  const [tracks, setTracks] = useState(null as Track[] | null);
+  const [error, setError] = useState("");
+  const [name, setName] = useState(t("liked.defaultName"));
+  const [oldestFirst, setOldestFirst] = useState(false);
+  const [busy, setBusy] = useState("");
+  const [done, setDone] = useState(null as null | { uri: string; name: string; copied: number; skipped: number; deleted?: boolean });
+  useEffect(() => {
+    spotify.getLikedTracks().then(setTracks, (e: Error) => setError(e.message));
+  }, []);
+
+  // Local files and tracks Spotify no longer plays cannot be put into a playlist.
+  const usable = (tracks ?? []).filter((track) => track.playable && !track.local);
+  const run = async (text: string, job: () => Promise<void>) => {
+    setBusy(text);
+    setError("");
+    try {
+      await job();
+    } catch (e) {
+      setError(message(e));
+    }
+    setBusy("");
+  };
+  const create = () => run(t("act.creating"), async () => {
+    const uris = usable.map((track) => track.uri);
+    if (oldestFirst) uris.reverse();
+    const title = name.trim();
+    const uri = await spotify.createPlaylist(title);
+    await spotify.addTracks(uri, uris);
+    setDone({ uri, name: title, copied: uris.length, skipped: (tracks ?? []).length - uris.length });
+  });
+  const remove = () => run(t("liked.deleting"), async () => {
+    if (!done) return;
+    await spotify.deletePlaylist(done.uri);
+    setDone({ ...done, deleted: true });
+  });
+  const open = (uri: string) => Spicetify.Platform.History.push(`/playlist/${uri.split(":")[2]}`);
+  const radio = { display: "flex", alignItems: "center", gap: 8, margin: "6px 0", cursor: "pointer" } as const;
+
+  return (
+    <div style={{ ...css.column, marginTop: 20, maxWidth: 600 }}>
+      <BackLink label={t("back.tools")} onClick={onBack} />
+      <h2 style={{ fontSize: 20, margin: "6px 0 12px" }}>{t("f.liked.title")}</h2>
+      {error && <p style={css.error}>{error}</p>}
+      {!tracks && !error && <p style={{ ...css.muted, display: "flex", gap: 8, alignItems: "center" }}><Spinner size={14} />{t("loading")}</p>}
+      {tracks && tracks.length === 0 && <p style={css.muted}>{t("liked.empty")}</p>}
+      {tracks && tracks.length > 0 && !done && (
+        <div className="sai-in">
+          <p style={{ margin: "0 0 16px" }}>{t("liked.count", { tracks: count(usable.length, "track") })}</p>
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{t("liked.nameLabel")}</div>
+          <input style={{ ...css.input, margin: "6px 0 16px" }} value={name} maxLength={100} onChange={(e: any) => setName(e.target.value)} />
+          <div style={{ fontWeight: 700, fontSize: 14 }}>{t("liked.order")}</div>
+          <label style={radio}><input type="radio" checked={!oldestFirst} onChange={() => setOldestFirst(false)} />{t("liked.newest")}</label>
+          <label style={radio}><input type="radio" checked={oldestFirst} onChange={() => setOldestFirst(true)} />{t("liked.oldest")}</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18, flexWrap: "wrap" }}>
+            <button style={css.primary} disabled={!!busy || !name.trim() || usable.length === 0} onClick={create}>{t("liked.create")}</button>
+            {busy && <span style={{ ...css.muted, display: "inline-flex", gap: 8, alignItems: "center" }}><Spinner size={14} />{busy}</span>}
+          </div>
+          <p style={{ ...css.muted, marginTop: 16 }}>{t("liked.note")}</p>
+        </div>
+      )}
+      {done && (
+        <div className="sai-in" style={css.notice}>
+          {done.deleted
+            ? <span>{t("liked.deleted", { name: done.name })}</span>
+            : (
+              <div>
+                <div>{t("liked.done", { name: done.name, tracks: count(done.copied, "track") })}</div>
+                {done.skipped > 0 && <div style={{ ...css.muted, marginTop: 4 }}>{t("liked.skipped", { n: done.skipped })}</div>}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+                  <button style={css.primary} onClick={() => open(done.uri)}>{t("act.open")}</button>
+                  <button style={css.secondary} disabled={!!busy} onClick={remove}>{t("liked.delete")}</button>
+                  {busy && <span style={{ ...css.muted, display: "inline-flex", gap: 8, alignItems: "center" }}><Spinner size={14} />{busy}</span>}
+                </div>
+              </div>
+            )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type FeatureId = "duplicates" | "agent" | "liked" | "language" | "split" | "cleanup" | "recommend";
 interface Feature {
   id: FeatureId;
-  icon: "copy" | "spark" | "globe" | "split" | "funnel" | "compass";
+  icon: "copy" | "spark" | "globe" | "split" | "funnel" | "compass" | "heart";
   /** AI features start the agent with a ready-made request for the chosen playlist. */
   ai: boolean;
 }
 const FEATURES: Feature[] = [
   { id: "duplicates", icon: "copy", ai: false },
   { id: "agent", icon: "spark", ai: false },
+  { id: "liked", icon: "heart", ai: false },
   { id: "language", icon: "globe", ai: true },
   { id: "split", icon: "split", ai: true },
   { id: "cleanup", icon: "funnel", ai: true },
@@ -296,12 +384,12 @@ function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: 
       {playlists?.length === 0 && <p style={css.muted}>{t("noPlaylists")}</p>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 8 }}>
         {playlists?.map((p: Playlist) => (
-          <div key={p.uri} className="sai-tile" onClick={() => onPick(p)} title={p.name}>
+          <div key={p.uri} className="sai-tile" onClick={() => onPick(p)} title={shownName(p)}>
             {p.imageUrl
               ? <img className="cover" src={p.imageUrl} loading="lazy" alt="" />
-              : <div className="cover"><Icon name="music" size={40} /></div>}
-            <div className="name">{p.name}</div>
-            <div style={css.muted}>{count(p.trackCount, "track")}{!p.editable && ` · ${t("notYours")}`}</div>
+              : <div className="cover"><Icon name={p.uri === spotify.LIKED_URI ? "heart" : "music"} size={40} /></div>}
+            <div className="name">{shownName(p)}</div>
+            <div style={css.muted}>{count(p.trackCount, "track")}{!p.editable && p.uri !== spotify.LIKED_URI && ` · ${t("notYours")}`}</div>
           </div>
         ))}
       </div>
@@ -326,10 +414,12 @@ function App() {
     body = <div style={{ ...css.column, marginTop: 20 }}><Duplicates playlist={selected} onBack={() => setSelected(null)} /></div>;
   } else if (tool === "agent") {
     body = <AgentView onBack={home} onSettings={() => setTool("settings")} />;
+  } else if (tool === "liked") {
+    body = <LikedToPlaylist onBack={home} />;
   } else if (feature?.ai && selected) {
-    body = <AgentView onBack={home} onSettings={() => setTool("settings")} playlist={selected} initialPrompt={t(`p.${feature.id}` as Key, { name: selected.name })} />;
+    body = <AgentView onBack={home} onSettings={() => setTool("settings")} playlist={selected} initialPrompt={t(`p.${feature.id}` as Key, { name: shownName(selected) })} />;
   } else if (feature && tool !== "settings") {
-    body = <PlaylistPicker title={t(`f.${feature.id}.title` as Key)} onPick={setSelected} onBack={home} />;
+    body = <PlaylistPicker title={t(`f.${feature.id}.title` as Key)} onPick={(p) => setSelected({ ...p, name: shownName(p) })} onBack={home} />;
   } else if (tool === "settings") {
     body = <SettingsView onBack={home} onLanguage={(choice) => setLang(setLanguage(choice))} />;
   } else {

@@ -120,6 +120,10 @@ export function geminiDirect(settings: Settings, options: SessionOptions, fetchF
     if (!res.ok) {
       const message: string = json?.error?.message ?? `HTTP ${res.status}`;
       if (res.status === 400 && /API key/i.test(message)) throw keyError(401, message, "Google", settings.model);
+      // The key is fine, but Google gives its project no free requests (any more).
+      if (res.status === 403 && /free tier|billing/i.test(message)) {
+        throw new LlmError("Google gives this key no free requests: its project needs billing set up in Google AI Studio. Use another key, or the shared access.", "no_free_tier", undefined, { who: "Google" });
+      }
       throw keyError(res.status, message, "Google", settings.model);
     }
     return json;

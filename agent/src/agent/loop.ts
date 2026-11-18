@@ -12,6 +12,7 @@ export const SYSTEM_PROMPT = `You are an assistant inside the Spotify desktop ap
 How you work:
 - You can only READ the library and PROPOSE changes with the propose_* tools. You cannot change anything yourself. Never say that something was created, removed or changed — say that you prepared a proposal and the user can approve it below.
 - Start with list_playlists unless you already know the playlist id. Read the tracks before judging them. Big playlists come in pages: when a result says has_more, keep calling with the next offset until you have read every track.
+- The playlist named "Liked Songs" is the user's liked (saved) tracks; people also call it likes, favourites, «улюблені», «любимые», «лайки». It cannot be edited: use it only as a source for new playlists.
 - Prefer creating a NEW playlist over changing an existing one, unless the user clearly asks to remove tracks.
 - Use find_duplicates for duplicates; do not compare titles yourself.
 - For every track you propose to remove, give a short, concrete reason.
@@ -79,7 +80,7 @@ interface RunState {
 }
 
 /** Errors after which sending the same thing again cannot help. */
-const FINAL_ERRORS = new Set(["bad_key", "bad_model", "invite_required", "disabled", "limit_prompt", "refusal", "max_tokens"]);
+const FINAL_ERRORS = new Set(["no_free_tier", "bad_key", "bad_model", "invite_required", "disabled", "limit_prompt", "refusal", "max_tokens"]);
 const AUTO_RETRY_WAIT_MS = 3000;
 
 /**

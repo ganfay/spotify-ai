@@ -113,7 +113,7 @@ export function GlobalStyles() {
   );
 }
 
-type IconName = "copy" | "globe" | "split" | "funnel" | "compass" | "stop" | "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
+type IconName = "copy" | "globe" | "split" | "funnel" | "compass" | "stop" | "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music" | "heart";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -140,6 +140,7 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     case "stop": body = <rect x="6.500" y="6.500" width="11" height="11" rx="2" fill="currentColor" />; break;
     case "play": body = <path fill="currentColor" d="M8 5.500v13a.6.6 0 0 0 .92.500l10-6.500a.6.6 0 0 0 0-1l-10-6.500A.6.6 0 0 0 8 5.500z" />; break;
     case "pause": body = <g fill="currentColor"><rect x="6.500" y="5" width="4" height="14" rx="1" /><rect x="13.500" y="5" width="4" height="14" rx="1" /></g>; break;
+    case "heart": body = <path d="M12 20s-7.500-4.700-7.500-10.200A4.300 4.300 0 0 1 12 7.300a4.300 4.300 0 0 1 7.500 2.500C19.500 15.300 12 20 12 20z" {...stroke} />; break;
     case "plus": body = <path d="M12 5v14M5 12h14" {...stroke} />; break;
     case "chevron": body = <path d="M9 6l6 6-6 6" {...stroke} />; break;
     case "lock": body = <g {...stroke} strokeWidth={1.8}><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></g>; break;
