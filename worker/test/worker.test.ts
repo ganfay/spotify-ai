@@ -402,6 +402,26 @@ describe("retries and the fallback model", () => {
     expect(body.models).toEqual(["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"]);
   });
 
+  it("a model that does not answer or is not available to the key is skipped, and the trail says so", async () => {
+    let n = 0;
+    upstreamReply = () => {
+      n++;
+      if (n === 1) throw new DOMException("too slow", "TimeoutError");
+      if (n === 2) return Response.json({ error: { message: "model not found" } }, { status: 404 });
+      return Response.json(GEMINI_OK);
+    };
+    const res = await generate();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-tried")).toBe("gemini-3.5-flash-lite=timeout,gemini-3.6-flash=404,gemini-3.8-flash=200");
+    expect(res.headers.get("access-control-expose-headers")).toBe("x-tried");
+  });
+
+  it("reports the trail on failure too", async () => {
+    upstreamReply = () => Response.json({ error: { message: "bad" } }, { status: 400 });
+    const res = await generate();
+    expect(res.headers.get("x-tried")).toBe("gemini-3.5-flash-lite=400");
+  });
+
   it("FALLBACK_MODELS empty switches the fallback off", async () => {
     upstreamReply = overloaded;
     await generate({ env: makeEnv({ FALLBACK_MODELS: "" }) });

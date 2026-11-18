@@ -21,9 +21,20 @@ import { isUuid, isUuidV4, MAX_BODY_BYTES, validateGenerateBody } from "./valida
 export { Limits } from "./limits";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const UPSTREAM_TIMEOUT_MS = 60_000;
 /** No new try is started once this much time has passed since the first one. */
-const RETRY_BUDGET_MS = 40_000;
+const RETRY_BUDGET_MS = 50_000;
+/**
+ * Answers after which the next model is tried: out of quota, overloaded, and
+ * "this key cannot use this model" (a fallback that is not available must not
+ * break the service). 400 is not here: a wrong request is wrong for every model.
+ */
+const MOVE_ON = new Set([403, 404, 429, 500, 503]);
+
+function withHeaders(response: Response, headers: Record<string, string>): Response {
+  const out = new Response(response.body, response);
+  for (const [name, value] of Object.entries(headers)) out.headers.set(name, value);
+  return out;
+}
 
 /** All counters live in one Durable Object instance, so they are exact. */
 function limitsStub(env: Env): DurableObjectStub<Limits> {
@@ -189,49 +200,58 @@ async function generate(request: Request, env: Env): Promise<Response> {
   const models = allowedModels(env);
   if (wanted !== null) models.unshift(...models.splice(models.indexOf(wanted), 1));
   const delayMs = intVar(env.RETRY_DELAY_MS, DEFAULTS.RETRY_DELAY_MS);
+  const timeoutMs = intVar(env.UPSTREAM_TIMEOUT_MS, DEFAULTS.UPSTREAM_TIMEOUT_MS);
   const started = Date.now();
+  const outOfTime = (): boolean => Date.now() - started > RETRY_BUDGET_MS;
+  // Which model answered what ("model=200", "model=timeout"): no user data, helps to see why an answer was slow.
+  const trail: string[] = [];
   let upstream: Response | null = null;
   attempts: for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt++) {
-      if (upstream !== null && Date.now() - started > RETRY_BUDGET_MS) break attempts;
+      if (trail.length > 0 && outOfTime()) break attempts;
       if (attempt > 0 && delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
       try {
         upstream = await fetch(`${GEMINI_BASE}/${encodeURIComponent(model)}:generateContent`, {
           method: "POST",
           headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify(upstreamBody),
-          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+          signal: AbortSignal.timeout(timeoutMs),
         });
-      } catch {
+      } catch (err) {
+        // No answer in time, or no connection: this model is not repeated, the next one gets its chance.
         upstream = null;
-        break attempts;
+        trail.push(`${model}=${err instanceof Error && err.name === "TimeoutError" ? "timeout" : "unreachable"}`);
+        break;
       }
+      trail.push(`${model}=${upstream.status}`);
       if (upstream.ok) break attempts;
-      if (upstream.status !== 500 && upstream.status !== 503) break; // not worth repeating on this model
+      if (upstream.status !== 500 && upstream.status !== 503) break; // only an overloaded model is worth repeating
     }
-    if (upstream === null || (upstream.status !== 429 && upstream.status !== 500 && upstream.status !== 503)) break;
+    // Go on to the next model unless this one says the request itself is wrong.
+    if (upstream !== null && !MOVE_ON.has(upstream.status)) break;
   }
+  const tried = { "x-tried": trail.join(",").slice(0, 300) };
   if (upstream === null) {
-    return errorResponse(502, "upstream", "Could not reach the AI provider.", { status: 0 });
+    return withHeaders(errorResponse(502, "upstream", "Could not reach the AI provider.", { status: 0 }), tried);
   }
 
   if (upstream.ok) {
     // Pass the provider's JSON through unchanged.
     return new Response(upstream.body, {
       status: 200,
-      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+      headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...tried },
     });
   }
 
   const message = await upstreamMessage(upstream, apiKey);
   if (upstream.status === 429) {
     const retryAfter = Number(upstream.headers.get("retry-after"));
-    return errorResponse(429, "rate_limited", `The AI provider is rate limiting us: ${message}`, {
+    return withHeaders(errorResponse(429, "rate_limited", `The AI provider is rate limiting us: ${message}`, {
       scope: "provider",
       retryAfterSeconds: Number.isInteger(retryAfter) && retryAfter > 0 ? retryAfter : 60,
-    });
+    }), tried);
   }
-  return errorResponse(502, "upstream", message, { status: upstream.status });
+  return withHeaders(errorResponse(502, "upstream", message, { status: upstream.status }), tried);
 }
 
 const RATE_MESSAGES = {

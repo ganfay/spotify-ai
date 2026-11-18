@@ -14,6 +14,7 @@ export interface Env {
   /** Comma-separated; empty string switches the fallback off. */
   FALLBACK_MODELS?: string;
   RETRY_DELAY_MS?: string;
+  UPSTREAM_TIMEOUT_MS?: string;
   MAX_OUTPUT_TOKENS?: string;
   ALLOWED_ORIGINS?: string;
   PROMPTS_PER_HOUR?: string;
@@ -30,6 +31,8 @@ export const DEFAULTS = {
   MODEL: "gemini-3.5-flash-lite",
   FALLBACK_MODELS: "gemini-3.6-flash,gemini-3.8-flash",
   RETRY_DELAY_MS: 1200,
+  /** How long one model may take to answer before the next one is tried. */
+  UPSTREAM_TIMEOUT_MS: 45000,
   MAX_OUTPUT_TOKENS: 16384,
   ALLOWED_ORIGINS: "https://xpui.app.spotify.com",
   PROMPTS_PER_HOUR: 5,
