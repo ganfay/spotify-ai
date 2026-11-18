@@ -338,7 +338,6 @@ export function AgentView({ onBack, onSettings, initialPrompt = "" }: { onBack: 
         <BackLink label={t("back.tools")} onClick={onBack} />
         <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {messages.length > 0 && <span className="sai-link" style={{ marginRight: 8 }} onClick={reset}><Icon name="plus" size={14} />{t("ag.new")}</span>}
-          <button className="sai-iconbtn" title={t("set.title")} onClick={onSettings}><Icon name="settings" size={18} /></button>
         </span>
       </div>
 

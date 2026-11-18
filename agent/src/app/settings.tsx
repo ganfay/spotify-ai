@@ -4,6 +4,7 @@
 
 import { createSession, LlmError, PROVIDERS, providerOf } from "../llm";
 import { isConfigured, loadSettings, saveSettings, type Settings } from "../settings";
+import { reloadInterface } from "../spotify/adapter";
 import { type Key, LANGUAGES, t } from "./i18n";
 import { BackLink, css, hooks, Icon, ResultBadge, Spinner } from "./ui";
 
@@ -183,7 +184,12 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
             </span>
             <span style={label} onClick={flip}>{t("set.adblockToggle")}</span>
           </label>
-          {wanted !== active && <ResultBadge ok={true} title={t("set.restartNeeded")} />}
+          {wanted !== active && (
+            <div className="sai-in" style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", margin: "12px 0 4px" }}>
+              <span style={css.muted}>{t("set.restartNeeded")}</span>
+              <button style={css.primary} onClick={reloadInterface}>{t("set.restartNow")}</button>
+            </div>
+          )}
         </div>
       ) : (
         <div>

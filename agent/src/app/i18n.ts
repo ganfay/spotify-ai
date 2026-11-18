@@ -15,7 +15,6 @@ const en = {
   "app.tagline": "Nothing in your library changes until you confirm it.",
   "back.tools": "All tools",
   "back.playlists": "All playlists",
-  "settings.link": "Settings — AI access, API key, language",
   loading: "Loading",
   pick: "{title} — pick a playlist",
   notYours: "not yours",
@@ -121,6 +120,11 @@ const en = {
   "pr.noGroup": "— no group —",
   "pr.recName": "{name} — recommendations",
   "pr.cleanedName": "{name} (cleaned)",
+  "set.restartNow": "Apply now",
+  "settings.button": "Settings",
+  "home.recent": "Recent changes",
+  "home.recentHint": "Undo returns the playlist to how it was just before that change.",
+  "home.noRecent": "Nothing changed yet. Every change you confirm will be listed here, so you can undo it later.",
   "pr.fallback": "Proposal",
 
   "set.client": "Spotify client",
@@ -129,7 +133,7 @@ const en = {
   "set.off": "off",
   "set.clientHow": "What Spotify may report to its developers (crash reports, interface logs) is set when the app is installed — by default it is stopped. To change it, run the installer again with an option:",
   "set.adblockToggle": "Block ads",
-  "set.restartNeeded": "Close Spotify and open it again to apply this change.",
+  "set.restartNeeded": "This takes effect after Spotify's window is reloaded (music keeps its place; it takes a few seconds).",
   "set.adblockMissing": "The ad blocker was not installed. To add it, run:",
   "set.statsNote": "Your listening statistics (Recently played, Wrapped) are never blocked.",
   "set.title": "Settings",
@@ -197,13 +201,14 @@ const en = {
 };
 
 export type Key = keyof typeof en;
+/** Every text key (used by the tests to check that no translation is missing). */
+export const KEYS = Object.keys(en) as Key[];
 type Dict = Partial<Record<Key, string>>;
 
 const uk: Dict = {
   "app.tagline": "У твоїй бібліотеці нічого не зміниться, доки ти не підтвердиш.",
   "back.tools": "Усі інструменти",
   "back.playlists": "Усі плейлисти",
-  "settings.link": "Налаштування — доступ до ШІ, ключ, мова",
   loading: "Завантаження",
   pick: "{title} — обери плейлист",
   notYours: "не твій",
@@ -309,6 +314,11 @@ const uk: Dict = {
   "pr.noGroup": "— без групи —",
   "pr.recName": "{name} — рекомендації",
   "pr.cleanedName": "{name} (очищений)",
+  "set.restartNow": "Застосувати зараз",
+  "settings.button": "Налаштування",
+  "home.recent": "Останні зміни",
+  "home.recentHint": "«Повернути» відновлює плейлист таким, яким він був перед цією зміною.",
+  "home.noRecent": "Змін ще не було. Кожна підтверджена зміна з'явиться тут, щоб її можна було повернути пізніше.",
   "pr.fallback": "Пропозиція",
 
   "set.client": "Клієнт Spotify",
@@ -317,7 +327,7 @@ const uk: Dict = {
   "set.off": "вимкнено",
   "set.clientHow": "Те, що Spotify може повідомляти своїм розробникам (звіти про збої, журнали інтерфейсу), задається під час встановлення — за замовчуванням це зупинено. Щоб змінити, запусти інсталятор ще раз із параметром:",
   "set.adblockToggle": "Блокувати рекламу",
-  "set.restartNeeded": "Закрий Spotify і відкрий знову, щоб зміна подіяла.",
+  "set.restartNeeded": "Зміна подіє після перезавантаження вікна Spotify (це кілька секунд, програма не закривається).",
   "set.adblockMissing": "Блокувальник реклами не встановлено. Щоб додати, запусти:",
   "set.statsNote": "Твоя статистика прослуховувань («Нещодавно прослухане», Wrapped) не блокується ніколи.",
   "set.title": "Налаштування",
@@ -388,7 +398,6 @@ const ru: Dict = {
   "app.tagline": "В твоей библиотеке ничего не изменится, пока ты не подтвердишь.",
   "back.tools": "Все инструменты",
   "back.playlists": "Все плейлисты",
-  "settings.link": "Настройки — доступ к ИИ, ключ, язык",
   loading: "Загрузка",
   pick: "{title} — выбери плейлист",
   notYours: "не твой",
@@ -494,6 +503,11 @@ const ru: Dict = {
   "pr.noGroup": "— без группы —",
   "pr.recName": "{name} — рекомендации",
   "pr.cleanedName": "{name} (очищенный)",
+  "set.restartNow": "Применить сейчас",
+  "settings.button": "Настройки",
+  "home.recent": "Последние изменения",
+  "home.recentHint": "«Вернуть» восстанавливает плейлист таким, каким он был перед этим изменением.",
+  "home.noRecent": "Изменений ещё не было. Каждое подтверждённое изменение появится здесь, чтобы его можно было вернуть позже.",
   "pr.fallback": "Предложение",
 
   "set.client": "Клиент Spotify",
@@ -502,7 +516,7 @@ const ru: Dict = {
   "set.off": "выключена",
   "set.clientHow": "То, что Spotify может сообщать своим разработчикам (отчёты о сбоях, журналы интерфейса), задаётся при установке — по умолчанию это остановлено. Чтобы изменить, запусти установщик ещё раз с параметром:",
   "set.adblockToggle": "Блокировать рекламу",
-  "set.restartNeeded": "Закрой Spotify и открой снова, чтобы изменение подействовало.",
+  "set.restartNeeded": "Изменение подействует после перезагрузки окна Spotify (это несколько секунд, программа не закрывается).",
   "set.adblockMissing": "Блокировщик рекламы не установлен. Чтобы добавить, запусти:",
   "set.statsNote": "Твоя статистика прослушиваний («Недавно прослушано», Wrapped) не блокируется никогда.",
   "set.title": "Настройки",
@@ -573,7 +587,6 @@ const de: Dict = {
   "app.tagline": "In deiner Bibliothek ändert sich nichts, bevor du es bestätigst.",
   "back.tools": "Alle Werkzeuge",
   "back.playlists": "Alle Playlists",
-  "settings.link": "Einstellungen — KI-Zugang, API-Schlüssel, Sprache",
   loading: "Wird geladen",
   pick: "{title} — Playlist wählen",
   notYours: "nicht deine",
@@ -679,6 +692,11 @@ const de: Dict = {
   "pr.noGroup": "— keine Gruppe —",
   "pr.recName": "{name} — Empfehlungen",
   "pr.cleanedName": "{name} (bereinigt)",
+  "set.restartNow": "Jetzt anwenden",
+  "settings.button": "Einstellungen",
+  "home.recent": "Letzte Änderungen",
+  "home.recentHint": "„Rückgängig“ stellt die Playlist so wieder her, wie sie direkt vor dieser Änderung war.",
+  "home.noRecent": "Noch keine Änderungen. Jede bestätigte Änderung erscheint hier, damit du sie später rückgängig machen kannst.",
   "pr.fallback": "Vorschlag",
 
   "set.client": "Spotify-Client",
@@ -687,7 +705,7 @@ const de: Dict = {
   "set.off": "aus",
   "set.clientHow": "Was Spotify an seine Entwickler melden darf (Absturzberichte, Oberflächen-Logs), wird bei der Installation festgelegt — standardmäßig ist es gestoppt. Zum Ändern das Installationsskript erneut mit einer Option starten:",
   "set.adblockToggle": "Werbung blockieren",
-  "set.restartNeeded": "Schließe Spotify und öffne es erneut, damit die Änderung wirkt.",
+  "set.restartNeeded": "Das wirkt, nachdem das Spotify-Fenster neu geladen wurde (ein paar Sekunden, das Programm bleibt offen).",
   "set.adblockMissing": "Der Werbeblocker wurde nicht installiert. Zum Hinzufügen ausführen:",
   "set.statsNote": "Deine Hörstatistik (Zuletzt gehört, Wrapped) wird nie blockiert.",
   "set.title": "Einstellungen",

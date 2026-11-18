@@ -37,8 +37,9 @@ export const css = {
   primary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "#000" },
   secondary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)" },
   danger: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "#e22134", color: "#fff" },
-  cards: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16, marginTop: 24 },
-  card: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "18px 20px", minHeight: 96 },
+  cards: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginTop: 24 },
+  small: { padding: "7px 16px", borderRadius: 500, fontSize: 13, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)", flex: "none" },
+  card: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "20px 22px", minHeight: 104 },
   badge: { fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 8 },
   notice: { background: "rgba(30,215,96,.12)", borderRadius: 8, padding: "12px 14px", margin: "14px 0" },
   error: { color: "#f15e6c", margin: "10px 0" },
@@ -73,6 +74,10 @@ export function GlobalStyles() {
       .sai-card:hover { background: rgba(255,255,255,.09) !important; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.35); }
       .sai-card .ico { width: 42px; height: 42px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.07); color: var(--spice-subtext, #b3b3b3); transition: background .2s, color .2s, transform .2s; }
       .sai-card:hover .ico { background: var(--spice-button, #1ed760); color: #000; transform: scale(1.06) rotate(-4deg); }
+      .sai-pill { cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px 8px 12px; border-radius: 500px; border: 0; background: rgba(255,255,255,.07); color: var(--spice-text, #fff); font-size: 13px; font-weight: 700; transition: background .15s, transform .15s; }
+      .sai-pill:hover { background: rgba(255,255,255,.14); }
+      .sai-pill svg { transition: transform .35s; }
+      .sai-pill:hover svg { transform: rotate(60deg); }
       .sai-kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--spice-button, #1ed760); }
       .sai-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden; margin-top: 8px; width: 260px; max-width: 100%; }
       .sai-bar > div { height: 100%; background: var(--spice-button, #1ed760); border-radius: 2px; transition: width .3s ease; }

@@ -232,3 +232,12 @@ export async function playTrack(uri: string): Promise<void> {
   if (typeof player?.playUri !== "function") throw new SpotifyApiError("Playback is not available in this client version.");
   await call("Starting playback", async () => player.playUri(uri));
 }
+
+/**
+ * Reloads Spotify's window so extensions start again with the current settings.
+ * (Spotify's own LifecycleAPI.restart() closes the app on Linux without reopening it,
+ * so it is not used.)
+ */
+export function reloadInterface(): void {
+  window.location.reload();
+}

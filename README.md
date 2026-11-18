@@ -28,7 +28,7 @@ git clone https://github.com/ganfay/spotify-ai.git && cd spotify-ai && ./install
 Something broke? Run `./install.sh` again — it repairs the setup.
 Remove everything: `./install.sh --uninstall`.
 
-Ad blocking can be switched in AI Playlists → Settings (restart Spotify to apply). Installer options (remembered for later runs): `./install.sh --adblock off` does not install the blocker at all; `./install.sh --block-reports off` lets Spotify send crash reports and interface logs to its developers again. Listening statistics are never blocked. What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
+Ad blocking can be switched in AI Playlists → Settings. Installer options (remembered for later runs): `./install.sh --adblock off` does not install the blocker at all; `./install.sh --block-reports off` lets Spotify send crash reports and interface logs to its developers again. Listening statistics are never blocked. What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 The installer asks for `sudo` twice on the first run: to stop Spotify auto-updates (`apt-mark hold`) and to let your user write to `/usr/share/spotify`. Windows and macOS are not supported yet.
 

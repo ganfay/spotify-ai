@@ -1,19 +1,15 @@
 // Every language must have every text, with the same {placeholders}.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { count, type Key, LANGUAGES, setLanguage, t } from "../src/app/i18n";
+import { count, KEYS, LANGUAGES, setLanguage, t } from "../src/app/i18n";
 
-const KEYS: Key[] = (() => {
-  setLanguage("en");
-  // t() returns the key itself when a text is missing in English too.
-  const probe = ["app.tagline", "f.split.title", "p.recommend", "dup.summary", "act.cleanCopy", "res.copy", "ag.failed", "ex.5",
-    "tool.propose_split", "progress.checking", "pr.splitHint", "pr.createN", "set.advText", "set.privacy", "err.limit_install",
-    "err.bad_model", "tag.sped up / slowed", "play", "pr.kind.additions", "set.langAuto"] as Key[];
-  return probe;
-})();
+// Words that are legitimately the same in several languages.
+const SAME_OK = /^(tag\.|play$|pause$|set\.optional$)/;
+
 const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join();
 
-test("all four languages have the texts, with matching placeholders", () => {
+test("all four languages have EVERY text, with matching placeholders", () => {
+  assert.ok(KEYS.length > 150);
   for (const key of KEYS) {
     setLanguage("en");
     const source = t(key);
@@ -22,7 +18,7 @@ test("all four languages have the texts, with matching placeholders", () => {
       setLanguage(id);
       const text = t(key);
       assert.equal(holes(text), holes(source), `${id} placeholders differ for ${key}`);
-      if (!key.startsWith("tag.") && key !== "play") assert.notEqual(text, source, `${id} is not translated: ${key}`);
+      if (!SAME_OK.test(key)) assert.notEqual(text, source, `${id} is not translated: ${key}`);
     }
   }
 });

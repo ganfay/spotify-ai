@@ -3,12 +3,12 @@
 
 import { type DuplicateGroup, findDuplicates } from "../features/duplicates";
 import { loadSettings } from "../settings";
-import { restoreSnapshot, type Snapshot, takeSnapshot } from "../snapshots";
+import { deleteSnapshot, listSnapshots, restoreSnapshot, type Snapshot, takeSnapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
 import type { EntryRef, Playlist, Track } from "../spotify/types";
 
 import { AgentView } from "./agent";
-import { count, type Key, setLanguage, t } from "./i18n";
+import { count, type Key, language, setLanguage, t } from "./i18n";
 import { SettingsView } from "./settings";
 import { BackLink, css, duration, GlobalStyles, hooks, Icon, Spinner, TrackRow } from "./ui";
 
@@ -189,6 +189,49 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
   );
 }
 
+/** Undo points of earlier changes, newest first. Shown on the home screen. */
+function RecentChanges() {
+  const { useState } = hooks();
+  const [items, setItems] = useState(listSnapshots());
+  const [busy, setBusy] = useState("");
+  const [note, setNote] = useState("");
+
+  const undo = async (snapshot: Snapshot) => {
+    setBusy(snapshot.id);
+    setNote("");
+    try {
+      const { exact } = await restoreSnapshot(snapshot);
+      deleteSnapshot(snapshot.id);
+      setNote(t(exact ? "res.undone" : "res.undoneInexact"));
+    } catch (e) {
+      setNote(message(e));
+    }
+    setItems(listSnapshots());
+    setBusy("");
+  };
+  const when = (iso: string) => new Date(iso).toLocaleString(language(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div style={{ marginTop: 36 }}>
+      <h2 style={{ fontSize: 18, margin: "0 0 4px" }}>{t("home.recent")}</h2>
+      {items.length === 0 ? <p style={css.muted}>{t("home.noRecent")}</p> : <p style={css.muted}>{t("home.recentHint")}</p>}
+      {note && <div style={css.notice} className="sai-in">{note}</div>}
+      {items.slice(0, 8).map((snapshot) => (
+        <div key={snapshot.id} className="sai-trackrow" style={{ padding: "10px 12px" }}>
+          <div className="sai-cover" style={{ cursor: "default" }}><Icon name="music" size={18} /></div>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontWeight: 700 }}>{snapshot.playlistName}</span>
+            <div style={css.muted}>{snapshot.reason} · {count(snapshot.entries.length, "track")} · {when(snapshot.createdAt)}</div>
+          </span>
+          <button style={{ ...css.small, display: "inline-flex", gap: 8, alignItems: "center" }} disabled={!!busy} onClick={() => undo(snapshot)}>
+            {busy === snapshot.id && <Spinner size={13} />}{t("act.undo")}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: Playlist) => void; onBack: () => void }) {
   const { useEffect, useState } = hooks();
   const [playlists, setPlaylists] = useState(null as Playlist[] | null);
@@ -245,15 +288,22 @@ function App() {
     body = (
       <div>
         <Home onOpen={setTool} />
-        <div style={{ marginTop: 28 }}><span className="sai-link" onClick={() => setTool("settings")}><Icon name="settings" size={16} />{t("settings.link")}</span></div>
+        <RecentChanges />
       </div>
     );
   }
   return (
     <section style={css.page} lang={lang}>
       <GlobalStyles />
-      <h1 style={{ marginBottom: 4 }}>AI Playlists</h1>
-      <p style={css.muted}>{t("app.tagline")}</p>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+        <div>
+          <h1 style={{ marginBottom: 4, cursor: "pointer" }} onClick={home}>AI Playlists</h1>
+          <p style={css.muted}>{t("app.tagline")}</p>
+        </div>
+        {tool !== "settings" && (
+          <button className="sai-pill" onClick={() => setTool("settings")}><Icon name="settings" size={17} />{t("settings.button")}</button>
+        )}
+      </div>
       {body}
     </section>
   );
