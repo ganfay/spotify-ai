@@ -26,6 +26,10 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-npv-root] {
   background-color: transparent !important;
 }
+/* "Now playing": Spotify lays dark veils over the cover or video (plain empty
+   boxes with a dark gradient). On a see-through panel they turn it black, so they
+   are thinned — not removed, the title over a video still needs them. */
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-npv-root] div:empty { opacity: .45; }
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-library,
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view,
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__right-sidebar-peek,
@@ -36,17 +40,27 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
 /* ------------------------------------------------------------- any look on
    Things Spotify colours by itself (from the cover of what is open) or leaves
    plain grey. They follow the chosen look instead. */
-/* Top bar: round buttons and the search field as tinted glass, not grey. */
-html[data-sai-look] .Root__globalNav button[class*="legacy-button-tertiary"],
-html[data-sai-look] .Root__globalNav input {
-  background-color: rgba(var(--spice-rgb-text), .09) !important;
-  transition: background-color .15s;
+/* Spotify draws buttons ("Create", "Add"), cards, the search field and the
+   highlight under the pointer in "raised" greys. On a coloured backdrop those
+   look like dark patches, so inside the panels they become tinted glass: a little
+   of the text colour, see-through. Menus and pop-ups live outside these panels
+   and keep their solid colours. */
+html[data-sai-look] :is(.Root__globalNav, .Root__nav-bar, .Root__main-view, .Root__right-sidebar, .Root__now-playing-bar),
+html[data-sai-look] :is(.Root__globalNav, .Root__nav-bar, .Root__main-view, .Root__right-sidebar, .Root__now-playing-bar) :is(.encore-dark-theme, .encore-base-set) {
+  --spice-main-elevated: rgba(var(--spice-rgb-text), .09);
+  --spice-highlight: rgba(var(--spice-rgb-text), .07);
+  --spice-highlight-elevated: rgba(var(--spice-rgb-text), .13);
+  --spice-tab-active: rgba(var(--spice-rgb-text), .15);
+  --spice-card: rgba(var(--spice-rgb-text), .07);
+  /* The same greys under the names Spotify's own components use. */
+  --background-elevated-base: rgba(var(--spice-rgb-text), .09);
+  --background-elevated-highlight: rgba(var(--spice-rgb-text), .14);
+  --background-elevated-press: rgba(var(--spice-rgb-text), .06);
+  --background-highlight: rgba(var(--spice-rgb-text), .07);
+  --background-press: rgba(var(--spice-rgb-text), .04);
 }
-html[data-sai-look] .Root__globalNav button[class*="legacy-button-tertiary"]:hover,
-html[data-sai-look] .Root__globalNav input:hover,
-html[data-sai-look] .Root__globalNav input:focus { background-color: rgba(var(--spice-rgb-text), .16) !important; }
-/* The back and forward arrows are bare icons in Spotify; they stay bare. */
-html[data-sai-look] .Root__globalNav .main-globalNav-historyButtons button { background-color: transparent !important; }
+/* Inside the search field the magnifier and "browse" are bare icons: no second circle. */
+html[data-sai-look] .main-globalNav-searchSection button { background-color: transparent !important; }
 /* Playlist, album and artist headers: the cover's colour stays as a soft glow that fades out. */
 html[data-sai-look] .main-entityHeader-backgroundColor,
 html[data-sai-look] .main-home-homeHeader {
@@ -54,7 +68,7 @@ html[data-sai-look] .main-home-homeHeader {
   -webkit-mask-image: linear-gradient(#000 30%, transparent);
   mask-image: linear-gradient(#000 30%, transparent);
 }
-html[data-sai-look] .main-actionBarBackground-background { opacity: 0; }
+html[data-sai-look] [class*="actionBarBackground-background"] { opacity: 0; }
 /* Bars that stay in place while the page scrolls under them: frosted, in the look's colour. */
 html[data-sai-look] .main-home-filterChipsSection { background-color: transparent !important; background-image: none !important; }
 html[data-sai-look] .main-topBar-background {
