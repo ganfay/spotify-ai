@@ -354,7 +354,7 @@ describe("retries and the fallback model", () => {
     upstreamReply = () => (++n <= 2 ? overloaded() : Response.json(GEMINI_OK));
     const res = await generate();
     expect(res.status).toBe(200);
-    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.5-flash-lite", "gemini-3.6-flash"]);
+    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]);
   });
 
   it("skips a model that is out of quota without repeating it", async () => {
@@ -362,7 +362,7 @@ describe("retries and the fallback model", () => {
     upstreamReply = () => (++n === 1 ? Response.json({ error: { message: "quota" } }, { status: 429 }) : Response.json(GEMINI_OK));
     const res = await generate();
     expect(res.status).toBe(200);
-    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.6-flash"]);
+    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]);
   });
 
   it("gives up after two tries per model and reports the overload", async () => {
@@ -370,7 +370,7 @@ describe("retries and the fallback model", () => {
     const res = await generate();
     expect(res.status).toBe(502);
     expect((await errOf(res)).status).toBe(503);
-    expect(upstreamCalls).toHaveLength(6); // three models, two tries each
+    expect(upstreamCalls).toHaveLength(8); // four models, two tries each
   });
 
   it("does not repeat a request the provider rejects (400), and counts one request", async () => {
@@ -389,7 +389,7 @@ describe("retries and the fallback model", () => {
     upstreamCalls = [];
     upstreamReply = overloaded;
     await generate({ headers: { "x-model": "gemini-3.8-flash" } });
-    expect([...new Set(upstreamCalls.map(modelOf))]).toEqual(["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.6-flash"]);
+    expect([...new Set(upstreamCalls.map(modelOf))]).toEqual(["gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash"]);
 
     upstreamCalls = [];
     const refused = await generate({ headers: { "x-model": "gemini-4-carbon" } });
@@ -399,7 +399,7 @@ describe("retries and the fallback model", () => {
 
   it("status lists the models a user may pick", async () => {
     const body = (await (await status(uuid())).json()) as { models: string[] };
-    expect(body.models).toEqual(["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"]);
+    expect(body.models).toEqual(["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"]);
   });
 
   it("a model that does not answer or is not available to the key is skipped, and the trail says so", async () => {
@@ -412,7 +412,7 @@ describe("retries and the fallback model", () => {
     };
     const res = await generate();
     expect(res.status).toBe(200);
-    expect(res.headers.get("x-tried")).toBe("gemini-3.5-flash-lite=timeout,gemini-3.6-flash=404,gemini-3.8-flash=200");
+    expect(res.headers.get("x-tried")).toBe("gemini-3.5-flash-lite=timeout,gemini-3.1-flash-lite=404,gemini-3.6-flash=200");
     expect(res.headers.get("access-control-expose-headers")).toBe("x-tried");
   });
 
@@ -560,7 +560,7 @@ describe("/v1/status", () => {
       expect(await res.json()).toEqual({
         ok: true,
         model: "gemini-3.5-flash-lite",
-        models: ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"],
+        models: ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-3.8-flash"],
         promptsLeftThisHour: 5,
         promptsPerHour: 5,
         inviteRequired: false,

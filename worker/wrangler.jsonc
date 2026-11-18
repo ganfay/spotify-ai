@@ -21,7 +21,7 @@
     // A user may also pick one of MODEL + FALLBACK_MODELS in the app's Settings; the
     // others then follow as fallbacks. Put only models here that you are ready to pay for
     // (or that are free on your key).
-    "FALLBACK_MODELS": "gemini-3.6-flash,gemini-3.8-flash",
+    "FALLBACK_MODELS": "gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash",
     "MAX_OUTPUT_TOKENS": "16384",
     "ALLOWED_ORIGINS": "https://xpui.app.spotify.com",
     "PROMPTS_PER_HOUR": "5",

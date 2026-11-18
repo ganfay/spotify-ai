@@ -29,7 +29,7 @@ export interface Env {
 
 export const DEFAULTS = {
   MODEL: "gemini-3.5-flash-lite",
-  FALLBACK_MODELS: "gemini-3.6-flash,gemini-3.8-flash",
+  FALLBACK_MODELS: "gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash",
   RETRY_DELAY_MS: 1200,
   /** How long one model may take to answer before the next one is tried. */
   UPSTREAM_TIMEOUT_MS: 45000,
