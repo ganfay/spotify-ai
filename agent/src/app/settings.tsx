@@ -11,6 +11,8 @@ declare const Spicetify: any;
 
 const field = { ...css.input, margin: "6px 0 14px" } as const;
 const label = { fontWeight: 700, fontSize: 14 } as const;
+const code = { display: "block", padding: "10px 12px", borderRadius: 6, background: "var(--spice-card, #181818)", fontSize: 13, userSelect: "all", margin: "6px 0" } as const;
+const ADBLOCK_FLAG = "spotify-ai:adblock";
 const section = { ...css.muted, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 700, fontSize: 11, margin: "22px 0 8px" } as const;
 
 /** A model-layer error in the user's language. */
@@ -63,8 +65,17 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
   };
 
   const locked = unlock !== "open";
-  // adblockify is a Spicetify extension; this is how the client tells us whether it was applied.
-  const adblock = (Spicetify?.Config?.extensions ?? []).includes("adblock.js");
+  // The ad blocker is a Spicetify extension wrapped by our installer: it runs at
+  // Spotify start unless this flag says "off". So the switch works after a restart.
+  const installed = (Spicetify?.Config?.extensions ?? []).includes("spotify-ai-adblock.js");
+  const active = (globalThis as any).__spotifyAiAdblock === true;
+  const [wanted, setWanted] = useState(localStorage.getItem(ADBLOCK_FLAG) !== "off");
+  const flip = (event: { preventDefault(): void }) => {
+    event.preventDefault();
+    if (wanted) localStorage.setItem(ADBLOCK_FLAG, "off");
+    else localStorage.removeItem(ADBLOCK_FLAG);
+    setWanted(!wanted);
+  };
   return (
     <div style={{ ...css.column, marginTop: 20, maxWidth: 600 }}>
       <BackLink label={t("back.tools")} onClick={onBack} />
@@ -161,14 +172,27 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
       <p style={css.muted}>{t("set.privacy")}</p>
 
       <div style={section}>{t("set.client")}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: adblock ? "var(--spice-button, #1ed760)" : "var(--spice-subtext, #b3b3b3)" }} />
-        <span style={label}>{t("set.adblock")}: {t(adblock ? "set.on" : "set.off")}</span>
-      </div>
-      <p style={css.muted}>{t("set.clientHow")}</p>
-      <code style={{ display: "block", padding: "10px 12px", borderRadius: 6, background: "var(--spice-card, #181818)", fontSize: 13, userSelect: "all" }}>
-        ./install.sh --adblock {adblock ? "off" : "on"}
-      </code>
+      {installed ? (
+        <div>
+          <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+            <span role="switch" aria-checked={wanted} onClick={flip} style={{
+              width: 42, height: 24, borderRadius: 12, flex: "none", position: "relative", transition: "background .18s",
+              background: wanted ? "var(--spice-button, #1ed760)" : "rgba(255,255,255,.25)",
+            }}>
+              <span style={{ position: "absolute", top: 3, left: wanted ? 21 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left .18s" }} />
+            </span>
+            <span style={label} onClick={flip}>{t("set.adblockToggle")}</span>
+          </label>
+          {wanted !== active && <ResultBadge ok={true} title={t("set.restartNeeded")} />}
+        </div>
+      ) : (
+        <div>
+          <p style={css.muted}>{t("set.adblockMissing")}</p>
+          <code style={code}>./install.sh --adblock on</code>
+        </div>
+      )}
+      <p style={{ ...css.muted, marginTop: 18 }}>{t("set.clientHow")}</p>
+      <code style={code}>./install.sh --block-reports off</code>
       <p style={{ ...css.muted, marginBottom: 40 }}>{t("set.statsNote")}</p>
     </div>
   );

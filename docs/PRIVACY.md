@@ -10,7 +10,7 @@ Written for users, not lawyers. Last checked: 2026-11-18.
 ## What Spotify still receives
 
 - **Listening statistics** (what you played) — always sent, exactly as in unmodified Spotify. This is what "Recently played", listening stats and Wrapped are built from. Nothing here blocks it.
-- **Ads** — with ad blocking on (the default), the ad system inside the client is switched off. `./install.sh --adblock off` turns ads back on.
+- **Ads** — with ad blocking on (the default), the ad system inside the client is switched off. You can switch it in AI Playlists → Settings (restart Spotify to apply).
 - **Crash reports and interface logs to Spotify's developers** — stopped by default (a standard Spicetify option). `./install.sh --block-reports off` lets Spotify receive them again.
 
 ## What the AI receives

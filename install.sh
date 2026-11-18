@@ -2,7 +2,8 @@
 # spotify-ai installer v0 — Linux, Spotify from the official apt repository.
 #
 #   ./install.sh                     install or repair (safe to run again)
-#   ./install.sh --adblock off       keep ads (on = block them, the default)
+#   ./install.sh --adblock off       do not install the ad blocker at all (default: on;
+#                                    when installed it can also be switched in the app's Settings)
 #   ./install.sh --block-reports off let Spotify send crash reports and interface
 #                                    logs to its developers (on = stop them, the default)
 #   ./install.sh --uninstall         return Spotify to its original state
@@ -29,7 +30,8 @@ SPOTIFY_DIR="/usr/share/spotify"
 SPICETIFY_HOME="${HOME}/.spicetify"
 SPICETIFY="${SPICETIFY_HOME}/spicetify"
 SPICETIFY_CONFIG_DIR="${HOME}/.config/spicetify"
-EXTENSION="adblock.js"
+EXTENSION="spotify-ai-adblock.js"
+OLD_EXTENSION="adblock.js"   # name used by earlier versions of this installer
 AGENT_APP="ai-playlists"
 AGENT_SOURCE="${HERE}/agent/release/${AGENT_APP}"
 MPRIS="org.mpris.MediaPlayer2.spotify"
@@ -126,7 +128,8 @@ install_spicetify() {
 install_adblockify() {
   say "adblockify (${ADBLOCKIFY_COMMIT:0:7})"
   local target="${SPICETIFY_CONFIG_DIR}/Extensions/${EXTENSION}"
-  if [[ -f "${target}" && "$(sha256sum "${target}" | cut -d' ' -f1)" == "${ADBLOCKIFY_SHA256}" ]]; then
+  local marker="adblockify ${ADBLOCKIFY_COMMIT} sha256:${ADBLOCKIFY_SHA256} wrapper:1"
+  if [[ -f "${target}" ]] && grep -qF "${marker}" "${target}"; then
     info "already installed"
     return
   fi
@@ -136,7 +139,18 @@ install_adblockify() {
     "https://raw.githubusercontent.com/rxri/spicetify-extensions/${ADBLOCKIFY_COMMIT}/adblock/adblock.js"
   check_sha256 "${tmp}" "${ADBLOCKIFY_SHA256}"
   mkdir -p "$(dirname "${target}")"
-  mv "${tmp}" "${target}"
+  # The verified, unchanged file is wrapped in a check, so ad blocking can be
+  # switched off in AI Playlists -> Settings (takes effect when Spotify restarts).
+  {
+    printf '// %s\n' "${marker}"
+    printf '// adblockify by rxri (MIT): https://github.com/rxri/spicetify-extensions\n'
+    printf '(function () {\n'
+    printf '  try { if (localStorage.getItem("spotify-ai:adblock") === "off") return; } catch (e) {}\n'
+    printf '  window.__spotifyAiAdblock = true;\n'
+    cat "${tmp}"
+    printf '\n})();\n'
+  } > "${target}"
+  rm -f "${tmp}" "${SPICETIFY_CONFIG_DIR}/Extensions/${OLD_EXTENSION}"
   info "installed"
 }
 
@@ -184,8 +198,11 @@ configure() {
   "${SPICETIFY}" config inject_css 0 replace_colors 0 >/dev/null
   # We ship pinned versions, so Spicetify's own update check would only add a request at startup.
   "${SPICETIFY}" config check_spicetify_update 0 >/dev/null
+  if grep -E '^extensions' "${ini}" | tr '|=' '  ' | grep -qw "${OLD_EXTENSION}"; then
+    "${SPICETIFY}" config extensions "${OLD_EXTENSION}-" >/dev/null   # replaced by the switchable one
+  fi
   local has_ext=0
-  grep -E '^extensions' "${ini}" | grep -qw "${EXTENSION}" && has_ext=1
+  grep -E '^extensions' "${ini}" | grep -qF "${EXTENSION}" && has_ext=1
   if [[ "${ADBLOCK}" == "on" && "${has_ext}" == 0 ]]; then
     "${SPICETIFY}" config extensions "${EXTENSION}" >/dev/null
   elif [[ "${ADBLOCK}" == "off" && "${has_ext}" == 1 ]]; then
