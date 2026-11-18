@@ -82,8 +82,12 @@ export function geminiViaProxy(settings: Settings, options: SessionOptions, prom
     if (settings.inviteCode) headers["x-invite-code"] = settings.inviteCode;
     const { res, json } = await postJson(fetchFn, `${settings.proxyUrl.replace(/\/+$/, "")}/v1/generate`, headers, body, "the AI proxy");
     if (!res.ok) {
-      const code = typeof json.error === "string" ? json.error : "http";
-      throw new LlmError(proxyMessage(code, json.scope, json.message ?? `The AI proxy answered ${res.status}.`, json.retryAfterSeconds), code, json.retryAfterSeconds);
+      const raw = typeof json.error === "string" ? json.error : "http";
+      // A precise code per kind of limit, so the interface can explain it in the user's language.
+      const scope: Record<string, string> = { install: "limit_install", global: "limit_global", provider: "limit_global", prompt: "limit_prompt" };
+      const code = raw === "rate_limited" ? scope[json.scope] ?? "limit_global" : raw;
+      const min = Math.max(1, Math.ceil((json.retryAfterSeconds ?? 60) / 60));
+      throw new LlmError(proxyMessage(raw, json.scope, json.message ?? `The AI proxy answered ${res.status}.`, json.retryAfterSeconds), code, json.retryAfterSeconds, { min });
     }
     return json;
   });

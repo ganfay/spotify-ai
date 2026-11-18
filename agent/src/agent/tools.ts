@@ -191,8 +191,8 @@ export class Toolbox {
   /** Per playlist: how many tracks from the start the model has been shown. */
   private readonly shown = new Map<string, number>();
 
-  /** Set by the agent: receives short progress texts of long-running tools. */
-  notify: (text: string) => void = () => {};
+  /** Set by the agent: progress of long-running tools, counted over the whole playlist. */
+  notify: (done: number, total: number) => void = () => {};
 
   constructor(private readonly spotify: SpotifyPort) {}
 
@@ -291,7 +291,7 @@ export class Toolbox {
     const page = tracks.slice(offset, offset + PAGE);
     // Progress is shown for the whole playlist, not for this page only.
     const facts = await this.spotify.getTrackData(page.map((t) => t.uri), fields, (done, total) =>
-      this.notify(`Checking tracks ${Math.min(tracks.length, offset + page.length - (total - done))} of ${tracks.length}`));
+      this.notify(Math.min(tracks.length, offset + page.length - (total - done)), tracks.length));
     if (offset <= (this.shown.get(playlist.uri) ?? 0)) this.markShown(playlist.uri, offset + page.length);
     const num = (v: number | undefined, digits = 2) => (v === undefined ? "?" : v.toFixed(digits));
     const lines = page.map((t, i) => {

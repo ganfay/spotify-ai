@@ -16,6 +16,8 @@ export interface Settings {
   installId: string;
   inviteCode: string;
   model: string;
+  /** Interface language: "auto" = the language of Spotify itself. */
+  language: "auto" | "en" | "uk" | "ru" | "de";
 }
 
 // Filled in by the build when the owner has deployed the proxy (see agent/build.mjs).
@@ -30,6 +32,7 @@ const DEFAULTS: Settings = {
   installId: "",
   inviteCode: "",
   model: "gemini-3.5-flash-lite",
+  language: "auto",
 };
 
 export function loadSettings(): Settings {

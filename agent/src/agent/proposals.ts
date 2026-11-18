@@ -77,10 +77,9 @@ export async function applyNewPlaylist(spotify: SpotifyPort, p: NewPlaylistPropo
 }
 
 /** The safe default for a removal proposal: a copy without the ticked tracks. */
-export async function applyRemovalAsCopy(spotify: SpotifyPort, p: RemovalProposal): Promise<Applied> {
+export async function applyRemovalAsCopy(spotify: SpotifyPort, p: RemovalProposal, name = `${p.playlist.name} (cleaned)`): Promise<Applied> {
   const drop = new Set(p.tracks.filter((t) => t.selected).map((t) => t.track.uid));
   const uris = p.allTracks.filter((t) => !drop.has(t.uid) && playable(t)).map((t) => t.uri);
-  const name = `${p.playlist.name} (cleaned)`;
   const uri = await spotify.createPlaylist(name);
   await spotify.addTracks(uri, uris);
   return { kind: "created", playlists: [{ uri, name, tracks: uris.length }] };
@@ -107,9 +106,8 @@ export async function applySplit(spotify: SpotifyPort, p: SplitProposal): Promis
 }
 
 /** The safe default for recommendations: a separate playlist with the picks. */
-export async function applyAdditionsAsNew(spotify: SpotifyPort, p: AdditionsProposal): Promise<Applied> {
+export async function applyAdditionsAsNew(spotify: SpotifyPort, p: AdditionsProposal, name = `${p.playlist.name} — recommendations`): Promise<Applied> {
   const uris = p.tracks.filter((t) => t.selected).map((t) => t.track.uri);
-  const name = `${p.playlist.name} — recommendations`;
   const uri = await spotify.createPlaylist(name);
   await spotify.addTracks(uri, uris);
   return { kind: "created", playlists: [{ uri, name, tracks: uris.length }] };

@@ -39,7 +39,7 @@ function fakeSpotify() {
   return { port, created };
 }
 
-const base: Settings = { mode: "own-key", proxyUrl: "https://proxy.example", provider: "gemini", apiKey: "KEY", baseUrl: "", installId: "11111111-1111-4111-8111-111111111111", inviteCode: "", model: "m" };
+const base: Settings = { mode: "own-key", proxyUrl: "https://proxy.example", provider: "gemini", apiKey: "KEY", baseUrl: "", installId: "11111111-1111-4111-8111-111111111111", inviteCode: "", model: "m", language: "en" };
 
 // The same four model turns, written in each provider's wire format.
 const STEPS = [
@@ -217,13 +217,13 @@ test("get_track_data: language codes and mood numbers, unknown shown as ?", asyn
   const { port } = fakeSpotify();
   const box = new Toolbox(port);
   const progress: string[] = [];
-  box.notify = (t) => progress.push(t);
+  box.notify = (done, total) => progress.push(`${done}/${total}`);
   const res = await box.call("get_track_data", { playlist_id: "p1", fields: ["language", "mood"] });
   const lines = String(res.tracks).split("\n");
   assert.equal(lines[0], "t1 | Обійми | Океан Ельзи | lang=uk | pop=60 | energy=0.40 valence=0.30 dance=0.50 tempo=96 acoustic=0.60");
   assert.match(lines[1]!, /lang=ru/);
   assert.equal(lines[3], "t4 | Плакала | KAZKA | lang=? | pop=? | energy=? valence=? dance=? tempo=? acoustic=?");
-  assert.deepEqual(progress, ["Checking tracks 4 of 4"]);
+  assert.deepEqual(progress, ["4/4"]);
   assert.match(String((await box.call("get_track_data", { playlist_id: "p1", fields: ["lyrics"] })).error), /fields must contain/);
 });
 
@@ -251,16 +251,16 @@ test("An exclude-list or a split is refused until every track of a big playlist 
   const big: SpotifyPort = { ...port, getTracks: async () => many };
   const box = new Toolbox(big);
   const progress: string[] = [];
-  box.notify = (t) => progress.push(t);
+  box.notify = (done, total) => progress.push(`${done}/${total}`);
   const first = await box.call("get_track_data", { playlist_id: "p1", fields: ["language"] });
   assert.equal(first.has_more, true);
   assert.match(String(first.next), /offset 1000 — 200 tracks are not read yet/);
-  assert.equal(progress.at(-1), "Checking tracks 1000 of 1200");
+  assert.equal(progress.at(-1), "1000/1200");
   const early = await box.call("propose_new_playlist", { source_playlist_id: "p1", name: "x", summary: "s", exclude_track_ids: ["t2"] });
   assert.match(String(early.error), /only read tracks t1-t1000 of 1200.*offset 1000/s);
   assert.match(String((await box.call("propose_split", { source_playlist_id: "p1", summary: "s", groups: [{ name: "a", track_ids: ["t1"] }, { name: "b", track_ids: ["t2"] }] })).error), /only read/);
   await box.call("get_track_data", { playlist_id: "p1", fields: ["language"], offset: 1000 });
-  assert.equal(progress.at(-1), "Checking tracks 1200 of 1200");
+  assert.equal(progress.at(-1), "1200/1200");
   const ok = await box.call("propose_new_playlist", { source_playlist_id: "p1", name: "x", summary: "s", exclude_track_ids: ["t2"] });
   assert.equal(ok.tracks_in_playlist, 1199);
 });

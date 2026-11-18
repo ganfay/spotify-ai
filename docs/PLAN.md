@@ -77,6 +77,7 @@ Order is chosen so that the riskiest unknowns are tested first.
 - **Phase 3 — UI:** side panel or page with conversation, proposals as cards, progress for long jobs, clear error messages.
 - **Phase 4 — settings:** own-key field; ad blocking on/off (with SpotX this means re-running the installer, with adblockify it is a real toggle); telemetry — document exactly what is blocked; a toggle only if technically honest.
 - **Phase 5 — Windows + macOS installers**, README (install, uninstall, credits, privacy note, risk note), tested version set, releases. Needs access to a Windows and a macOS machine (or friends as testers).
+  - **Security review before the repo goes public** (owner's request, 2026-11-18), done with an independent reviewer: secrets in the whole git history; the Worker (limits, CORS, admin routes, what it logs and stores); the client (where the key lives in own-key mode, what is sent where); prompt injection through track / playlist names and lyrics (the agent has no changing tools — verify nothing slips past the confirmation step); dependencies; the installer (checksums, what runs with sudo).
   - Cross-platform check of the variant chosen in Phase 1: the same 60-minute ad test and stats test on each OS (decision 13).
   - Open point if variant B (no SpotX) wins: how to install a *pinned* Spotify version on Windows/macOS. The official installer always gives the newest client, which Spicetify may not support yet for days or weeks. SpotX solves this itself; without it we need our own answer (to research then).
 

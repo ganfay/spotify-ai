@@ -38,8 +38,12 @@ export interface SessionOptions {
   tools: ToolSpec[];
 }
 
+/**
+ * code is stable and is what the interface translates; message is the English
+ * fallback. details carry the values the translated text needs ({who}, {model}, {min}).
+ */
 export class LlmError extends Error {
-  constructor(message: string, readonly code: string, readonly retryAfterSeconds?: number) {
+  constructor(message: string, readonly code: string, readonly retryAfterSeconds?: number, readonly details: Record<string, string | number> = {}) {
     super(message);
     this.name = "LlmError";
   }
@@ -62,15 +66,16 @@ export async function postJson(fetchFn: FetchFn, url: string, headers: Record<st
   try {
     res = await fetchFn(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
   } catch {
-    throw new LlmError(`Cannot reach ${who}. Check your internet connection (or the address in Settings).`, "network");
+    throw new LlmError(`Cannot reach ${who}. Check your internet connection (or the address in Settings).`, "network", undefined, { who });
   }
   return { res, json: await readJson(res) };
 }
 
 /** Common HTTP errors of "bring your own key" providers. */
 export function keyError(status: number, message: string, who: string, model: string): LlmError {
-  if (status === 401 || status === 403) return new LlmError(`${who} rejected the API key. Check it in Settings.`, "bad_key");
-  if (status === 404) return new LlmError(`${who} does not know the model "${model}". Change it in Settings.`, "bad_model");
-  if (status === 429) return new LlmError(`Your ${who} key has hit its limit or has no credit. Try again later.`, "rate_limited");
+  const details = { who, model };
+  if (status === 401 || status === 403) return new LlmError(`${who} rejected the API key. Check it in Settings.`, "bad_key", undefined, details);
+  if (status === 404) return new LlmError(`${who} does not know the model "${model}". Change it in Settings.`, "bad_model", undefined, details);
+  if (status === 429) return new LlmError(`Your ${who} key has hit its limit or has no credit. Try again later.`, "rate_limited", undefined, details);
   return new LlmError(`${who}: ${message}`.slice(0, 300), "http");
 }

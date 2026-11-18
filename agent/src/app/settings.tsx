@@ -1,17 +1,29 @@
-// Settings: how the agent reaches a model.
+// Settings: interface language and how the agent reaches a model:
 //  - shared free access through the owner's proxy (limited), or
 //  - the user's own API key from any supported provider (no limits from us).
 
-import { createSession, PROVIDERS, providerOf } from "../llm";
+import { createSession, LlmError, PROVIDERS, providerOf } from "../llm";
 import { isConfigured, loadSettings, saveSettings, type Settings } from "../settings";
+import { type Key, LANGUAGES, t } from "./i18n";
 import { BackLink, css, hooks, Icon, ResultBadge, Spinner } from "./ui";
 
 declare const Spicetify: any;
 
 const field = { ...css.input, margin: "6px 0 14px" } as const;
 const label = { fontWeight: 700, fontSize: 14 } as const;
+const section = { ...css.muted, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 700, fontSize: 11, margin: "22px 0 8px" } as const;
 
-export function SettingsView({ onBack }: { onBack: () => void }) {
+/** A model-layer error in the user's language. */
+export function errorText(e: unknown): string {
+  if (e instanceof LlmError) {
+    const key = `err.${e.code}` as Key;
+    const text = t(key, e.details);
+    if (text !== key) return text;
+  }
+  return (e as Error)?.message ?? String(e);
+}
+
+export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLanguage: (choice: Settings["language"]) => void }) {
   const { useState } = hooks();
   const [settings, setSettings] = useState(loadSettings());
   const [check, setCheck] = useState(null as null | { ok: boolean; title: string; detail: string });
@@ -23,6 +35,7 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
     setSettings(next);
     saveSettings(next);
     setCheck(null);
+    if (patch.language) onLanguage(patch.language);
   };
   const provider = providerOf(settings);
   const own = settings.mode === "own-key";
@@ -39,89 +52,94 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
       const session = createSession(settings, { system: "Reply with the single word OK.", tools: [] }, () => crypto.randomUUID());
       const turn = await session.send({ text: "Say OK" });
       const ms = Math.round(performance.now() - started);
-      const who = own ? `${provider.label} · ${settings.model}` : "Shared access";
+      const who = own ? `${provider.label} · ${settings.model}` : t("set.sharedAccess");
       setCheck(turn.text
-        ? { ok: true, title: "Connected", detail: `${who} · ${ms} ms` }
-        : { ok: false, title: "No answer", detail: "The model answered with nothing." });
+        ? { ok: true, title: t("set.connected"), detail: `${who} · ${ms} ms` }
+        : { ok: false, title: t("set.noAnswer"), detail: t("set.noAnswerText") });
     } catch (e) {
-      setCheck({ ok: false, title: "Connection failed", detail: (e as Error).message });
+      setCheck({ ok: false, title: t("set.failed"), detail: errorText(e) });
     }
     setBusy(false);
   };
 
+  const locked = unlock !== "open";
   return (
     <div style={{ ...css.column, marginTop: 20, maxWidth: 600 }}>
-      <BackLink label="All tools" onClick={onBack} />
-      <h2 style={{ fontSize: 20, margin: "6px 0 16px" }}>Settings</h2>
+      <BackLink label={t("back.tools")} onClick={onBack} />
+      <h2 style={{ fontSize: 20, margin: "6px 0 4px" }}>{t("set.title")}</h2>
 
+      <div style={section}>{t("set.language")}</div>
+      <select style={{ ...field, marginTop: 0 }} value={settings.language} onChange={(e: any) => update({ language: e.target.value })}>
+        <option value="auto">{t("set.langAuto")}</option>
+        {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
+      </select>
+
+      <div style={section}>{t("set.access")}</div>
       <label style={{ ...css.entry, alignItems: "flex-start" }}>
         <input type="radio" checked={!own} onChange={() => update({ mode: "proxy" })} />
         <span>
-          <div style={label}>Shared free access</div>
-          <div style={css.muted}>No key needed. A few requests per hour, shared with other users of this build.</div>
+          <div style={label}>{t("set.shared")}</div>
+          <div style={css.muted}>{t("set.sharedText")}</div>
         </span>
       </label>
       <label style={{ ...css.entry, alignItems: "flex-start" }}>
         <input type="radio" checked={own} onChange={() => update({ mode: "own-key" })} />
         <span>
-          <div style={label}>My own API key</div>
-          <div style={css.muted}>No limits from us. The key stays on this computer and is sent only to the provider you choose.</div>
+          <div style={label}>{t("set.own")}</div>
+          <div style={css.muted}>{t("set.ownText")}</div>
         </span>
       </label>
 
       <div style={{ marginTop: 20 }}>
         {own ? (
           <div>
-            <div style={label}>Provider</div>
+            <div style={label}>{t("set.provider")}</div>
             <select style={field} value={settings.provider} onChange={(e: any) => pickProvider(e.target.value)}>
               {PROVIDERS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
 
-            <div style={label}>API key</div>
+            <div style={label}>{t("set.key")}</div>
             <div style={css.muted}>{provider.keyHint}</div>
             <input style={field} type="password" autoComplete="off" value={settings.apiKey}
-                   placeholder={provider.id === "custom" ? "Leave empty if your local model needs no key" : "Paste your key"}
+                   placeholder={t(provider.id === "custom" ? "set.keyLocal" : "set.keyPlaceholder")}
                    onChange={(e: any) => update({ apiKey: e.target.value })} />
 
-            <div style={label}>Model</div>
-            <div style={css.muted}>The exact model name from your provider. It must support tool calling.</div>
-            <input style={field} value={settings.model} placeholder="model name" onChange={(e: any) => update({ model: e.target.value })} />
+            <div style={label}>{t("set.model")}</div>
+            <div style={css.muted}>{t("set.modelHint")}</div>
+            <input style={field} value={settings.model} placeholder={t("set.modelPlaceholder")} onChange={(e: any) => update({ model: e.target.value })} />
 
             {provider.baseUrl !== undefined && (
               <div>
-                <div style={label}>Address {provider.id !== "custom" && <span style={css.muted}>(optional)</span>}</div>
-                <input style={field} value={settings.baseUrl} placeholder={provider.baseUrl || "https://…/v1"}
+                <div style={label}>{t("set.address")} {provider.id !== "custom" && <span style={css.muted}>{t("set.optional")}</span>}</div>
+                <input style={field} value={settings.baseUrl} placeholder={provider.baseUrl || "https://example.com/v1"}
                        onChange={(e: any) => update({ baseUrl: e.target.value })} />
               </div>
             )}
           </div>
         ) : (
           <div>
-            {!settings.proxyUrl && <p style={css.error}>This build has no shared access configured. Use your own API key instead.</p>}
+            {!settings.proxyUrl && <p style={css.error}>{t("set.noProxy")}</p>}
             <details className="sai-adv">
-              <summary><Icon name="chevron" size={14} />Advanced — for developers only</summary>
+              <summary><Icon name="chevron" size={14} />{t("set.adv")}</summary>
               <div style={{ margin: "12px 0 0 20px" }}>
-                <p style={css.muted}>
-                  These two fields connect the app to its AI server. They are already set correctly.
-                  Change them only if you run your own server — a wrong value makes the AI stop working.
-                </p>
+                <p style={css.muted}>{t("set.advText")}</p>
                 {unlock === "locked" && (
                   <button style={{ ...css.secondary, display: "inline-flex", alignItems: "center", gap: 8, margin: "4px 0 14px" }} onClick={() => setUnlock("asking")}>
-                    <Icon name="lock" size={15} />Unlock editing
+                    <Icon name="lock" size={15} />{t("set.unlock")}
                   </button>
                 )}
                 {unlock === "asking" && (
                   <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "4px 0 14px" }}>
-                    <span>Are you sure? You normally never need this.</span>
-                    <button style={css.danger} onClick={() => setUnlock("open")}>Yes, let me edit</button>
-                    <button style={css.secondary} onClick={() => setUnlock("locked")}>Cancel</button>
+                    <span>{t("set.sure")}</span>
+                    <button style={css.danger} onClick={() => setUnlock("open")}>{t("set.yesEdit")}</button>
+                    <button style={css.secondary} onClick={() => setUnlock("locked")}>{t("act.cancel")}</button>
                   </div>
                 )}
-                <div style={label}>Server address</div>
-                <input style={{ ...field, opacity: unlock === "open" ? 1 : 0.55 }} readOnly={unlock !== "open"} value={settings.proxyUrl}
+                <div style={label}>{t("set.server")}</div>
+                <input style={{ ...field, opacity: locked ? 0.55 : 1 }} readOnly={locked} value={settings.proxyUrl}
                        placeholder="https://example.workers.dev" onChange={(e: any) => update({ proxyUrl: e.target.value })} />
-                <div style={label}>Invite code <span style={css.muted}>(only if the server owner gave you one)</span></div>
-                <input style={{ ...field, opacity: unlock === "open" ? 1 : 0.55 }} readOnly={unlock !== "open"} value={settings.inviteCode}
+                <div style={label}>{t("set.invite")} <span style={css.muted}>{t("set.inviteHint")}</span></div>
+                <input style={{ ...field, opacity: locked ? 0.55 : 1 }} readOnly={locked} value={settings.inviteCode}
                        onChange={(e: any) => update({ inviteCode: e.target.value })} />
               </div>
             </details>
@@ -133,15 +151,12 @@ export function SettingsView({ onBack }: { onBack: () => void }) {
         <button style={{ ...css.primary, display: "inline-flex", alignItems: "center", gap: 10, opacity: busy || !isConfigured(settings) ? 0.6 : 1 }}
                 disabled={busy || !isConfigured(settings)} onClick={test}>
           {busy && <Spinner size={16} />}
-          {busy ? "Testing" : "Test connection"}
+          {t(busy ? "set.testing" : "set.test")}
         </button>
-        <span style={css.muted}>Changes are saved automatically.</span>
+        <span style={css.muted}>{t("set.saved")}</span>
       </div>
       {check && <ResultBadge ok={check.ok} title={check.title} detail={check.detail} />}
-      <p style={css.muted}>
-        What is sent to the AI: your request text and the playlists it needs to read (track titles, artists, albums).
-        Never your Spotify login. On free AI tiers the provider may use this data to improve its models.
-      </p>
+      <p style={css.muted}>{t("set.privacy")}</p>
     </div>
   );
 }

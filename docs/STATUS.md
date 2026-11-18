@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phase 1 — ads + stats on Linux: almost done.** Variant B (Spicetify + adblockify) chosen (decision 22). `install.sh` v0 works: fresh install and repeat run tested. Full cycle `--uninstall` → install tested by the owner, including the sudo steps. Open: stats check on the phone.
+**Phases 0–3 done (2026-11-18).** Linux only. Next: Phase 4 (toggles), then Phase 5 (Windows, macOS, security review, going public).
 
 ## Done
 
@@ -35,7 +35,8 @@ Last update: 2026-11-17
 3d. Live checks with the real model: recommendations for a 9-track playlist returned 5 picks with reasons in 7 s; the owner ran a mood split on a 400-track playlist earlier. **Not yet checked live:** language filter and cleanup after the new data tool, quality of results on big playlists, `Add to playlist` + undo for recommendations (covered by the snapshot test only indirectly).
 3e. Known rough edges: the agent returned 5 recommendations where 10–20 were asked for; taste of mood splits needs tuning (owner's note); the agent stops politely when the model goes in circles (max 16 steps).
 4. `install.sh` installs the agent app too, from the prebuilt copy in `agent/release/` (refresh it with `cd agent && npm run release` and commit).
-4a. UI wishes noted by the owner for Phase 3: icons on the home cards and a nicer (still simple) card animation. Track rows already have covers and click-to-play.
+4a. Phase 3 done: interface in English, Ukrainian, Russian and German (`agent/src/app/i18n.ts`, 163 texts each; default = Spotify's language, changeable in Settings); home cards with icons and a staggered entrance + hover animation; proposal cards with a kind label, select all / none, and a split editor (rename groups, move tracks between groups); progress bar for long reads; Stop button; covers and click-to-play with a pause state that follows the real player. 23 unit tests + end-to-end checks in the client.
+4b. Small things left: the track count on a playlist tile can differ from the real count by 1–2 (Spotify's cached number); Spotify adapter error texts and provider key hints are English only; the agent's taste for mood splits and the number of recommendations still need tuning.
 5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 
 ## Blockers / open questions

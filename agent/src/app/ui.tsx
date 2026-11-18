@@ -1,10 +1,13 @@
 // Shared styles and helpers of the agent's pages.
 
+import { t } from "./i18n";
+
 declare const Spicetify: any;
 
 export interface Hooks {
   useState<T>(initial: T): [T, (value: T) => void];
   useEffect(effect: () => void, deps?: unknown[]): void;
+  useRef<T>(initial: T): { current: T };
 }
 export const hooks = (): Hooks => Spicetify.React;
 declare global {
@@ -65,8 +68,18 @@ export function GlobalStyles() {
       .sai-iconbtn:hover { background: rgba(255,255,255,.1); color: var(--spice-text, #fff); }
       .sai-chip { cursor: pointer; padding: 8px 14px; border-radius: 500px; background: rgba(255,255,255,.07); font-size: 13px; transition: background .15s; }
       .sai-chip:hover { background: rgba(255,255,255,.14); }
-      .sai-card { transition: background .15s, transform .15s; }
-      .sai-card.ready:hover { background: rgba(255,255,255,.1) !important; transform: translateY(-1px); }
+      @keyframes sai-rise { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+      .sai-card { cursor: pointer; display: flex; gap: 14px; align-items: flex-start; animation: sai-rise .38s cubic-bezier(.2,.8,.2,1) both; transition: background .2s, transform .2s, box-shadow .2s; }
+      .sai-card:hover { background: rgba(255,255,255,.09) !important; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.35); }
+      .sai-card .ico { width: 42px; height: 42px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.07); color: var(--spice-subtext, #b3b3b3); transition: background .2s, color .2s, transform .2s; }
+      .sai-card:hover .ico { background: var(--spice-button, #1ed760); color: #000; transform: scale(1.06) rotate(-4deg); }
+      .sai-kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--spice-button, #1ed760); }
+      .sai-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden; margin-top: 8px; width: 260px; max-width: 100%; }
+      .sai-bar > div { height: 100%; background: var(--spice-button, #1ed760); border-radius: 2px; transition: width .3s ease; }
+      .sai-select { background: var(--spice-card, #181818); color: var(--spice-text, #fff); border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 4px 6px; font-size: 12px; max-width: 150px; }
+      .sai-groupname { background: transparent; border: 0; border-bottom: 1px solid transparent; color: var(--spice-text, #fff); font-weight: 700; font-size: 15px; padding: 2px 0; min-width: 0; flex: 1; }
+      .sai-groupname:hover, .sai-groupname:focus { border-bottom-color: rgba(255,255,255,.35); outline: none; }
+      @media (prefers-reduced-motion: reduce) { .sai-card, .sai-in { animation: none !important; } .sai-card:hover { transform: none; } }
       .sai-send { cursor: pointer; width: 36px; height: 36px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; background: var(--spice-button, #1ed760); color: #000; transition: transform .12s, opacity .15s; flex: none; }
       .sai-send:hover:not(:disabled) { transform: scale(1.06); }
       .sai-send:disabled { opacity: .35; cursor: default; }
@@ -93,7 +106,7 @@ export function GlobalStyles() {
   );
 }
 
-type IconName = "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
+type IconName = "copy" | "globe" | "split" | "funnel" | "compass" | "stop" | "play" | "pause" | "settings" | "back" | "check" | "cross" | "send" | "spark" | "plus" | "chevron" | "lock" | "music";
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
   const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -112,6 +125,12 @@ export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
     case "check": body = <path d="M5 12.5l4.5 4.5L19 7.5" {...stroke} strokeWidth={2.4} />; break;
     case "cross": body = <path d="M6 6l12 12M18 6L6 18" {...stroke} strokeWidth={2.4} />; break;
     case "send": body = <path d="M12 19V5M5.500 11.500L12 5l6.500 6.500" {...stroke} strokeWidth={2.4} />; break;
+    case "copy": body = <g {...stroke} strokeWidth={1.8}><rect x="8.500" y="8.500" width="11" height="11" rx="2.500" /><path d="M15.500 5.500v-.5a2 2 0 0 0-2-2H6.500a2 2 0 0 0-2 2v6.500a2 2 0 0 0 2 2h.5" /></g>; break;
+    case "globe": body = <g {...stroke} strokeWidth={1.8}><circle cx="12" cy="12" r="8.500" /><path d="M3.500 12h17M12 3.500c2.600 2.400 3.800 5.200 3.800 8.500s-1.200 6.100-3.800 8.500c-2.600-2.400-3.800-5.200-3.800-8.500S9.400 5.900 12 3.500z" /></g>; break;
+    case "split": body = <g {...stroke} strokeWidth={1.8}><path d="M12 3.500v6.500M12 10c0 3-6 3-6 7v3.500M12 10c0 3 6 3 6 7v3.500" /><path d="M3.500 18L6 20.500 8.500 18M15.500 18l2.500 2.500 2.500-2.500" /></g>; break;
+    case "funnel": body = <path {...stroke} strokeWidth={1.8} d="M4 5h16l-6.200 7.400V18l-3.600 2v-7.600L4 5z" />; break;
+    case "compass": body = <g {...stroke} strokeWidth={1.8}><circle cx="12" cy="12" r="8.500" /><path d="M15.300 8.700l-1.900 4.700-4.700 1.900 1.900-4.700 4.700-1.900z" /></g>; break;
+    case "stop": body = <rect x="6.500" y="6.500" width="11" height="11" rx="2" fill="currentColor" />; break;
     case "play": body = <path fill="currentColor" d="M8 5.500v13a.6.6 0 0 0 .92.500l10-6.500a.6.6 0 0 0 0-1l-10-6.500A.6.6 0 0 0 8 5.500z" />; break;
     case "pause": body = <g fill="currentColor"><rect x="6.500" y="5" width="4" height="14" rx="1" /><rect x="13.500" y="5" width="4" height="14" rx="1" /></g>; break;
     case "plus": body = <path d="M12 5v14M5 12h14" {...stroke} />; break;
@@ -219,7 +238,7 @@ export function TrackRow(props: {
   return (
     <div className="sai-trackrow">
       {props.onToggle && <input type="checkbox" checked={!!props.checked} onChange={props.onToggle} style={{ flex: "none", cursor: "pointer" }} />}
-      <div className={current ? "sai-cover on" : "sai-cover"} onClick={click} title={props.local ? "" : playing ? "Pause" : "Play"}>
+      <div className={current ? "sai-cover on" : "sai-cover"} onClick={click} title={props.local ? "" : playing ? t("pause") : t("play")}>
         {props.imageUrl ? <img src={props.imageUrl} loading="lazy" alt="" /> : <Icon name="music" size={18} />}
         {!props.local && <span className="play"><Icon name={playing ? "pause" : "play"} size={18} /></span>}
       </div>
@@ -231,4 +250,8 @@ export function TrackRow(props: {
       {props.right !== undefined && <span style={{ ...css.muted, flex: "none" }}>{props.right}</span>}
     </div>
   );
+}
+
+export function ProgressBar({ done, total }: { done: number; total: number }) {
+  return <div className="sai-bar"><div style={{ width: `${total ? Math.min(100, (done / total) * 100) : 0}%` }} /></div>;
 }

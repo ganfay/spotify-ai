@@ -13,7 +13,7 @@ It is built from three parts, installed by one command:
 
 1. [Spicetify](https://github.com/spicetify/cli) — mod platform for the Spotify desktop client;
 2. [adblockify](https://github.com/rxri/spicetify-extensions) by rxri — ad-blocking Spicetify extension;
-3. **AI Playlists** from this repository — a Spicetify custom app: duplicate finder and an AI agent that filters by language, splits by mood, cleans up and recommends. It only proposes; nothing changes until you press a button.
+3. **AI Playlists** from this repository — a Spicetify custom app: duplicate finder and an AI agent that filters by language, splits by mood, cleans up and recommends. It only proposes; nothing changes until you press a button. Interface in English, Ukrainian, Russian and German.
 
 Spicetify and adblockify are **not** part of this repository. The installer downloads pinned versions from their official repositories and verifies checksums.
 

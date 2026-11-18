@@ -43,7 +43,7 @@ Style: answer in the language the user wrote in. Be brief: one or two sentences 
 export type AgentEvent =
   | { type: "thinking" }
   | { type: "tool"; name: string; args: Record<string, unknown> }
-  | { type: "progress"; text: string }
+  | { type: "progress"; done: number; total: number }
   | { type: "proposal"; proposal: Proposal };
 
 export interface AgentResult {
@@ -76,6 +76,12 @@ export class Agent {
   private readonly toolbox: Toolbox;
   private readonly session: ChatSession;
   private promptId = "";
+  private cancelled = false;
+
+  /** Stops the current run at the next step. */
+  cancel(): void {
+    this.cancelled = true;
+  }
 
   constructor(settings: Settings, spotify: SpotifyPort, fetchFn?: FetchFn) {
     this.toolbox = new Toolbox(spotify);
@@ -84,14 +90,15 @@ export class Agent {
 
   async run(prompt: string, onEvent: (event: AgentEvent) => void = () => {}): Promise<AgentResult> {
     this.promptId = crypto.randomUUID();
-    this.toolbox.notify = (text) => onEvent({ type: "progress", text });
+    this.toolbox.notify = (done, total) => onEvent({ type: "progress", done, total });
+    this.cancelled = false;
     const first = this.toolbox.proposals.length;
     onEvent({ type: "thinking" });
     let turn = await this.session.send({ text: prompt });
     const seen = new Map<string, number>();
     for (let step = 1; step <= MAX_STEPS; step++) {
-      if (turn.toolCalls.length === 0) {
-        return { text: turn.text, proposals: this.toolbox.proposals.slice(first), steps: step };
+      if (turn.toolCalls.length === 0 || this.cancelled) {
+        return { text: turn.text, proposals: this.toolbox.proposals.slice(first), steps: step, ...(this.cancelled ? { incomplete: true } : {}) };
       }
       const results: ToolResult[] = [];
       let stuck = false;
@@ -108,7 +115,7 @@ export class Agent {
         for (const proposal of this.toolbox.proposals.slice(before)) onEvent({ type: "proposal", proposal });
         results.push({ id: call.id, name: call.name, result });
       }
-      if (stuck || step === MAX_STEPS) break;
+      if (stuck || step === MAX_STEPS || this.cancelled) break;
       onEvent({ type: "thinking" });
       turn = await this.session.send({ toolResults: results });
     }
