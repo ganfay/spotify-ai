@@ -201,14 +201,14 @@ T() {
         de) fmt='Deinstalliere Spotify unter Windows-Einstellungen > Apps und starte das hier erneut.' ;;
         *) fmt='Uninstall Spotify in Windows Settings > Apps, then run this again.' ;;
       esac ;;
-    done)
+    finished)
       case "${UI_LANG}" in
         uk) fmt='Готово. Кнопка AI Playlists — у верхній панелі Spotify, зліва від «Головна».' ;;
         ru) fmt='Готово. Кнопка AI Playlists — в верхней панели Spotify, слева от «Главная».' ;;
         de) fmt='Fertig. Der Button AI Playlists ist in der oberen Leiste von Spotify, links von Start.' ;;
         *) fmt='Done. The AI Playlists button is in the top bar of Spotify, left of Home.' ;;
       esac ;;
-    done_un)
+    finished_un)
       case "${UI_LANG}" in
         uk) fmt='Готово. Spotify повернуто до початкового стану.' ;;
         ru) fmt='Готово. Spotify возвращён в исходное состояние.' ;;
@@ -732,7 +732,7 @@ uninstall() {
         rm -rf "${UPDATE_DIR}" && info "updates allowed again"
       fi
       rm -rf "${HOME}/.local/state/spicetify"
-      say "$(T done_un)"
+      say "$(T finished_un)"
     else
       say "Done. Our parts are removed; Spicetify itself and the update block were left as they are."
     fi
@@ -740,7 +740,7 @@ uninstall() {
     info "asking for sudo to give the Spotify folder back to root and allow updates"
     sudo chown -R root "${SPOTIFY_DIR}/Apps" && sudo chown root "${SPOTIFY_DIR}" && info "folder owner restored"
     sudo apt-mark unhold spotify-client >/dev/null && info "updates allowed again"
-    say "$(T done_un)"
+    say "$(T finished_un)"
   else
     say "Done. Our parts are removed; Spicetify itself, the folder permissions and the update hold were left as they are."
   fi
@@ -782,7 +782,7 @@ main() {
   install_agent
   configure
   apply
-  say "$(T done)"
+  say "$(T finished)"
   if [[ "${OS}" == "macos" ]]; then
     info "starting Spotify"
     open "${SPOTIFY_APP}" || true

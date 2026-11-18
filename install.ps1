@@ -101,8 +101,8 @@ function Install-SpotifyAi {
       store_1 = 'Spotify from the Microsoft Store cannot be modified. It has to be replaced by the normal Spotify; your account and playlists are not touched.'
       store_ask = 'Remove the Store version now?'
       store_stop = 'Uninstall Spotify in Windows Settings > Apps, then run this again.'
-      done = 'Done. The AI Playlists button is in the top bar of Spotify, left of Home.'
-      done_un = 'Done. Spotify is back to its original state.'
+      finished = 'Done. The AI Playlists button is in the top bar of Spotify, left of Home.'
+      finished_un = 'Done. Spotify is back to its original state.'
     }
     uk = @{
       newer_1 = [regex]::Unescape('Spotify {0} \u043d\u043e\u0432\u0456\u0448\u0438\u0439 \u0437\u0430 \u043f\u0435\u0440\u0435\u0432\u0456\u0440\u0435\u043d\u0443 \u0432\u0435\u0440\u0441\u0456\u044e {1}. \u0417\u0430\u0437\u0432\u0438\u0447\u0430\u0439 \u0443\u0441\u0435 \u043f\u0440\u0430\u0446\u044e\u0454; \u044f\u043a\u0449\u043e \u043d\u0456 \u2014 \u0432\u0438\u0434\u0430\u043b\u0435\u043d\u043d\u044f \u043f\u043e\u0432\u0435\u0440\u043d\u0435 Spotify \u044f\u043a \u0431\u0443\u0432.')
@@ -119,8 +119,8 @@ function Install-SpotifyAi {
       store_1 = [regex]::Unescape('Spotify \u0437 Microsoft Store \u0437\u043c\u0456\u043d\u044e\u0432\u0430\u0442\u0438 \u043d\u0435 \u043c\u043e\u0436\u043d\u0430. \u0419\u043e\u0433\u043e \u0442\u0440\u0435\u0431\u0430 \u0437\u0430\u043c\u0456\u043d\u0438\u0442\u0438 \u0437\u0432\u0438\u0447\u0430\u0439\u043d\u0438\u043c Spotify; \u0430\u043a\u0430\u0443\u043d\u0442 \u0456 \u043f\u043b\u0435\u0439\u043b\u0438\u0441\u0442\u0438 \u043d\u0435 \u0437\u0430\u0447\u0456\u043f\u0430\u044e\u0442\u044c\u0441\u044f.')
       store_ask = [regex]::Unescape('\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438 \u0432\u0435\u0440\u0441\u0456\u044e \u0437 Store \u0437\u0430\u0440\u0430\u0437?')
       store_stop = [regex]::Unescape('\u0412\u0438\u0434\u0430\u043b\u0438 Spotify \u0443 \u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0438 Windows > \u041f\u0440\u043e\u0433\u0440\u0430\u043c\u0438 \u0456 \u0437\u0430\u043f\u0443\u0441\u0442\u0438 \u0446\u0435 \u0449\u0435 \u0440\u0430\u0437.')
-      done = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. \u041a\u043d\u043e\u043f\u043a\u0430 AI Playlists \u2014 \u0443 \u0432\u0435\u0440\u0445\u043d\u0456\u0439 \u043f\u0430\u043d\u0435\u043b\u0456 Spotify, \u0437\u043b\u0456\u0432\u0430 \u0432\u0456\u0434 \u00ab\u0413\u043e\u043b\u043e\u0432\u043d\u0430\u00bb.')
-      done_un = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. Spotify \u043f\u043e\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u0434\u043e \u043f\u043e\u0447\u0430\u0442\u043a\u043e\u0432\u043e\u0433\u043e \u0441\u0442\u0430\u043d\u0443.')
+      finished = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. \u041a\u043d\u043e\u043f\u043a\u0430 AI Playlists \u2014 \u0443 \u0432\u0435\u0440\u0445\u043d\u0456\u0439 \u043f\u0430\u043d\u0435\u043b\u0456 Spotify, \u0437\u043b\u0456\u0432\u0430 \u0432\u0456\u0434 \u00ab\u0413\u043e\u043b\u043e\u0432\u043d\u0430\u00bb.')
+      finished_un = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. Spotify \u043f\u043e\u0432\u0435\u0440\u043d\u0443\u0442\u043e \u0434\u043e \u043f\u043e\u0447\u0430\u0442\u043a\u043e\u0432\u043e\u0433\u043e \u0441\u0442\u0430\u043d\u0443.')
     }
     ru = @{
       newer_1 = [regex]::Unescape('Spotify {0} \u043d\u043e\u0432\u0435\u0435 \u043f\u0440\u043e\u0432\u0435\u0440\u0435\u043d\u043d\u043e\u0439 \u0432\u0435\u0440\u0441\u0438\u0438 {1}. \u041e\u0431\u044b\u0447\u043d\u043e \u0432\u0441\u0451 \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442; \u0435\u0441\u043b\u0438 \u043d\u0435\u0442 \u2014 \u0443\u0434\u0430\u043b\u0435\u043d\u0438\u0435 \u0432\u0435\u0440\u043d\u0451\u0442 Spotify \u043a\u0430\u043a \u0431\u044b\u043b.')
@@ -137,8 +137,8 @@ function Install-SpotifyAi {
       store_1 = [regex]::Unescape('Spotify \u0438\u0437 Microsoft Store \u0438\u0437\u043c\u0435\u043d\u044f\u0442\u044c \u043d\u0435\u043b\u044c\u0437\u044f. \u0415\u0433\u043e \u043d\u0443\u0436\u043d\u043e \u0437\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u043e\u0431\u044b\u0447\u043d\u044b\u043c Spotify; \u0430\u043a\u043a\u0430\u0443\u043d\u0442 \u0438 \u043f\u043b\u0435\u0439\u043b\u0438\u0441\u0442\u044b \u043d\u0435 \u0437\u0430\u0442\u0440\u0430\u0433\u0438\u0432\u0430\u044e\u0442\u0441\u044f.')
       store_ask = [regex]::Unescape('\u0423\u0434\u0430\u043b\u0438\u0442\u044c \u0432\u0435\u0440\u0441\u0438\u044e \u0438\u0437 Store \u0441\u0435\u0439\u0447\u0430\u0441?')
       store_stop = [regex]::Unescape('\u0423\u0434\u0430\u043b\u0438 Spotify \u0432 \u041f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b Windows > \u041f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u044f \u0438 \u0437\u0430\u043f\u0443\u0441\u0442\u0438 \u044d\u0442\u043e \u0435\u0449\u0451 \u0440\u0430\u0437.')
-      done = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. \u041a\u043d\u043e\u043f\u043a\u0430 AI Playlists \u2014 \u0432 \u0432\u0435\u0440\u0445\u043d\u0435\u0439 \u043f\u0430\u043d\u0435\u043b\u0438 Spotify, \u0441\u043b\u0435\u0432\u0430 \u043e\u0442 \u00ab\u0413\u043b\u0430\u0432\u043d\u0430\u044f\u00bb.')
-      done_un = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. Spotify \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0451\u043d \u0432 \u0438\u0441\u0445\u043e\u0434\u043d\u043e\u0435 \u0441\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435.')
+      finished = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. \u041a\u043d\u043e\u043f\u043a\u0430 AI Playlists \u2014 \u0432 \u0432\u0435\u0440\u0445\u043d\u0435\u0439 \u043f\u0430\u043d\u0435\u043b\u0438 Spotify, \u0441\u043b\u0435\u0432\u0430 \u043e\u0442 \u00ab\u0413\u043b\u0430\u0432\u043d\u0430\u044f\u00bb.')
+      finished_un = [regex]::Unescape('\u0413\u043e\u0442\u043e\u0432\u043e. Spotify \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0451\u043d \u0432 \u0438\u0441\u0445\u043e\u0434\u043d\u043e\u0435 \u0441\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435.')
     }
     de = @{
       newer_1 = 'Spotify {0} ist neuer als die getestete Version {1}. Meist funktioniert es; wenn nicht, stellt die Deinstallation Spotify wieder her.'
@@ -155,8 +155,8 @@ function Install-SpotifyAi {
       store_1 = [regex]::Unescape('Spotify aus dem Microsoft Store kann nicht ver\u00e4ndert werden. Es muss durch das normale Spotify ersetzt werden; Konto und Playlists bleiben unber\u00fchrt.')
       store_ask = 'Die Store-Version jetzt entfernen?'
       store_stop = 'Deinstalliere Spotify unter Windows-Einstellungen > Apps und starte das hier erneut.'
-      done = 'Fertig. Der Button AI Playlists ist in der oberen Leiste von Spotify, links von Start.'
-      done_un = 'Fertig. Spotify ist wieder im Originalzustand.'
+      finished = 'Fertig. Der Button AI Playlists ist in der oberen Leiste von Spotify, links von Start.'
+      finished_un = 'Fertig. Spotify ist wieder im Originalzustand.'
     }
   }
   # <<< texts
@@ -594,7 +594,7 @@ function Install-SpotifyAi {
     Remove-Item -LiteralPath (Split-Path $OptionsFile -Parent) -Recurse -Force -ErrorAction SilentlyContinue
     if ($ours -or -not $hasSpicetify) {
       Unblock-Updates
-      Say (T done_un)
+      Say (T finished_un)
     } else {
       Say 'Done. Our parts are removed; Spicetify itself and the update block were left as they are.'
     }
@@ -634,7 +634,7 @@ function Install-SpotifyAi {
     Install-Agent
     Set-Configuration $options
     Invoke-Apply $options
-    Say (T done)
+    Say (T finished)
     if (-not $NoLaunch) {
       Info 'starting Spotify'
       Start-Process -FilePath $SpotifyExe

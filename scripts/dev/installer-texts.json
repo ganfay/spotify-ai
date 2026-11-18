@@ -68,13 +68,13 @@
     "ru": "Удали Spotify в Параметры Windows > Приложения и запусти это ещё раз.",
     "de": "Deinstalliere Spotify unter Windows-Einstellungen > Apps und starte das hier erneut."
   },
-  "done": {
+  "finished": {
     "en": "Done. The AI Playlists button is in the top bar of Spotify, left of Home.",
     "uk": "Готово. Кнопка AI Playlists — у верхній панелі Spotify, зліва від «Головна».",
     "ru": "Готово. Кнопка AI Playlists — в верхней панели Spotify, слева от «Главная».",
     "de": "Fertig. Der Button AI Playlists ist in der oberen Leiste von Spotify, links von Start."
   },
-  "done_un": {
+  "finished_un": {
     "en": "Done. Spotify is back to its original state.",
     "uk": "Готово. Spotify повернуто до початкового стану.",
     "ru": "Готово. Spotify возвращён в исходное состояние.",

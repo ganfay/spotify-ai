@@ -1,6 +1,6 @@
-# spotify-ai (working title)
+# spotify-ai
 
-> **Status: early. Linux is tested by the author; the Windows and macOS installers are new. Ad blocking and the AI Playlists app install with one command.**
+> Works on Windows, macOS and Linux. Tested by people on all three; a daily automatic check installs it on real Windows and macOS machines and opens an issue when a new Spotify breaks something.
 
 A desktop Spotify setup for Windows, macOS and Linux:
 
@@ -96,7 +96,7 @@ To bring it back, run the same line with `on` instead of `off`.
 | macOS | `curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh \| bash -s -- --block-reports off` |
 | Linux | `./install.sh --block-reports off` |
 
-**Try even though Spotify is newer than the tested version**
+**Do not ask when Spotify is newer than the tested version**
 
 | System | Command |
 |---|---|
@@ -116,9 +116,11 @@ What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 Side effect to know about: the ad blocker switches the client to a "premium" state (for example unlimited skips). Server-side premium features (downloads, higher quality) stay locked.
 
-### "Spotify is newer than the newest version this installer supports"
+### "Spotify is newer than the tested version"
 
-On Windows and macOS Spotify can only be downloaded in its current version. Now and then Spotify publishes a new version a few days before Spicetify supports it. The installer then stops without changing anything. Try again a few days later.
+On Windows and macOS Spotify can only be downloaded in its current version, and Spotify publishes a new one almost every week. When yours is newer than the last one tested here, the installer says so and asks **Try anyway?** — it usually works. If Spotify then looks broken, uninstalling brings it back, and you can try again a few days later.
+
+The installer's questions and errors are shown in English, Ukrainian, Russian or German, following the language of your system.
 
 ## What installing changes on your computer
 
