@@ -4,6 +4,9 @@
 # Or paste this into PowerShell:
 #   irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 | iex
 #
+# Pasted that way it takes no options; set $env:SPOTIFY_AI_UNINSTALL = '1' (or
+# SPOTIFY_AI_FORCE) first, or use uninstall.cmd.
+#
 # Options (when run as a file, or through install.cmd):
 #   -Uninstall           return Spotify to its original state
 #   -Adblock off         do not install the ad blocker at all (default: on; when installed
@@ -32,6 +35,11 @@ param(
   [switch]$Force,
   [switch]$NoLaunch
 )
+
+# Options for the "irm | iex" way, where parameters cannot be passed. (Running a
+# downloaded script block with parameters is a form Windows Defender blocks.)
+if ($env:SPOTIFY_AI_UNINSTALL -eq '1') { $Uninstall = $true }
+if ($env:SPOTIFY_AI_FORCE -eq '1') { $Force = $true }
 
 function Install-SpotifyAi {
   param([bool]$Uninstall, [string]$Adblock, [string]$BlockReports, [bool]$Force, [bool]$NoLaunch, [string]$Here)

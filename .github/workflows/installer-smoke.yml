@@ -54,14 +54,20 @@ jobs:
           Start-Sleep -Seconds 3
           $env:SPOTIFY_AI_BASE_URL = 'http://127.0.0.1:8765'
           $script = Invoke-RestMethod http://127.0.0.1:8765/install.ps1
-          if ('${{ inputs.force }}' -eq 'true') { & ([scriptblock]::Create($script)) -Force } else { $script | Invoke-Expression }
+          if ('${{ inputs.force }}' -eq 'true') { $env:SPOTIFY_AI_FORCE = '1' }
+          $script | Invoke-Expression
+          $env:SPOTIFY_AI_FORCE = ''
           Stop-Process -Id $server.Id -Force
           Get-Process -Name Spotify -ErrorAction SilentlyContinue | Stop-Process -Force
           if (Test-Path "$env:APPDATA\Spotify\Apps\xpui\extensions\spotify-ai-adblock.js") { throw 'the saved "adblock off" choice was not kept' }
           if (-not (Test-Path "$env:APPDATA\Spotify\Apps\xpui\spicetify-routes-ai-playlists*")) { throw 'app missing' }
-      - name: Uninstall
+      - name: Uninstall (the "irm | iex" way with the environment switch, as uninstall.cmd does)
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -Uninstall
+          $server = Start-Process python -ArgumentList '-m', 'http.server', '8765', '--bind', '127.0.0.1' -PassThru -WindowStyle Hidden
+          Start-Sleep -Seconds 3
+          $env:SPOTIFY_AI_UNINSTALL = '1'
+          Invoke-RestMethod http://127.0.0.1:8765/install.ps1 | Invoke-Expression
+          Stop-Process -Id $server.Id -Force
           if (Test-Path "$env:APPDATA\Spotify\Apps\xpui") { throw 'Spotify files not restored' }
           if (-not (Test-Path "$env:APPDATA\Spotify\Apps\xpui.spa")) { throw 'xpui.spa missing' }
           if (Test-Path "$env:LOCALAPPDATA\Spotify\Update") { throw 'update block not removed' }

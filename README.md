@@ -34,6 +34,8 @@ Prefer one command? Press <kbd>Win</kbd>+<kbd>R</kbd>, paste this, press Enter:
 powershell -NoExit -c "irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 | iex"
 ```
 
+If Windows Defender blocks a command you pasted, use `install.cmd` instead and tell us in an issue what Defender reported.
+
 Remove everything: download and double-click [uninstall.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/uninstall.cmd).
 
 ### macOS (Ventura or newer, Apple Silicon and Intel)
