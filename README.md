@@ -23,20 +23,24 @@ Your account, playlists and likes are never touched by the installer. Something 
 
 ### Windows 10 / 11
 
-1. Download [install.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/install.cmd).
-2. Double-click it. If Windows shows "Windows protected your PC", press **More info → Run anyway**.
-
-That is all: no administrator rights, no git. If Spotify is not installed, the installer gets it from Spotify's own server. Spotify from the Microsoft Store cannot be modified — the installer offers to replace it with the normal one.
-
-Prefer one command? Press <kbd>Win</kbd>+<kbd>R</kbd>, paste this, press Enter:
+Press <kbd>Win</kbd>+<kbd>R</kbd>, paste this, press Enter:
 
 ```
 powershell -NoExit -c "irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 | iex"
 ```
 
-If Windows Defender blocks a command you pasted, use `install.cmd` instead and tell us in an issue what Defender reported.
+That is all: no administrator rights, no git. If Spotify is not installed, the installer gets it from Spotify's own server. Spotify from the Microsoft Store cannot be modified — the installer offers to replace it with the normal one.
 
-Remove everything: download and double-click [uninstall.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/uninstall.cmd).
+Remove everything — the same way with this command:
+
+```
+powershell -NoExit -c "$env:SPOTIFY_AI_UNINSTALL='1'; irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 | iex"
+```
+
+**Prefer a double-click?** Download [install.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/install.cmd) (and [uninstall.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/uninstall.cmd) to remove) and run it. This works only when Windows lets you run downloaded scripts:
+
+- "Windows protected your PC" (SmartScreen): press **More info → Run anyway**.
+- "Smart App Control blocked a file that may be unsafe" (Windows 11): there is no "run anyway" for it. Use the pasted command above instead. **Do not switch Smart App Control off just for this** — Windows cannot switch it back on without a reset.
 
 ### macOS (Ventura or newer, Apple Silicon and Intel)
 
