@@ -69,6 +69,10 @@ export function GlobalStyles() {
       .sai-link:hover { color: var(--spice-text, #fff); }
       .sai-chatrow { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background .15s; }
       .sai-chatrow:hover { background: rgba(255,255,255,.07); }
+      .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }
+      .sai-tour-btn:hover { background: rgba(255,255,255,.18); transform: scale(1.03); }
+      .sai-tour-btn.primary { background: var(--spice-button, #1ed760); color: #000; }
+      .sai-tour-btn.primary:hover { background: var(--spice-button-active, #3be477); }
       .sai-iconbtn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: var(--spice-subtext, #b3b3b3); transition: background .15s, color .15s; }
       .sai-iconbtn:hover { background: rgba(255,255,255,.1); color: var(--spice-text, #fff); }
       .sai-chip { cursor: pointer; padding: 8px 14px; border-radius: 500px; background: rgba(255,255,255,.07); font-size: 13px; transition: background .15s; }

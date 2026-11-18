@@ -10,6 +10,7 @@ import type { EntryRef, Playlist, Track } from "../spotify/types";
 import { AgentView } from "./agent";
 import { count, type Key, language, setLanguage, t } from "./i18n";
 import { SettingsView } from "./settings";
+import { Tour, tourSeen } from "./tour";
 import { BackLink, css, duration, GlobalStyles, hooks, Icon, Spinner, TrackRow } from "./ui";
 
 declare const Spicetify: any;
@@ -261,9 +262,9 @@ const FEATURES: Feature[] = [
 
 function Home({ onOpen }: { onOpen: (id: string) => void }) {
   return (
-    <div style={css.cards}>
+    <div style={css.cards} data-tour="cards">
       {FEATURES.map((f, i) => (
-        <div key={f.id} className="sai-card" style={{ ...css.card, animationDelay: `${i * 55}ms` }} onClick={() => onOpen(f.id)}>
+        <div key={f.id} className="sai-card" data-tour={f.id} style={{ ...css.card, animationDelay: `${i * 55}ms` }} onClick={() => onOpen(f.id)}>
           <div className="ico"><Icon name={f.icon} size={22} /></div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>
@@ -329,7 +330,7 @@ function RecentChanges() {
   };
 
   return (
-    <div style={{ marginTop: 36 }}>
+    <div style={{ marginTop: 36 }} data-tour="recent">
       <h2 style={{ fontSize: 18, margin: "0 0 4px" }}>{t("home.recent")}</h2>
       {items.length === 0 ? <p style={css.muted}>{t("home.noRecent")}</p> : <p style={css.muted}>{t("home.recentHint")}</p>}
       {note && <div style={css.notice} className="sai-in">{note}</div>}
@@ -404,6 +405,8 @@ function App() {
   // Re-rendering the whole page after a language change is enough: every text is read through t().
   const [lang, setLang] = useState(setLanguage(loadSettings().language));
 
+  // The guided tour: by itself on the very first visit, again when asked for in Settings.
+  const [touring, setTouring] = useState(!tourSeen());
   const feature = FEATURES.find((f) => f.id === tool);
   const home = () => {
     setTool("");
@@ -421,7 +424,7 @@ function App() {
   } else if (feature && tool !== "settings") {
     body = <PlaylistPicker title={t(`f.${feature.id}.title` as Key)} onPick={(p) => setSelected({ ...p, name: shownName(p) })} onBack={home} />;
   } else if (tool === "settings") {
-    body = <SettingsView onBack={home} onLanguage={(choice) => setLang(setLanguage(choice))} />;
+    body = <SettingsView onBack={home} onLanguage={(choice) => setLang(setLanguage(choice))} onTour={() => { home(); setTouring(true); }} />;
   } else {
     body = (
       <div>
@@ -439,10 +442,11 @@ function App() {
           <p style={css.muted}>{t("app.tagline")}</p>
         </div>
         {tool !== "settings" && (
-          <button className="sai-pill" onClick={() => setTool("settings")}><Icon name="settings" size={17} />{t("settings.button")}</button>
+          <button className="sai-pill" data-tour="settings" onClick={() => setTool("settings")}><Icon name="settings" size={17} />{t("settings.button")}</button>
         )}
       </div>
       {body}
+      {touring && tool === "" && <Tour onClose={() => setTouring(false)} />}
     </section>
   );
 }

@@ -26,7 +26,7 @@ export function errorText(e: unknown): string {
   return (e as Error)?.message ?? String(e);
 }
 
-export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLanguage: (choice: Settings["language"]) => void }) {
+export function SettingsView({ onBack, onLanguage, onTour }: { onBack: () => void; onLanguage: (choice: Settings["language"]) => void; onTour?: () => void }) {
   const { useEffect, useState } = hooks();
   const [settings, setSettings] = useState(loadSettings());
   const [check, setCheck] = useState(null as null | { ok: boolean; title: string; detail: string });
@@ -195,6 +195,7 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
         </button>
         <span style={css.muted}>{t("set.saved")}</span>
       </div>
+      {onTour && <p style={{ margin: "14px 0 0" }}><span className="sai-link" onClick={onTour}>{t("set.tour")}</span></p>}
       {check && <ResultBadge ok={check.ok} title={check.title} detail={check.detail} />}
       <p style={css.muted}>{t("set.privacy")}</p>
 

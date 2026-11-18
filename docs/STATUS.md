@@ -100,7 +100,23 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 - Google's terms: only the paid tier may be used when the app is made available to users in the EEA, Switzerland or the UK.
 - My live tests used up the owner's 5 prompts per hour again. Live tests of the shared mode need a separate test allowance (for example an invite/admin switch), not the owner's own.
 
-- Not done, wanted by the owner: an in-app tutorial (a short guided tour) — after the macOS test.
+
+## Done on 2026-11-19
+
+- **Guided tour** (`agent/src/app/tour.tsx`): four steps on the home page (tools, AI agent, Recent changes, Settings), each lights up its element; shown once on the first visit, "Show the short tour again" in Settings; Esc/Enter/arrows work; four languages. Checked live on Linux. The owner's own Spotify had the tour marked as seen after my test, so he sees it only from Settings.
+- **Newer Spotify:** instead of stopping, both installers explain and ask "Try anyway?" (Enter = yes); `--force` / `-Force` skips the question; with nobody to ask they stop as before.
+- **Installer messages in four languages** for what a person must understand (questions, errors, the last line); progress lines stay English. Language from the system, `SPOTIFY_AI_LANG` overrides. Texts live in `scripts/dev/installer-texts.json` and are generated into both scripts (`gen-installer-texts.py`; CI fails when they are out of date). `install.ps1` stays ASCII: its texts are `\uXXXX` escapes. Printing Cyrillic in a real Windows console was not looked at by a person.
+- **Daily watch** (`.github/workflows/watch.yml`): every day the full install test runs on Windows and macOS with that day's Spotify. On failure it runs once more with force, compares the pinned Spicetify with the latest release, and opens (or updates) an issue labelled `watch` that says what it means and what to do; when the test passes again the issue is closed. First run passed. GitHub switches scheduled workflows off after 60 days without commits in the repository.
+- README: no "working title"; ready commands for every option.
+
+Wanted by the owner, not started — see "Next big things" below.
+
+## Next big things (asked for on 2026-11-19, not started)
+
+- **Appearance:** a colour/gradient customiser with presets, and three full themes that restyle Spotify, one of them black and white. This needs code and styles loaded when Spotify starts, which the current design avoids on purpose (decision: nothing runs at startup, `inject_css 0`); the owner must agree to that trade first.
+- **A fairer shuffle** for big playlists (his 1,200-track playlist keeps repeating the same songs).
+- **Animated playlist covers (GIF):** Spotify's servers accept only still images for covers, so this can only be a local effect in the owner's own client.
+
 
 ## Phase 5 — in progress
 
