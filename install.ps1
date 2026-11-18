@@ -14,6 +14,8 @@
 #   -BlockReports off    let Spotify send crash reports and interface logs to its developers
 #   -Force               try even when Spotify is newer than the tested version
 #   -NoLaunch            do not start Spotify at the end
+#   -CleanSpotify yes    when the installed Spotify was changed by another mod, replace it
+#                        with a clean copy without asking (no = keep it)
 #
 # Choices are remembered, so a later plain run keeps them.
 # Listening statistics (Recently played, Wrapped) are never blocked.
@@ -33,16 +35,18 @@ param(
   [ValidateSet('', 'on', 'off')][string]$Adblock = '',
   [ValidateSet('', 'on', 'off')][string]$BlockReports = '',
   [switch]$Force,
-  [switch]$NoLaunch
+  [switch]$NoLaunch,
+  [ValidateSet('', 'yes', 'no')][string]$CleanSpotify = ''
 )
 
 # Options for the "irm | iex" way, where parameters cannot be passed. (Running a
 # downloaded script block with parameters is a form Windows Defender blocks.)
 if ($env:SPOTIFY_AI_UNINSTALL -eq '1') { $Uninstall = $true }
 if ($env:SPOTIFY_AI_FORCE -eq '1') { $Force = $true }
+if ($env:SPOTIFY_AI_CLEAN -eq 'yes' -or $env:SPOTIFY_AI_CLEAN -eq 'no') { $CleanSpotify = $env:SPOTIFY_AI_CLEAN }
 
 function Install-SpotifyAi {
-  param([bool]$Uninstall, [string]$Adblock, [string]$BlockReports, [bool]$Force, [bool]$NoLaunch, [string]$Here)
+  param([bool]$Uninstall, [string]$Adblock, [string]$BlockReports, [bool]$Force, [bool]$NoLaunch, [string]$Here, [string]$CleanSpotify)
 
   $ErrorActionPreference = 'Stop'
   $ProgressPreference = 'SilentlyContinue'   # the progress bar makes downloads very slow
@@ -147,7 +151,8 @@ function Install-SpotifyAi {
 
   function Wait-PrefsReady($seconds) {
     for ($i = 0; $i -lt $seconds; $i++) {
-      if ((Test-Path -LiteralPath $SpotifyExe) -and (Test-PrefsReady)) { return $true }
+      # The program files, the interface package and the first-run settings must all be there.
+      if ((Test-Path -LiteralPath $SpotifyExe) -and (Test-Path -LiteralPath (Join-Path $SpotifyDir 'Apps\xpui.spa')) -and (Test-PrefsReady)) { return $true }
       Start-Sleep -Seconds 1
     }
     return $false
@@ -188,6 +193,59 @@ function Install-SpotifyAi {
     Info 'Spotify installed'
   }
 
+  # Signs that this Spotify was changed by something else. Returns a list of findings (empty = looks original).
+  function Get-ModSigns {
+    $signs = @()
+    foreach ($name in 'Spotify.exe', 'Spotify.dll', 'chrome_elf.dll') {
+      $file = Join-Path $SpotifyDir $name
+      if (-not (Test-Path -LiteralPath $file)) { continue }
+      $signature = Get-AuthenticodeSignature -LiteralPath $file
+      if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Spotify') { $signs += "$name is not signed by Spotify (patched)" }
+    }
+    # Files that ad-blocking mods put next to Spotify.exe (BlockTheSpot and similar), and backups left by patchers (SpotX).
+    foreach ($name in 'dpapi.dll', 'version.dll', 'config.ini', 'Spotify.bak', 'Spotify.dll.bak', 'chrome_elf.dll.bak', 'Apps\xpui.bak') {
+      if (Test-Path -LiteralPath (Join-Path $SpotifyDir $name)) { $signs += "extra file $name" }
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $SpotifyDir 'Apps\xpui.spa'))) { $signs += 'the interface package Apps\xpui.spa is missing' }
+    return $signs
+  }
+
+  function Confirm-Yes($question) {
+    if ($CleanSpotify) { return ($CleanSpotify -eq 'yes') }
+    $answer = $null
+    try { $answer = Read-Host "    $question [Y/n]" } catch { return $false }   # nobody to ask: keep what is there
+    return ($answer -notmatch '^(n|no)$')
+  }
+
+  # First install only: a Spotify changed by another mod is a bad base. Offer Spotify's own copy.
+  function Repair-ModifiedSpotify {
+    # Already patched by Spicetify (ours or the user's): its backup is the base, nothing to check here.
+    if (Test-Path -LiteralPath (Join-Path $SpotifyDir 'Apps\xpui') -PathType Container) { return }
+    Say 'Checking that Spotify is original'
+    $signs = @(Get-ModSigns)
+    if ($signs.Count -eq 0) { Info 'ok: signed by Spotify, no traces of other mods'; return }
+    Info 'This Spotify does NOT look original:'
+    foreach ($sign in $signs) { Info "  - $sign" }
+    Info 'Replace it with a clean copy from the Spotify server? Your account, playlists and'
+    Info 'likes are not touched, and you stay logged in.'
+    Info '(If you keep the modified one: ad blocking or the AI Playlists button may not work,'
+    Info ' Spotify may open as an empty window, and uninstalling will return Spotify to this'
+    Info ' modified state, not to the original.)'
+    if (-not (Confirm-Yes 'Replace Spotify with a clean copy?')) {
+      Info 'WARNING: keeping the modified Spotify. If something does not work, run this again and answer yes.'
+      return
+    }
+    Stop-Spotify
+    # Everything of the program goes; the login and the settings ("prefs", "Users") stay.
+    foreach ($item in Get-ChildItem -LiteralPath $SpotifyDir -Force) {
+      if ($item.Name -eq 'prefs' -or $item.Name -eq 'Users') { continue }
+      Remove-Item -LiteralPath $item.FullName -Recurse -Force
+    }
+    Install-Spotify
+    Start-Sleep -Seconds 8   # the fresh copy starts once and records its own version
+    Stop-Spotify
+  }
+
   function Test-System {
     Say 'Checking the system'
     if ($PSVersionTable.PSVersion -lt [version]'5.1') { throw 'PowerShell 5.1 or newer is required (Windows 10 and 11 have it).' }
@@ -203,7 +261,7 @@ function Install-SpotifyAi {
 
   function Test-Spotify {
     Remove-StoreSpotify
-    if (-not (Test-Path -LiteralPath $SpotifyExe)) { Install-Spotify }
+    if (-not (Test-Path -LiteralPath $SpotifyExe)) { Install-Spotify } else { Repair-ModifiedSpotify }
     if (-not (Test-PrefsReady)) {
       Info 'Spotify has not been opened yet: opening it once'
       Start-Process -FilePath $SpotifyExe
@@ -475,7 +533,7 @@ function Install-SpotifyAi {
 $spotifyAiFailed = $false
 try {
   Install-SpotifyAi -Uninstall ([bool]$Uninstall) -Adblock $Adblock -BlockReports $BlockReports `
-    -Force ([bool]$Force) -NoLaunch ([bool]$NoLaunch) -Here "$PSScriptRoot"
+    -Force ([bool]$Force) -NoLaunch ([bool]$NoLaunch) -Here "$PSScriptRoot" -CleanSpotify $CleanSpotify
 } catch {
   Write-Host ''
   Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red

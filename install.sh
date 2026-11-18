@@ -12,6 +12,8 @@
 #   --block-reports off   let Spotify send crash reports and interface logs to its
 #                         developers (on = stop them, the default)
 #   --force               macOS: try even when Spotify is newer than the tested version
+#   --clean-spotify yes   macOS: when the installed Spotify was changed by another mod,
+#                         replace it with a clean copy without asking (no = keep it)
 #   --uninstall           return Spotify to its original state
 #
 # Choices are remembered, so a later plain run keeps them.
@@ -62,6 +64,7 @@ PROCESS=""
 REINSTALL_HINT=""
 UPDATE_DIR="${HOME}/Library/Application Support/Spotify/PersistentCache/Update"
 FORCE=0
+CLEAN_SPOTIFY=""   # yes | no | "" = ask in the terminal
 
 # Defaults; overwritten by the saved choices and then by command-line flags.
 ADBLOCK="on"
@@ -201,6 +204,10 @@ check_macos() {
     wait_prefs 90 || die "open Spotify, log in, close it, then run the installer again."
   fi
   [[ "${1}" == "install" ]] || return 0
+  check_version_macos
+}
+
+check_version_macos() {
   local installed
   installed="$(defaults read "${SPOTIFY_APP}/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
   if [[ -z "${installed}" ]]; then
@@ -212,6 +219,63 @@ check_macos() {
   else
     die "Spotify ${installed} is newer than the newest version this installer supports (${SPOTIFY_MAX}). Spotify was not changed. Support usually follows within a week: run the newest installer again then."
   fi
+}
+
+# True when the app is exactly what Spotify shipped: signed by Spotify, nothing changed inside.
+spotify_is_original() {
+  codesign --verify --deep --strict "${SPOTIFY_APP}" >/dev/null 2>&1 \
+    && codesign -dv --verbose=2 "${SPOTIFY_APP}" 2>&1 | grep -q '^Authority=Developer ID Application: Spotify'
+}
+
+# Asks a yes/no question in the terminal (Enter = yes). With --clean-spotify the
+# answer is given; with nobody to ask, the answer is no.
+ask_yes() {
+  if [[ -n "${CLEAN_SPOTIFY}" ]]; then
+    [[ "${CLEAN_SPOTIFY}" == "yes" ]]
+    return
+  fi
+  local answer=""
+  # The script itself may be arriving on standard input (curl | bash), so the keyboard is read directly.
+  { read -r -p "    $1 [Y/n] " answer < /dev/tty; } 2>/dev/null || return 1
+  case "${answer}" in
+    n|N|no|No|NO) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+# macOS, first install only: a Spotify changed by another mod (SpotX, a "cracked"
+# copy …) is a bad base. Offer to put Spotify's own copy in its place.
+ensure_clean_spotify() {
+  [[ "${OS}" == "macos" ]] || return 0
+  # Already patched by Spicetify (ours or the user's): the backup is the base, nothing to check here.
+  [[ ! -d "${SPOTIFY_DIR}/Apps/xpui" ]] || return 0
+  say "Checking that Spotify is original"
+  need codesign
+  if spotify_is_original; then
+    info "ok: signed by Spotify, nothing changed"
+    return 0
+  fi
+  info "This Spotify is NOT the original: its files were changed (by another mod such as"
+  info "SpotX, by a modified copy from the internet, or by something that was installed before)."
+  info "Replace it with a clean copy from Spotify's own server? Your account, playlists and"
+  info "likes are not touched, and you stay logged in."
+  info "(If you keep the modified one: ad blocking or the AI Playlists button may not work,"
+  info " Spotify may open as an empty window, and uninstalling will return Spotify to this"
+  info " modified state, not to the original.)"
+  if ! ask_yes "Replace Spotify with a clean copy?"; then
+    info "WARNING: keeping the modified Spotify. If something does not work, run this again and answer yes."
+    return 0
+  fi
+  local tool
+  for tool in hdiutil codesign ditto; do need "${tool}"; done
+  stop_spotify
+  rm -rf "${SPOTIFY_APP}" || die "could not remove the old Spotify. Move it to the Trash yourself and run this again."
+  install_spotify_macos
+  # Let the new copy start once, so that it records its own version.
+  open "${SPOTIFY_APP}" || true
+  sleep 12
+  stop_spotify
+  check_version_macos
 }
 
 check_system() { # install | uninstall
@@ -490,6 +554,7 @@ main() {
     case "$1" in
       --uninstall) action="uninstall" ;;
       --force) FORCE=1 ;;
+      --clean-spotify) [[ "${2:-}" == "yes" || "${2:-}" == "no" ]] || die "--clean-spotify needs 'yes' or 'no'."; CLEAN_SPOTIFY="$2"; shift ;;
       --adblock) on_off "${2:-}" "--adblock"; ADBLOCK="$2"; shift ;;
       --block-reports) on_off "${2:-}" "--block-reports"; BLOCK_REPORTS="$2"; shift ;;
       *) die "unknown option '$1'. See the top of install.sh for the options." ;;
@@ -506,6 +571,7 @@ main() {
   save_options
   hold_updates
   fix_permissions
+  ensure_clean_spotify
   install_spicetify
   install_adblockify
   install_agent

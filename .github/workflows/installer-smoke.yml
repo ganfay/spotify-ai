@@ -72,6 +72,25 @@ jobs:
           if (-not (Test-Path "$env:APPDATA\Spotify\Apps\xpui.spa")) { throw 'xpui.spa missing' }
           if (Test-Path "$env:LOCALAPPDATA\Spotify\Update") { throw 'update block not removed' }
           if (Test-Path "$env:LOCALAPPDATA\spicetify") { throw 'Spicetify not removed' }
+      - name: A Spotify changed by another mod is replaced by a clean one
+        run: |
+          $force = @(); if ('${{ inputs.force }}' -eq 'true') { $force = @('-Force') }
+          Get-Process -Name Spotify -ErrorAction SilentlyContinue | Stop-Process -Force
+          Set-Content "$env:APPDATA\Spotify\dpapi.dll" 'left by another mod'
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch -CleanSpotify yes @force | Tee-Object -FilePath clean.log
+          if ($LASTEXITCODE -ne 0) { throw 'install failed' }
+          if (-not (Select-String -Path clean.log -SimpleMatch 'does NOT look original' -Quiet)) { throw 'the modified Spotify was not noticed' }
+          if (Test-Path "$env:APPDATA\Spotify\dpapi.dll") { throw 'the foreign file is still there' }
+          if (-not (Test-Path "$env:APPDATA\Spotify\Apps\xpui\spicetify-routes-ai-playlists*")) { throw 'app missing' }
+          if (-not (Test-Path "$env:APPDATA\Spotify\prefs")) { throw 'the login settings were removed' }
+      - name: An original Spotify is recognised as original (after our own uninstall)
+        run: |
+          $force = @(); if ('${{ inputs.force }}' -eq 'true') { $force = @('-Force') }
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -Uninstall
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch @force | Tee-Object -FilePath plain.log
+          if ($LASTEXITCODE -ne 0) { throw 'install failed' }
+          if (-not (Select-String -Path plain.log -SimpleMatch 'ok: signed by Spotify' -Quiet)) { throw 'an untouched Spotify was reported as modified' }
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -Uninstall
   macos:
     runs-on: macos-latest
     timeout-minutes: 25
@@ -80,7 +99,9 @@ jobs:
       - name: Syntax (the bash that macOS ships)
         run: /bin/bash --version | head -1 && /bin/bash -n install.sh
       - name: Install (from the folder)
-        run: /bin/bash install.sh ${{ inputs.force && '--force' || '' }}
+        run: |
+          /bin/bash install.sh ${{ inputs.force && '--force' || '' }} | tee first.log
+          grep -q 'ok: signed by Spotify' first.log
       - name: Check the result
         run: |
           R=/Applications/Spotify.app/Contents/Resources
@@ -114,3 +135,20 @@ jobs:
           test -f "$R/Apps/xpui.spa"
           test ! -e "$HOME/Library/Application Support/Spotify/PersistentCache/Update"
           test ! -e ~/.spicetify
+      - name: A Spotify changed by another mod is replaced by a clean one
+        run: |
+          pkill -x Spotify || true
+          touch /Applications/Spotify.app/Contents/Resources/left-by-another-mod.txt
+          /bin/bash install.sh --clean-spotify yes ${{ inputs.force && '--force' || '' }} | tee clean.log
+          grep -q 'NOT the original' clean.log
+          test ! -e /Applications/Spotify.app/Contents/Resources/left-by-another-mod.txt
+          ls /Applications/Spotify.app/Contents/Resources/Apps/xpui | grep spicetify-routes-ai-playlists
+          sleep 3; pkill -x Spotify || true
+      - name: What our own uninstall leaves behind (information only)
+        run: |
+          /bin/bash install.sh --uninstall
+          codesign --verify --deep --strict /Applications/Spotify.app && echo "after uninstall: signature valid" || echo "after uninstall: signature NOT valid"
+          /bin/bash install.sh --clean-spotify no ${{ inputs.force && '--force' || '' }} | tee again.log
+          grep -E 'ok: signed by Spotify|NOT the original|keeping the modified' again.log
+          sleep 3; pkill -x Spotify || true
+          /bin/bash install.sh --uninstall
