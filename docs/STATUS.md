@@ -8,7 +8,7 @@ A new chat should read this file first, then [DECISIONS.md](DECISIONS.md) and [P
 
 **Phases 0–4 are done and tested by the owner on Linux. Phase 5 is in progress:** security review done, Windows and macOS installers written and machine-tested, going public is left.
 
-The repository `ganfay/spotify-ai` is still **private**.
+The repository `ganfay/spotify-ai` is **public** since 2026-11-18 (made public by the owner). Release `v0.1.0` holds `install.cmd` and `uninstall.cmd`, the files the README links to.
 
 ## What exists and works (Linux, Spotify 1.3.4.258 from apt)
 
@@ -76,7 +76,8 @@ Left open on purpose:
    - **Found:** the official Spotify is 1.3.10 since about 2026-11-18, Spicetify 2.46.7 supports up to 1.3.9. Without `-Force` / `--force` both installers stop at the version check, as designed. The run above used the force option: Spicetify patched 1.3.10 without an error, but nobody has looked at the interface, so `SPOTIFY_MAX` stays 1.3.9.
    - **Not covered by the machine test:** what the interface looks like, whether ads are blocked, whether the update block really stops an update, the Microsoft Store path, the "App Management" refusal on macOS, Intel Macs, Windows on ARM, SmartScreen on `install.cmd`, a non-administrator Windows user (the test machine runs as administrator).
    - The download way (`raw.githubusercontent.com`) works only when the repository is public; until then test from a downloaded ZIP of the repository (`install.cmd` in it uses the files next to it).
-   - The README links `install.cmd` / `uninstall.cmd` from the latest release: a release with these two files must be created when going public.
+   - First run by the owner on Windows (2026-11-18, the pasted command): Spotify was installed, then the installer stopped at the version check (1.3.10 > 1.3.9), as designed. The run with `-Force` is still to do.
+   - When `install.cmd` or `uninstall.cmd` change, upload them to a new release: the README links the latest release.
 5. Final README, last check of the history, create the release, then make the repository public — only after the owner says yes.
 
 ## Waiting on the owner
