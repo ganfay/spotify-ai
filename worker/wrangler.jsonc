@@ -17,6 +17,8 @@
   // use `npx wrangler secret put <NAME>`.
   "vars": {
     "MODEL": "gemini-3.5-flash-lite",
+    // Tried in this order when MODEL is overloaded (500/503) or out of quota (429).
+    "FALLBACK_MODELS": "gemini-3.6-flash",
     "MAX_OUTPUT_TOKENS": "16384",
     "ALLOWED_ORIGINS": "https://xpui.app.spotify.com",
     "PROMPTS_PER_HOUR": "5",

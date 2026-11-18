@@ -22,6 +22,8 @@ export { Limits } from "./limits";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const UPSTREAM_TIMEOUT_MS = 60_000;
+/** No new try is started once this much time has passed since the first one. */
+const RETRY_BUDGET_MS = 40_000;
 
 /** All counters live in one Durable Object instance, so they are exact. */
 function limitsStub(env: Env): DurableObjectStub<Limits> {
@@ -29,6 +31,12 @@ function limitsStub(env: Env): DurableObjectStub<Limits> {
 }
 
 const modelName = (env: Env): string => env.MODEL || DEFAULTS.MODEL;
+/** Other models to try, in order, when the main one is overloaded or out of quota. */
+const fallbackModels = (env: Env): string[] =>
+  (env.FALLBACK_MODELS ?? DEFAULTS.FALLBACK_MODELS)
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => /^[a-z0-9.-]{1,60}$/.test(name) && name !== modelName(env));
 const inviteRequired = (env: Env): boolean => env.REQUIRE_INVITE === "true";
 
 export default {
@@ -162,18 +170,34 @@ async function generate(request: Request, env: Env): Promise<Response> {
     },
   };
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(
-      `${GEMINI_BASE}/${encodeURIComponent(modelName(env))}:generateContent`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify(upstreamBody),
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-      },
-    );
-  } catch {
+  // 4. Call Gemini. An overloaded model (500/503) is tried once more after a short
+  // wait, then the next model in the list takes over; a model that is out of quota
+  // (429) is skipped at once. These extra tries are not counted against the user.
+  const models = [modelName(env), ...fallbackModels(env)];
+  const delayMs = intVar(env.RETRY_DELAY_MS, DEFAULTS.RETRY_DELAY_MS);
+  const started = Date.now();
+  let upstream: Response | null = null;
+  attempts: for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (upstream !== null && Date.now() - started > RETRY_BUDGET_MS) break attempts;
+      if (attempt > 0 && delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+      try {
+        upstream = await fetch(`${GEMINI_BASE}/${encodeURIComponent(model)}:generateContent`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+          body: JSON.stringify(upstreamBody),
+          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+        });
+      } catch {
+        upstream = null;
+        break attempts;
+      }
+      if (upstream.ok) break attempts;
+      if (upstream.status !== 500 && upstream.status !== 503) break; // not worth repeating on this model
+    }
+    if (upstream === null || (upstream.status !== 429 && upstream.status !== 500 && upstream.status !== 503)) break;
+  }
+  if (upstream === null) {
     return errorResponse(502, "upstream", "Could not reach the AI provider.", { status: 0 });
   }
 

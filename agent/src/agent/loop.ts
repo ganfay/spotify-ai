@@ -1,6 +1,6 @@
 // The agent loop: prompt -> model -> tool calls -> results -> … -> final answer.
 
-import { type ChatSession, createSession, type FetchFn, type ToolResult } from "../llm";
+import { type ChatSession, createSession, type FetchFn, LlmError, type ModelTurn, type ToolResult, type TurnInput } from "../llm";
 import type { Settings } from "../settings";
 import type { Proposal, SpotifyPort } from "./proposals";
 import { TOOL_DECLARATIONS, Toolbox } from "./tools";
@@ -68,6 +68,20 @@ const TOOL_LABELS: Record<string, string> = {
 };
 export const toolLabel = (name: string): string => TOOL_LABELS[name] ?? name;
 
+/** Where a run stands: what has to be sent to the model next. */
+interface RunState {
+  input: TurnInput;
+  /** Model answers received so far in this run. */
+  step: number;
+  seen: Map<string, number>;
+  /** Index of this run's first proposal in the toolbox. */
+  first: number;
+}
+
+/** Errors after which sending the same thing again cannot help. */
+const FINAL_ERRORS = new Set(["bad_key", "bad_model", "invite_required", "disabled", "limit_prompt", "refusal", "max_tokens"]);
+const AUTO_RETRY_WAIT_MS = 3000;
+
 /**
  * One conversation with the agent. Keeps the model session and the toolbox, so
  * a follow-up message ("yes, the second playlist") continues where it stopped.
@@ -77,6 +91,10 @@ export class Agent {
   private readonly session: ChatSession;
   private promptId = "";
   private cancelled = false;
+  /** Set when a request to the model failed: resume() sends the same thing again. */
+  private pending: RunState | null = null;
+  /** Tests set this to 0. */
+  retryWaitMs = AUTO_RETRY_WAIT_MS;
 
   /** Stops the current run at the next step. */
   cancel(): void {
@@ -89,24 +107,49 @@ export class Agent {
     this.session = createSession(settings, { system: SYSTEM_PROMPT, tools: TOOL_DECLARATIONS }, () => this.promptId, fetchFn);
   }
 
+  /**
+   * True when the last run stopped on a failed request to the model and can go on
+   * from that very request: everything read and computed before it is kept.
+   */
+  canResume(error?: unknown): boolean {
+    if (this.pending === null) return false;
+    return !(error instanceof LlmError && FINAL_ERRORS.has(error.code));
+  }
+
   async run(prompt: string, onEvent: (event: AgentEvent) => void = () => {}): Promise<AgentResult> {
     this.promptId = crypto.randomUUID();
+    return this.advance({ input: { text: prompt }, step: 0, seen: new Map(), first: this.toolbox.proposals.length }, onEvent);
+  }
+
+  /** Continues a run that stopped on a failed request (see canResume). Same prompt id: the proxy does not count a new prompt. */
+  async resume(onEvent: (event: AgentEvent) => void = () => {}): Promise<AgentResult> {
+    if (this.pending === null) throw new Error("There is nothing to continue.");
+    return this.advance(this.pending, onEvent);
+  }
+
+  private async advance(state: RunState, onEvent: (event: AgentEvent) => void): Promise<AgentResult> {
+    this.pending = null;
     this.toolbox.notify = (done, total) => onEvent({ type: "progress", done, total });
     this.cancelled = false;
-    const first = this.toolbox.proposals.length;
-    onEvent({ type: "thinking" });
-    let turn = await this.session.send({ text: prompt });
-    const seen = new Map<string, number>();
-    for (let step = 1; step <= MAX_STEPS; step++) {
+    for (;;) {
+      onEvent({ type: "thinking" });
+      let turn;
+      try {
+        turn = await this.send(state.input);
+      } catch (e) {
+        this.pending = state; // the session is unchanged, so the same input can go again
+        throw e;
+      }
+      state.step++;
       if (turn.toolCalls.length === 0 || this.cancelled) {
-        return { text: turn.text, proposals: this.toolbox.proposals.slice(first), steps: step, ...(this.cancelled ? { incomplete: true } : {}) };
+        return { text: turn.text, proposals: this.toolbox.proposals.slice(state.first), steps: state.step, ...(this.cancelled ? { incomplete: true } : {}) };
       }
       const results: ToolResult[] = [];
       let stuck = false;
       for (const call of turn.toolCalls) {
         const key = `${call.name} ${JSON.stringify(call.args)}`;
-        const times = (seen.get(key) ?? 0) + 1;
-        seen.set(key, times);
+        const times = (state.seen.get(key) ?? 0) + 1;
+        state.seen.set(key, times);
         if (times > 2) stuck = true; // the model is going in circles
         onEvent({ type: "tool", name: call.name, args: call.args });
         const before = this.toolbox.proposals.length;
@@ -116,12 +159,11 @@ export class Agent {
         for (const proposal of this.toolbox.proposals.slice(before)) onEvent({ type: "proposal", proposal });
         results.push({ id: call.id, name: call.name, result });
       }
-      if (stuck || step === MAX_STEPS || this.cancelled) break;
-      onEvent({ type: "thinking" });
-      turn = await this.session.send({ toolResults: results });
+      if (stuck || state.step >= MAX_STEPS || this.cancelled) break;
+      state.input = { toolResults: results };
     }
     // Out of steps or going in circles: end politely and keep whatever was prepared.
-    const proposals = this.toolbox.proposals.slice(first);
+    const proposals = this.toolbox.proposals.slice(state.first);
     return {
       text: proposals.length
         ? "I could not finish everything, but here is what I prepared so far."
@@ -130,5 +172,17 @@ export class Agent {
       steps: MAX_STEPS,
       incomplete: true,
     };
+  }
+
+  /** One request to the model; an overloaded service gets one more try after a short wait. */
+  private async send(input: TurnInput): Promise<ModelTurn> {
+    try {
+      return await this.session.send(input);
+    } catch (e) {
+      if (!(e instanceof LlmError) || e.code !== "overloaded" || this.cancelled) throw e;
+      await new Promise((resolve) => setTimeout(resolve, this.retryWaitMs));
+      if (this.cancelled) throw e;
+      return this.session.send(input);
+    }
   }
 }

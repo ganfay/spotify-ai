@@ -2,7 +2,7 @@
 // adds the key and enforces limits) or directly with the user's own key.
 
 import type { Settings } from "../settings";
-import { type ChatSession, defaultFetch, type FetchFn, keyError, LlmError, type ModelTurn, postJson, type SessionOptions, type TurnInput } from "./types";
+import { type ChatSession, defaultFetch, type FetchFn, isOverload, keyError, LlmError, overloaded, type ModelTurn, postJson, type SessionOptions, type TurnInput } from "./types";
 
 interface Part {
   text?: string;
@@ -29,6 +29,16 @@ class GeminiSession implements ChatSession {
   constructor(private readonly options: SessionOptions, private readonly transport: Transport) {}
 
   async send(input: TurnInput): Promise<ModelTurn> {
+    const before = this.contents.length;
+    try {
+      return await this.exchange(input);
+    } catch (e) {
+      this.contents.length = before;
+      throw e;
+    }
+  }
+
+  private async exchange(input: TurnInput): Promise<ModelTurn> {
     this.contents.push(
       "text" in input
         ? { role: "user", parts: [{ text: input.text }] }
@@ -83,6 +93,9 @@ export function geminiViaProxy(settings: Settings, options: SessionOptions, prom
     const { res, json } = await postJson(fetchFn, `${settings.proxyUrl.replace(/\/+$/, "")}/v1/generate`, headers, body, "the AI proxy");
     if (!res.ok) {
       const raw = typeof json.error === "string" ? json.error : "http";
+      // Google itself is overloaded or unreachable (the proxy already tried again and tried another model).
+      if (raw === "upstream" && (json.status === 0 || isOverload(json.status))) throw overloaded("Google");
+      if (raw === "http" && isOverload(res.status)) throw overloaded("the AI proxy");
       // A precise code per kind of limit, so the interface can explain it in the user's language.
       const scope: Record<string, string> = { install: "limit_install", global: "limit_global", provider: "limit_global", prompt: "limit_prompt" };
       const code = raw === "rate_limited" ? scope[json.scope] ?? "limit_global" : raw;

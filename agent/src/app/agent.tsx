@@ -1,7 +1,7 @@
 // The AI agent's chat. The agent only proposes; every change happens in a
 // ProposalCard after the user's click.
 
-import { Agent } from "../agent/loop";
+import { Agent, type AgentEvent, type AgentResult } from "../agent/loop";
 import {
   type Applied, applyAdditionsAsNew, applyAdditionsInPlace, applyNewPlaylist, applyRemovalAsCopy, applyRemovalInPlace, applySplit,
   type Proposal, type ProposedTrack, type SplitProposal, type SpotifyPort,
@@ -273,6 +273,8 @@ interface Message {
   from: "user" | "agent" | "error" | "note";
   text: string;
   proposals: Proposal[];
+  /** An error after which the run can go on from where it stopped. */
+  retry?: boolean;
 }
 interface Progress {
   text: string;
@@ -294,21 +296,19 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
   const running = useRef(null as Agent | null);
 
   const ready = isConfigured(settings);
-  const send = async (event: { preventDefault(): void }) => {
-    event.preventDefault();
-    const text = prompt.trim();
-    if (!text || progress || !ready) return;
-    const current = agent ?? new Agent(settings, port, undefined, playlist?.uri);
-    if (!agent) setAgent(current);
+  // A run that stopped on a failed request to the model and can go on from there.
+  const [stalled, setStalled] = useState(null as Agent | null);
+
+  /** Runs one request (new, or a continued one) and puts the outcome on the screen. */
+  const drive = async (current: Agent, history: Message[], start: (onEvent: (e: AgentEvent) => void) => Promise<AgentResult>) => {
     const id = ++runId.current;
     running.current = current;
-    const history: Message[] = [...messages, { from: "user", text, proposals: [] }];
+    setStalled(null);
     setMessages(history);
-    setPrompt("");
     setProgress({ text: t("ag.thinking") });
     const mine = () => runId.current === id;
     try {
-      const result = await current.run(text, (e) => {
+      const result = await start((e) => {
         if (!mine()) return;
         if (e.type === "tool") setProgress({ text: t(`tool.${e.name}` as Key) });
         else if (e.type === "progress") setProgress({ text: t("progress.checking", { done: e.done, total: e.total }), done: e.done, total: e.total });
@@ -317,25 +317,46 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
       if (!mine()) return;
       const reply = result.incomplete ? t(result.proposals.length ? "ag.partial" : "ag.failed") : result.text;
       setMessages([...history, { from: "agent", text: reply, proposals: result.proposals }]);
-      if (result.incomplete) setAgent(null);
+      setAgent(result.incomplete ? null : current);
     } catch (e) {
       if (!mine()) return;
-      setMessages([...history, { from: "error", text: errorText(e), proposals: [] }]);
-      setAgent(null); // a failed conversation is not continued
+      const retry = current.canResume(e);
+      setMessages([...history, { from: "error", text: errorText(e), proposals: [], retry }]);
+      // A new message starts a fresh conversation; "Try again" continues this one.
+      setAgent(null);
+      if (retry) setStalled(current);
     }
     setProgress(null);
+  };
+
+  const send = (event: { preventDefault(): void }) => {
+    event.preventDefault();
+    const text = prompt.trim();
+    if (!text || progress || !ready) return;
+    const current = agent ?? new Agent(settings, port, undefined, playlist?.uri);
+    setPrompt("");
+    void drive(current, [...messages, { from: "user", text, proposals: [] }], (onEvent) => current.run(text, onEvent));
+  };
+
+  const retry = () => {
+    if (!stalled || progress) return;
+    const current = stalled;
+    // The error message goes away; the conversation above it stays.
+    void drive(current, messages.slice(0, -1), (onEvent) => current.resume(onEvent));
   };
 
   const stop = () => {
     running.current?.cancel();
     runId.current++;
     setAgent(null);
+    setStalled(null);
     setProgress(null);
     setMessages([...messages, { from: "note", text: t("ag.stopped"), proposals: [] }]);
   };
   const reset = () => {
     setMessages([]);
     setAgent(null);
+    setStalled(null);
   };
 
   return (
@@ -376,6 +397,12 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
                   <Icon name={m.from === "error" ? "cross" : "spark"} size={16} />
                 </div>
                 <div style={m.from === "error" ? { ...answer, color: "#f15e6c" } : answer}>{m.text}</div>
+              </div>
+            )}
+            {m.retry && stalled && !progress && i === messages.length - 1 && (
+              <div style={{ marginLeft: 40, marginTop: 8, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <button style={css.primary} onClick={retry}>{t("ag.retry")}</button>
+                <span style={css.muted}>{t("ag.kept")}</span>
               </div>
             )}
             {m.proposals.length > 0 && <div style={{ marginLeft: 40 }}>{m.proposals.map((p) => <ProposalCard key={`${i}-${p.id}`} initial={p} />)}</div>}

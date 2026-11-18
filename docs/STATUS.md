@@ -67,6 +67,14 @@ Left open on purpose:
 - Owning only `/usr/share/spotify/Apps` instead of the whole folder was not tested (needs sudo on the owner's machine).
 - Commits carry the owner's real name (e-mail is the no-reply address) — his decision before going public.
 
+## Overloaded model (2026-11-18)
+
+Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was lost at its last step. Now:
+
+- **Proxy:** an overloaded model (500/503) is tried once more, then `FALLBACK_MODELS` (default `gemini-3.6-flash`) take over; a model out of quota (429) is skipped at once. These tries do not count against the user. 50 tests. **Not deployed yet — the owner must run `npx wrangler deploy` in `worker/`.** The fallback model with real function calls is unverified until then.
+- **Agent:** a failed request leaves the conversation untouched; one automatic repeat after 3 s; then the chat shows the error with a **Try again** button that sends the same request again — tracks already read, tool results and proposals are kept, and the proxy sees the same prompt id (no new prompt is counted). Kept in memory only: leaving the chat or sending a new message drops it. Checked live on Linux with a simulated 503 (own-key mode). 26 tests.
+- Still open: paid key or other providers in the shared mode, if overloads stay frequent.
+
 ## Phase 5 — in progress
 
 1. Research: how to install on Windows and macOS without SpotX — done. Result: versioned installers cannot be downloaded from Spotify's servers (signed links); the installer will accept the current official Spotify, check it against the supported ceiling (1.3.9 for Spicetify 2.46.7) and stop with a clear message if it is newer (expected gap 0–6 days). Update blocking: `chflags uchg` on the Update folder (macOS), a locked `Update` file (Windows); Spicetify's own command is broken on Windows. Asset names and checksums for Spicetify 2.46.7 on both systems are known.
@@ -77,7 +85,7 @@ Left open on purpose:
    - **Not covered by the machine test:** what the interface looks like, whether ads are blocked, whether the update block really stops an update, the Microsoft Store path, the "App Management" refusal on macOS, Intel Macs, Windows on ARM, SmartScreen on `install.cmd`, a non-administrator Windows user (the test machine runs as administrator).
    - The download way (`raw.githubusercontent.com`) works only when the repository is public; until then test from a downloaded ZIP of the repository (`install.cmd` in it uses the files next to it).
    - First run by the owner on Windows (2026-11-18, the pasted command): Spotify was installed, then the installer stopped at the version check (1.3.10 > 1.3.9), as designed. Then with `-Force`: full install on Spotify 1.3.10, interface, translation and all functions fine. `SPOTIFY_MAX` raised to 1.3.10 (macOS on 1.3.10: patched and started on the CI machine, interface not seen by a person).
-   - **Open:** the owner's antivirus blocked the pasted command and he had to switch it off (which antivirus and which detection — to be found out). The first prompt in shared mode failed with Google's "model is experiencing high demand" (HTTP 503); there is no retry and no fallback model yet.
+   - **Open:** the owner's antivirus blocked the pasted command and he had to switch it off (which antivirus and which detection — to be found out). The first prompt in shared mode failed with Google's "model is experiencing high demand" (HTTP 503) — see "Overloaded model" below.
    - When `install.cmd` or `uninstall.cmd` change, upload them to a new release: the README links the latest release.
 5. Final README, last check of the history, create the release, then make the repository public — only after the owner says yes.
 

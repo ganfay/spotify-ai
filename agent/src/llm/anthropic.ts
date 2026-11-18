@@ -20,6 +20,17 @@ export function anthropic(settings: Settings, options: SessionOptions, fetchFn: 
 
   return {
     async send(input: TurnInput): Promise<ModelTurn> {
+      const before = messages.length;
+      try {
+        return await exchange(input);
+      } catch (e) {
+        messages.length = before;
+        throw e;
+      }
+    },
+  };
+
+  async function exchange(input: TurnInput): Promise<ModelTurn> {
       messages.push(
         "text" in input
           ? { role: "user", content: input.text }
@@ -48,6 +59,5 @@ export function anthropic(settings: Settings, options: SessionOptions, fetchFn: 
         text: content.filter((b) => b.type === "text").map((b) => String(b.text ?? "")).join("").trim(),
         toolCalls: content.filter((b) => b.type === "tool_use").map((b) => ({ id: String(b.id), name: String(b.name), args: (b.input as Record<string, unknown>) ?? {} })),
       };
-    },
-  };
+  }
 }

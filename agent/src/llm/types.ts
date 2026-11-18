@@ -28,7 +28,10 @@ export interface ModelTurn {
 
 export type TurnInput = { text: string } | { toolResults: ToolResult[] };
 
-/** One conversation with a model. */
+/**
+ * One conversation with a model. When send() fails, the conversation must be
+ * left exactly as it was before the call, so the same input can be sent again.
+ */
 export interface ChatSession {
   send(input: TurnInput): Promise<ModelTurn>;
 }
@@ -71,11 +74,18 @@ export async function postJson(fetchFn: FetchFn, url: string, headers: Record<st
   return { res, json: await readJson(res) };
 }
 
+/** Statuses that mean "the service cannot cope right now", not "your request is wrong". */
+export const isOverload = (status: number): boolean => status === 500 || status === 502 || status === 503 || status === 504 || status === 529;
+
+export const overloaded = (who: string): LlmError =>
+  new LlmError(`${who} is overloaded right now. Nothing is lost: try again in a moment.`, "overloaded", undefined, { who });
+
 /** Common HTTP errors of "bring your own key" providers. */
 export function keyError(status: number, message: string, who: string, model: string): LlmError {
   const details = { who, model };
   if (status === 401 || status === 403) return new LlmError(`${who} rejected the API key. Check it in Settings.`, "bad_key", undefined, details);
   if (status === 404) return new LlmError(`${who} does not know the model "${model}". Change it in Settings.`, "bad_model", undefined, details);
   if (status === 429) return new LlmError(`Your ${who} key has hit its limit or has no credit. Try again later.`, "rate_limited", undefined, details);
+  if (isOverload(status)) return overloaded(who);
   return new LlmError(`${who}: ${message}`.slice(0, 300), "http");
 }

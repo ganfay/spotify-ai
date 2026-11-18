@@ -21,6 +21,7 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     ...(testEnv as unknown as Env),
     GEMINI_API_KEY: FAKE_KEY,
     ADMIN_TOKEN: ADMIN,
+    RETRY_DELAY_MS: "0",
     ...overrides,
   };
 }
@@ -332,6 +333,58 @@ describe("upstream errors and the API key", () => {
     await collect(await admin("GET", "/admin/invites"));
     for (const t of texts) expect(t).not.toContain(FAKE_KEY);
     expect(texts.join("")).toContain("[redacted]");
+  });
+});
+
+describe("retries and the fallback model", () => {
+  const modelOf = (call: UpstreamCall): string => /models\/([^:]+):/.exec(call.url)![1]!;
+  const overloaded = (): Response =>
+    Response.json({ error: { code: 503, message: "This model is currently experiencing high demand." } }, { status: 503 });
+
+  it("repeats an overloaded model once, then succeeds", async () => {
+    let n = 0;
+    upstreamReply = () => (++n === 1 ? overloaded() : Response.json(GEMINI_OK));
+    const res = await generate();
+    expect(res.status).toBe(200);
+    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.5-flash-lite"]);
+  });
+
+  it("moves to the fallback model when the main one stays overloaded", async () => {
+    let n = 0;
+    upstreamReply = () => (++n <= 2 ? overloaded() : Response.json(GEMINI_OK));
+    const res = await generate();
+    expect(res.status).toBe(200);
+    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.5-flash-lite", "gemini-3.6-flash"]);
+  });
+
+  it("skips a model that is out of quota without repeating it", async () => {
+    let n = 0;
+    upstreamReply = () => (++n === 1 ? Response.json({ error: { message: "quota" } }, { status: 429 }) : Response.json(GEMINI_OK));
+    const res = await generate();
+    expect(res.status).toBe(200);
+    expect(upstreamCalls.map(modelOf)).toEqual(["gemini-3.5-flash-lite", "gemini-3.6-flash"]);
+  });
+
+  it("gives up after two tries per model and reports the overload", async () => {
+    upstreamReply = overloaded;
+    const res = await generate();
+    expect(res.status).toBe(502);
+    expect((await errOf(res)).status).toBe(503);
+    expect(upstreamCalls).toHaveLength(4);
+  });
+
+  it("does not repeat a request the provider rejects (400), and counts one request", async () => {
+    upstreamReply = () => Response.json({ error: { message: "bad" } }, { status: 400 });
+    const install = uuid();
+    const res = await generate({ install });
+    expect(res.status).toBe(502);
+    expect(upstreamCalls).toHaveLength(1);
+  });
+
+  it("FALLBACK_MODELS empty switches the fallback off", async () => {
+    upstreamReply = overloaded;
+    await generate({ env: makeEnv({ FALLBACK_MODELS: "" }) });
+    expect(upstreamCalls).toHaveLength(2);
   });
 });
 

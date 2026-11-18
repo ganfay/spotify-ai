@@ -281,3 +281,61 @@ test("list_playlists does not send owner names; a locked agent sees only the pic
   const proposal = locked.proposals[0]!;
   assert.equal(proposal.kind === "new_playlist" && proposal.source.uri, PLAYLIST.uri);
 });
+
+test("a run that hits an overloaded model continues from the same request, without redoing the work", async () => {
+  for (const mode of ["own-key", "proxy"] as const) {
+    const { port } = fakeSpotify();
+    let reads = 0;
+    const getTracks = port.getTracks;
+    port.getTracks = async (...args) => (reads++, getTracks(...args));
+
+    // Answers 0 and 1 are fine, the third request fails twice (the automatic repeat too), then all is well.
+    const calls: Call[] = [];
+    let answered = 0;
+    let failures = 2;
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      calls.push({ url, headers: init.headers as Record<string, string>, body: JSON.parse(init.body as string) });
+      if (answered === 2 && failures > 0) {
+        failures--;
+        const body = mode === "proxy"
+          ? { error: "upstream", status: 503, message: "This model is currently experiencing high demand." }
+          : { error: { code: 503, message: "This model is currently experiencing high demand." } };
+        return new Response(JSON.stringify(body), { status: mode === "proxy" ? 502 : 503 });
+      }
+      return new Response(JSON.stringify(gemini(STEPS[answered++] ?? null)), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    const agent = new Agent({ ...base, mode }, port, fetchFn);
+    agent.retryWaitMs = 0;
+    assert.equal(agent.canResume(), false);
+    const failed = await agent.run("прибери російське з Mix").catch((e) => e);
+    assert.equal(failed.code, "overloaded");
+    assert.equal(agent.canResume(failed), true);
+    assert.equal(calls.length, 4); // two good answers, the failed request and its one automatic repeat
+    assert.equal(reads, 1);
+
+    const result = await agent.resume();
+    assert.equal(result.text, FINAL);
+    assert.equal(result.proposals.length, 1);
+    assert.equal(reads, 1); // the playlist was not read again
+    assert.equal(calls.length, 6);
+    // The continued request is the failed one, byte for byte: nothing was added to the conversation twice.
+    assert.deepEqual(calls[4]!.body, calls[3]!.body);
+    assert.deepEqual(calls[3]!.body, calls[2]!.body);
+    if (mode === "proxy") {
+      // Same prompt id: the proxy does not count the continuation as a new prompt.
+      assert.equal(new Set(calls.map((c) => c.headers["x-prompt-id"])).size, 1);
+    }
+    assert.equal(agent.canResume(), false);
+    await assert.rejects(agent.resume(), /nothing to continue/);
+  }
+});
+
+test("errors that a repeat cannot fix are not offered for continuing", async () => {
+  const { port } = fakeSpotify();
+  const badKey = (async () => new Response(JSON.stringify({ error: { message: "invalid x-api-key" } }), { status: 401 })) as unknown as typeof fetch;
+  const agent = new Agent({ ...base, provider: "openai" }, port, badKey);
+  const failed = await agent.run("x").catch((e) => e);
+  assert.equal(failed.code, "bad_key");
+  assert.equal(agent.canResume(failed), false);
+});

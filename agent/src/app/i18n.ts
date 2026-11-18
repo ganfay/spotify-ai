@@ -194,6 +194,9 @@ const en = {
   "err.empty": "The model gave no answer. Try to rephrase the request.",
   "err.refusal": "The model declined this request. Try to rephrase it.",
   "err.max_tokens": "The answer was too long and got cut off. Try a smaller task (for example a smaller playlist).",
+  "err.overloaded": "{who} is overloaded right now. This usually passes in a minute.",
+  "ag.retry": "Try again",
+  "ag.kept": "Nothing is lost: it continues from where it stopped.",
 
   "tag.live": "live",
   "tag.remaster": "remaster",
@@ -398,6 +401,9 @@ const uk: Dict = {
   "err.empty": "Модель нічого не відповіла. Спробуй переформулювати запит.",
   "err.refusal": "Модель відмовилась виконувати цей запит. Спробуй переформулювати.",
   "err.max_tokens": "Відповідь вийшла задовгою й обірвалась. Спробуй меншу задачу (наприклад, менший плейлист).",
+  "err.overloaded": "{who}: сервіс зараз перевантажений. Зазвичай це минає за хвилину.",
+  "ag.retry": "Спробувати знову",
+  "ag.kept": "Нічого не втрачено: продовжить з того місця, де зупинився.",
 
   "tag.live": "live",
   "tag.remaster": "ремастер",
@@ -597,6 +603,9 @@ const ru: Dict = {
   "err.empty": "Модель ничего не ответила. Попробуй переформулировать запрос.",
   "err.refusal": "Модель отказалась выполнять этот запрос. Попробуй переформулировать.",
   "err.max_tokens": "Ответ получился слишком длинным и оборвался. Попробуй задачу поменьше (например, плейлист поменьше).",
+  "err.overloaded": "{who}: сервис сейчас перегружен. Обычно это проходит за минуту.",
+  "ag.retry": "Попробовать снова",
+  "ag.kept": "Ничего не потеряно: продолжит с того места, где остановился.",
 
   "tag.live": "live",
   "tag.remaster": "ремастер",
@@ -796,6 +805,9 @@ const de: Dict = {
   "err.empty": "Das Modell hat nicht geantwortet. Formuliere die Anfrage anders.",
   "err.refusal": "Das Modell hat diese Anfrage abgelehnt. Formuliere sie anders.",
   "err.max_tokens": "Die Antwort war zu lang und wurde abgeschnitten. Versuch eine kleinere Aufgabe (zum Beispiel eine kleinere Playlist).",
+  "err.overloaded": "{who} ist gerade überlastet. Das geht meist nach einer Minute vorbei.",
+  "ag.retry": "Erneut versuchen",
+  "ag.kept": "Nichts ist verloren: Es geht dort weiter, wo es aufgehört hat.",
 
   "tag.live": "Live",
   "tag.remaster": "Remaster",

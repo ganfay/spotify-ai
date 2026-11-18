@@ -20,6 +20,17 @@ export function openAiCompatible(settings: Settings, options: SessionOptions, wh
 
   return {
     async send(input: TurnInput): Promise<ModelTurn> {
+      const before = messages.length;
+      try {
+        return await exchange(input);
+      } catch (e) {
+        messages.length = before;
+        throw e;
+      }
+    },
+  };
+
+  async function exchange(input: TurnInput): Promise<ModelTurn> {
       if ("text" in input) messages.push({ role: "user", content: input.text });
       else for (const r of input.toolResults) messages.push({ role: "tool", tool_call_id: r.id, content: JSON.stringify(r.result) });
 
@@ -40,6 +51,5 @@ export function openAiCompatible(settings: Settings, options: SessionOptions, wh
         return { id: call.id, name: call.function.name, args };
       });
       return { text: typeof message.content === "string" ? message.content.trim() : "", toolCalls };
-    },
-  };
+  }
 }
