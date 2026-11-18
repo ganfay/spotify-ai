@@ -29,10 +29,10 @@ Where it goes depends on the mode in Settings:
 
 | Mode | Path | Who can see the request |
 |---|---|---|
-| **Shared free access** | your Spotify app → this project's server (a Cloudflare Worker) → Google Gemini | Google, and Cloudflare as the company that runs the server. The server passes the request on and does not store it. |
+| **Shared free access** | your Spotify app → this project's server (a Cloudflare Worker) → Google Gemini. When Google is overloaded or out of quota, the same request goes to a fallback instead: a free model at OpenRouter (which passes it to the company hosting that model), or a model run by Cloudflare itself (Workers AI) | Google, or the fallback that answered, and Cloudflare as the company that runs the server. The server passes the request on and does not store it. |
 | **My own API key** | your Spotify app → the provider you chose (Google, Anthropic, OpenAI, xAI, OpenRouter or your own address) | That provider. Your key is stored only on your computer. |
 
-**Free AI tiers:** the shared access uses a free Gemini key. Under Google's terms for the free tier, requests may be used to improve Google's products and may be read by human reviewers. If that matters to you, use your own paid key.
+**Free AI tiers:** the shared access uses free tiers. Under Google's terms for the free tier, requests may be used to improve Google's products and may be read by human reviewers. Companies hosting free models at OpenRouter may log requests and train on them too. If that matters to you, use your own paid key.
 
 ## What this project's server stores
 

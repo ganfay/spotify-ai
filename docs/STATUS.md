@@ -84,7 +84,7 @@ Google sometimes answers 503 "high demand"; a long run (1,200 tracks read) was l
 - Seen in that check, not fixed: the model sometimes answers in another language than the request and may mention an internal id like `t32` in its text; Settings shows the Linux command for "block reports" on every system.
 - **Fallback models measured with the owner's free key (2026-11-18 evening), same tool-call request:** `gemini-3.5-flash-lite` 200 in 8 s; `gemini-3.1-flash-lite` 200 in 25 s; `gemini-3.6-flash`, `gemini-3.8-flash`, `gemini-4-hydrogen` all 503 "high demand". So on the free tier only the lite models answer; the list is now `gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash`. The proxy no longer gives up when a model times out (45 s) or is unavailable, and reports `x-tried` (model=status). 54 tests. **The last change of the list is not deployed yet.**
 - Lesson: my own test requests used up the daily "new installs per address" cap (5) and the owner's 5 prompts/hour — the limits work, and tests should reuse one install id.
-- Wanted by the owner, being researched: other providers with a free API as fallbacks in the shared mode.
+- **Other providers as fallbacks (decision 29):** OpenRouter free models and Cloudflare Workers AI are in the proxy's chain, with a request/answer translator. 60 tests. **Not deployed; OpenRouter needs the owner's key (`npx wrangler secret put OPENROUTER_API_KEY`). Nothing of this has met a real provider yet:** whether the chosen free models call tools well, and whether the Workers AI call format is right, is to be tested after the deploy by picking each entry with `x-model`.
 - Not done, wanted by the owner: an in-app tutorial (a short guided tour) — after the macOS test.
 
 ## Phase 5 — in progress

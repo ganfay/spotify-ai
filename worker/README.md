@@ -61,6 +61,19 @@ installs per IP" counting for the current day).
 
 Until `GEMINI_API_KEY` is set, `/v1/generate` answers `503`.
 
+### Fallback providers (optional)
+
+When every Gemini model is overloaded, too slow or out of quota, the proxy asks other providers, in this order. It translates the request into their format and the answer back, so the app does not notice. A conversation that a fallback answered with a function call stays with the fallbacks (Gemini rejects calls it did not make itself).
+
+| Provider | How to switch it on | Free limits (checked 2026-11-18) |
+|---|---|---|
+| **OpenRouter**, models in `OPENROUTER_MODELS` | create a key at openrouter.ai, then `npx wrangler secret put OPENROUTER_API_KEY` and deploy | `:free` models: 50 requests a day; 1,000 a day once the account has ever bought $10 of credits |
+| **Cloudflare Workers AI**, models in `WORKERS_AI_MODELS` | nothing: the `ai` binding in `wrangler.jsonc` is enough | a small daily allocation (about 18 requests of 100k tokens with `@cf/zai-org/glm-4.7-flash`), then requests fail and are skipped until 00:00 UTC |
+
+On OpenRouter, look at Settings → Privacy: free models are only available when you allow providers that may log or train on requests. Free models come and go — when one disappears, the proxy skips it (see the `x-tried` response header) and the list in `wrangler.jsonc` should be updated.
+
+Every answer carries `x-tried`: who was asked and what they answered, for example `gemini-3.5-flash-lite=503,gemini-3.5-flash-lite=503,or:nvidia/nemotron-3.5-lightning:free=200`.
+
 ## Change the limits
 
 Open `wrangler.jsonc`, edit the values under `"vars"`, then run

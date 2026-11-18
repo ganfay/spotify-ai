@@ -22,6 +22,8 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     GEMINI_API_KEY: FAKE_KEY,
     ADMIN_TOKEN: ADMIN,
     RETRY_DELAY_MS: "0",
+    // Tests never reach a real provider: no Workers AI binding unless a test gives a fake one.
+    AI: undefined,
     ...overrides,
   };
 }
@@ -426,6 +428,116 @@ describe("retries and the fallback model", () => {
     upstreamReply = overloaded;
     await generate({ env: makeEnv({ FALLBACK_MODELS: "" }) });
     expect(upstreamCalls).toHaveLength(2);
+  });
+});
+
+describe("other providers as the last fallback", () => {
+  const overloaded = (): Response => Response.json({ error: { message: "high demand" } }, { status: 503 });
+  const TOOLS = [{ functionDeclarations: [{ name: "list_playlists", description: "List playlists" }, { name: "get_tracks", description: "Tracks", parameters: { type: "object", properties: { playlist_id: { type: "string" } } } }] }];
+  const CHAT_CALL = { choices: [{ message: { role: "assistant", content: null, tool_calls: [{ id: "abc", type: "function", function: { name: "list_playlists", arguments: "{}" } }] } }] };
+  const isGoogle = (call: UpstreamCall): boolean => call.url.includes("generativelanguage");
+
+  it("lists them for the app only when they are configured", async () => {
+    const plain = (await (await status(uuid())).json()) as { models: string[] };
+    expect(plain.models.some((id) => id.startsWith("or:") || id.startsWith("cf:"))).toBe(false);
+    const env = makeEnv({ OPENROUTER_API_KEY: "or-key", OPENROUTER_MODELS: "a/b:free", AI: { run: async () => ({}) } });
+    const full = (await (await status(uuid(), env)).json()) as { models: string[] };
+    expect(full.models.slice(-2)).toEqual(["or:a/b:free", "cf:@cf/zai-org/glm-4.7-flash"]);
+  });
+
+  it("goes to OpenRouter when every Gemini model is overloaded, translating both ways", async () => {
+    upstreamReply = () => overloaded();
+    const realFetch = globalThis.fetch;
+    const seen: { url: string; auth: string | null; body: any }[] = [];
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = new Request(input as RequestInfo, init);
+      if (!req.url.includes("openrouter.ai")) return realFetch(input as RequestInfo, init);
+      seen.push({ url: req.url, auth: req.headers.get("authorization"), body: await req.json() });
+      return Response.json(CHAT_CALL);
+    });
+    const env = makeEnv({ OPENROUTER_API_KEY: "or-key-SECRET", OPENROUTER_MODELS: "a/b:free", FALLBACK_MODELS: "" });
+    const contents = [
+      { role: "user", parts: [{ text: "clean my playlist" }] },
+      { role: "model", parts: [{ thought: true, text: "hidden" }, { functionCall: { name: "list_playlists", args: {}, id: "g1" }, thoughtSignature: "sig" }] },
+      { role: "user", parts: [{ functionResponse: { name: "list_playlists", response: { playlists: 2 }, id: "g1" } }] },
+    ];
+    const res = await generate({ env, body: { systemInstruction: "Be brief.", contents, tools: TOOLS, generationConfig: { temperature: 0.2 } } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("x-tried")).toBe("gemini-3.5-flash-lite=503,gemini-3.5-flash-lite=503,or:a/b:free=200");
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.auth).toBe("Bearer or-key-SECRET");
+    expect(seen[0]!.body).toEqual({
+      model: "a/b:free",
+      messages: [
+        { role: "system", content: "Be brief." },
+        { role: "user", content: "clean my playlist" },
+        { role: "assistant", content: null, tool_calls: [{ id: "g1", type: "function", function: { name: "list_playlists", arguments: "{}" } }] },
+        { role: "tool", tool_call_id: "g1", content: '{"playlists":2}' },
+      ],
+      tools: [
+        { type: "function", function: { name: "list_playlists", description: "List playlists", parameters: { type: "object", properties: {} } } },
+        { type: "function", function: { name: "get_tracks", description: "Tracks", parameters: { type: "object", properties: { playlist_id: { type: "string" } } } } },
+      ],
+      temperature: 0.2,
+      max_tokens: 16384,
+    });
+    expect(await res.json()).toEqual({
+      candidates: [{ content: { role: "model", parts: [{ functionCall: { name: "list_playlists", args: {}, id: "abc" }, thoughtSignature: "spotify-ai:fallback" }] }, finishReason: "STOP", index: 0 }],
+      modelVersion: "or:a/b:free",
+    });
+  });
+
+  it("a conversation that a fallback provider answered stays with the fallback providers", async () => {
+    const asked: string[] = [];
+    const env = makeEnv({ AI: { run: async (model: string) => (asked.push(model), { response: "Done." }) } });
+    const contents = [
+      { role: "user", parts: [{ text: "x" }] },
+      { role: "model", parts: [{ functionCall: { name: "list_playlists", args: {}, id: "abc" }, thoughtSignature: "spotify-ai:fallback" }] },
+      { role: "user", parts: [{ functionResponse: { name: "list_playlists", response: {}, id: "abc" } }] },
+    ];
+    const res = await generate({ env, body: { contents, tools: TOOLS } });
+    expect(res.status).toBe(200);
+    expect(upstreamCalls.filter(isGoogle)).toHaveLength(0);
+    expect(asked).toEqual(["@cf/zai-org/glm-4.7-flash"]);
+    const body = (await res.json()) as any;
+    expect(body.candidates[0].content.parts).toEqual([{ text: "Done." }]);
+  });
+
+  it("Workers AI out of its daily allocation, or an empty answer, ends as an overload error", async () => {
+    upstreamReply = () => overloaded();
+    const env = makeEnv({ FALLBACK_MODELS: "", AI: { run: async () => { throw new Error("daily free allocation used up"); } } });
+    const res = await generate({ env });
+    expect(res.status).toBe(502);
+    expect((await errOf(res)).status).toBe(503);
+    expect(res.headers.get("x-tried")).toBe("gemini-3.5-flash-lite=503,gemini-3.5-flash-lite=503,cf:@cf/zai-org/glm-4.7-flash=503");
+
+    const empty = makeEnv({ FALLBACK_MODELS: "", AI: { run: async () => ({ choices: [{ message: { content: "" } }] }) } });
+    expect((await generate({ env: empty })).status).toBe(502);
+  });
+
+  it("the user can pick a fallback provider; a wrong request (400 from Gemini) is not sent on to them", async () => {
+    let ran = 0;
+    const env = makeEnv({ AI: { run: async () => (ran++, { response: "Hi" }) } });
+    const picked = await generate({ env, headers: { "x-model": "cf:@cf/zai-org/glm-4.7-flash" } });
+    expect(picked.headers.get("x-tried")).toBe("cf:@cf/zai-org/glm-4.7-flash=200");
+    expect(upstreamCalls).toHaveLength(0);
+
+    upstreamReply = () => Response.json({ error: { message: "bad" } }, { status: 400 });
+    await generate({ env });
+    expect(ran).toBe(1);
+  });
+
+  it("never leaks the OpenRouter key", async () => {
+    upstreamReply = () => overloaded();
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = new Request(input as RequestInfo, init);
+      if (req.url.includes("openrouter.ai")) return Response.json({ error: { message: "key or-key-SECRET is invalid" } }, { status: 401 });
+      return overloaded();
+    });
+    const res = await generate({ env: makeEnv({ OPENROUTER_API_KEY: "or-key-SECRET", OPENROUTER_MODELS: "a/b:free", FALLBACK_MODELS: "" }) });
+    const text = await res.text();
+    expect(text).not.toContain("or-key-SECRET");
+    expect(text).toContain("[redacted]");
   });
 });
 

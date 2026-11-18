@@ -3,9 +3,13 @@ import type { Limits } from "./limits";
 /** Bindings, vars and secrets. Every var is optional: the code has defaults. */
 export interface Env {
   LIMITS: DurableObjectNamespace<Limits>;
+  /** Workers AI binding (wrangler.jsonc "ai"); optional so the proxy works without it. */
+  AI?: { run(model: string, input: unknown): Promise<unknown> };
 
   // Secrets (set with `wrangler secret put`, or `.dev.vars` locally).
   GEMINI_API_KEY?: string;
+  /** Optional: switches the OpenRouter fallback on. */
+  OPENROUTER_API_KEY?: string;
   ADMIN_TOKEN?: string;
   IP_SALT?: string;
 
@@ -14,6 +18,8 @@ export interface Env {
   /** Comma-separated; empty string switches the fallback off. */
   FALLBACK_MODELS?: string;
   RETRY_DELAY_MS?: string;
+  OPENROUTER_MODELS?: string;
+  WORKERS_AI_MODELS?: string;
   UPSTREAM_TIMEOUT_MS?: string;
   MAX_OUTPUT_TOKENS?: string;
   ALLOWED_ORIGINS?: string;
@@ -31,6 +37,9 @@ export const DEFAULTS = {
   MODEL: "gemini-3.5-flash-lite",
   FALLBACK_MODELS: "gemini-3.1-flash-lite,gemini-3.6-flash,gemini-3.8-flash",
   RETRY_DELAY_MS: 1200,
+  /** Free models with tool calling and a context window big enough for a 1,200-track playlist. */
+  OPENROUTER_MODELS: "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free,openrouter/free",
+  WORKERS_AI_MODELS: "@cf/zai-org/glm-4.7-flash",
   /** How long one model may take to answer before the next one is tried. */
   UPSTREAM_TIMEOUT_MS: 45000,
   MAX_OUTPUT_TOKENS: 16384,

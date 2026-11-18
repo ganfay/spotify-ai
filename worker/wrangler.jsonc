@@ -11,12 +11,21 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Limits"] }],
 
+  // Workers AI: models that run inside Cloudflare itself, used as the last
+  // fallback. No key needed; the free plan includes a small daily allocation
+  // and requests simply fail (and are skipped) once it is used up.
+  "ai": { "binding": "AI" },
+
   // Non-secret settings. All values are strings. Change a value, then run
   // `npx wrangler deploy` again.
   // Secrets (GEMINI_API_KEY, ADMIN_TOKEN, IP_SALT) are NOT set here:
   // use `npx wrangler secret put <NAME>`.
   "vars": {
     "MODEL": "gemini-3.5-flash-lite",
+    // Other providers, tried after all Gemini models. OpenRouter is used only when the
+    // secret OPENROUTER_API_KEY is set (`npx wrangler secret put OPENROUTER_API_KEY`).
+    "OPENROUTER_MODELS": "nvidia/nemotron-3-ultra-550b-a55b:free,nvidia/nemotron-3.5-lightning:free,openrouter/free",
+    "WORKERS_AI_MODELS": "@cf/zai-org/glm-4.7-flash",
     // Tried in this order when MODEL is overloaded (500/503) or out of quota (429).
     // A user may also pick one of MODEL + FALLBACK_MODELS in the app's Settings; the
     // others then follow as fallbacks. Put only models here that you are ready to pay for

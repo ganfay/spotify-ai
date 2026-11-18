@@ -16,11 +16,13 @@ import {
   withCors,
 } from "./http";
 import type { Limits } from "./limits";
+import { cameFromFallback, type GeminiRequest, toChatRequest, toGeminiResponse } from "./translate";
 import { isUuid, isUuidV4, MAX_BODY_BYTES, validateGenerateBody } from "./validate";
 
 export { Limits } from "./limits";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 /** No new try is started once this much time has passed since the first one. */
 const RETRY_BUDGET_MS = 50_000;
 /**
@@ -42,18 +44,96 @@ function limitsStub(env: Env): DurableObjectStub<Limits> {
 }
 
 const modelName = (env: Env): string => env.MODEL || DEFAULTS.MODEL;
-/**
- * Every model this proxy may call: the main one, then the fallbacks in order.
- * The fallbacks take over when a model is overloaded or out of quota; a user may
- * also ask for one of this list by name, never for anything else.
- */
-const allowedModels = (env: Env): string[] => [
-  modelName(env),
-  ...(env.FALLBACK_MODELS ?? DEFAULTS.FALLBACK_MODELS)
+/** One place an answer can come from. id is what the app and the x-tried trail show. */
+interface Target {
+  id: string;
+  kind: "gemini" | "openrouter" | "workers-ai";
+  model: string;
+}
+
+const listVar = (value: string | undefined, fallback: string): string[] =>
+  (value ?? fallback)
     .split(",")
     .map((name) => name.trim())
-    .filter((name, i, all) => /^[a-z0-9.-]{1,60}$/.test(name) && name !== modelName(env) && all.indexOf(name) === i),
-];
+    .filter((name, i, all) => /^[@a-zA-Z0-9._:/-]{1,80}$/.test(name) && all.indexOf(name) === i);
+
+/**
+ * Everything this proxy may call, in the order it is tried: the main Gemini
+ * model, the other Gemini models, then other providers — OpenRouter (only when
+ * its key is set) and Workers AI (only when the AI binding exists). A user may
+ * ask for one of this list by id, never for anything else.
+ */
+function targets(env: Env): Target[] {
+  const main = modelName(env);
+  const out: Target[] = [{ id: main, kind: "gemini", model: main }];
+  for (const model of listVar(env.FALLBACK_MODELS, DEFAULTS.FALLBACK_MODELS)) {
+    if (model !== main) out.push({ id: model, kind: "gemini", model });
+  }
+  if (env.OPENROUTER_API_KEY) {
+    for (const model of listVar(env.OPENROUTER_MODELS, DEFAULTS.OPENROUTER_MODELS)) out.push({ id: `or:${model}`, kind: "openrouter", model });
+  }
+  if (env.AI) {
+    for (const model of listVar(env.WORKERS_AI_MODELS, DEFAULTS.WORKERS_AI_MODELS)) out.push({ id: `cf:${model}`, kind: "workers-ai", model });
+  }
+  return out;
+}
+const allowedModels = (env: Env): string[] => targets(env).map((target) => target.id);
+
+class TimeoutError extends Error {
+  override name = "TimeoutError";
+}
+
+function synthetic(status: number, message: string): Response {
+  return Response.json({ error: { message } }, { status });
+}
+
+/**
+ * Asks one target. The answer always has Gemini's shape when it is ok; a
+ * provider that answers with nothing usable counts as overloaded (503).
+ */
+async function ask(target: Target, body: GeminiRequest & { raw: unknown }, env: Env, timeoutMs: number): Promise<Response> {
+  if (target.kind === "gemini") {
+    return fetch(`${GEMINI_BASE}/${encodeURIComponent(target.model)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY ?? "" },
+      body: JSON.stringify(body.raw),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  }
+
+  const chat = toChatRequest(body);
+  let answer: unknown;
+  if (target.kind === "openrouter") {
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${env.OPENROUTER_API_KEY ?? ""}`, "x-title": "spotify-ai" },
+      body: JSON.stringify({ model: target.model, ...chat }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return res;
+    answer = await res.json().catch(() => null);
+    // OpenRouter can report a provider's failure inside a 200 answer.
+    const inner = (answer as { error?: { message?: unknown; code?: unknown } } | null)?.error;
+    if (inner) return synthetic(typeof inner.code === "number" && inner.code >= 400 ? inner.code : 503, String(inner.message ?? "provider error"));
+  } else {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      answer = await Promise.race([
+        env.AI!.run(target.model, chat),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new TimeoutError("too slow")), timeoutMs); }),
+      ]);
+    } catch (err) {
+      if (err instanceof TimeoutError) throw err;
+      // Out of the free daily allocation, or the model refused the input.
+      return synthetic(503, err instanceof Error ? err.message : "Workers AI failed");
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+  const translated = toGeminiResponse(answer, target.id);
+  return translated ? Response.json(translated) : synthetic(503, "The fallback model gave an empty answer.");
+}
+
 const inviteRequired = (env: Env): boolean => env.REQUIRE_INVITE === "true";
 
 export default {
@@ -194,41 +274,50 @@ async function generate(request: Request, env: Env): Promise<Response> {
     },
   };
 
-  // 4. Call Gemini. An overloaded model (500/503) is tried once more after a short
-  // wait, then the next model in the list takes over; a model that is out of quota
-  // (429) is skipped at once. These extra tries are not counted against the user.
-  const models = allowedModels(env);
-  if (wanted !== null) models.unshift(...models.splice(models.indexOf(wanted), 1));
+  // 4. Ask the targets in order. An overloaded Gemini model (500/503) is tried once
+  // more after a short wait; a model that is out of quota, too slow or unavailable
+  // is skipped; then the other providers get their turn. These extra tries are not
+  // counted against the user.
+  let chain = targets(env);
+  if (wanted !== null) chain = [...chain.filter((target) => target.id === wanted), ...chain.filter((target) => target.id !== wanted)];
+  // Function calls made by a fallback provider cannot go back to Gemini: stay with the others.
+  if (cameFromFallback(body.contents) && chain.some((target) => target.kind !== "gemini")) {
+    chain = chain.filter((target) => target.kind !== "gemini");
+  }
+  const question = {
+    raw: upstreamBody,
+    systemInstruction: body.systemInstruction,
+    contents: body.contents,
+    tools: body.tools,
+    temperature: body.generationConfig?.temperature,
+    maxOutputTokens: upstreamBody.generationConfig.maxOutputTokens,
+  };
   const delayMs = intVar(env.RETRY_DELAY_MS, DEFAULTS.RETRY_DELAY_MS);
   const timeoutMs = intVar(env.UPSTREAM_TIMEOUT_MS, DEFAULTS.UPSTREAM_TIMEOUT_MS);
   const started = Date.now();
   const outOfTime = (): boolean => Date.now() - started > RETRY_BUDGET_MS;
-  // Which model answered what ("model=200", "model=timeout"): no user data, helps to see why an answer was slow.
+  // Who answered what ("model=200", "model=timeout"): no user data, helps to see why an answer was slow.
   const trail: string[] = [];
   let upstream: Response | null = null;
-  attempts: for (const model of models) {
+  attempts: for (const target of chain) {
     for (let attempt = 0; attempt < 2; attempt++) {
       if (trail.length > 0 && outOfTime()) break attempts;
       if (attempt > 0 && delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
       try {
-        upstream = await fetch(`${GEMINI_BASE}/${encodeURIComponent(model)}:generateContent`, {
-          method: "POST",
-          headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
-          body: JSON.stringify(upstreamBody),
-          signal: AbortSignal.timeout(timeoutMs),
-        });
+        upstream = await ask(target, question, env, timeoutMs);
       } catch (err) {
-        // No answer in time, or no connection: this model is not repeated, the next one gets its chance.
+        // No answer in time, or no connection: not repeated, the next one gets its chance.
         upstream = null;
-        trail.push(`${model}=${err instanceof Error && err.name === "TimeoutError" ? "timeout" : "unreachable"}`);
+        trail.push(`${target.id}=${err instanceof Error && err.name === "TimeoutError" ? "timeout" : "unreachable"}`);
         break;
       }
-      trail.push(`${model}=${upstream.status}`);
+      trail.push(`${target.id}=${upstream.status}`);
       if (upstream.ok) break attempts;
-      if (upstream.status !== 500 && upstream.status !== 503) break; // only an overloaded model is worth repeating
+      // Only an overloaded Gemini model is worth repeating.
+      if (target.kind !== "gemini" || (upstream.status !== 500 && upstream.status !== 503)) break;
     }
-    // Go on to the next model unless this one says the request itself is wrong.
-    if (upstream !== null && !MOVE_ON.has(upstream.status)) break;
+    // Gemini saying "the request itself is wrong" ends the chain; everything else moves on.
+    if (upstream !== null && target.kind === "gemini" && !MOVE_ON.has(upstream.status)) break;
   }
   const tried = { "x-tried": trail.join(",").slice(0, 300) };
   if (upstream === null) {
@@ -243,7 +332,7 @@ async function generate(request: Request, env: Env): Promise<Response> {
     });
   }
 
-  const message = await upstreamMessage(upstream, apiKey);
+  const message = await upstreamMessage(upstream, [apiKey, env.OPENROUTER_API_KEY ?? ""]);
   if (upstream.status === 429) {
     const retryAfter = Number(upstream.headers.get("retry-after"));
     return withHeaders(errorResponse(429, "rate_limited", `The AI provider is rate limiting us: ${message}`, {
@@ -261,8 +350,8 @@ const RATE_MESSAGES = {
   global: "The shared daily limit is used up. Try again tomorrow.",
 } as const;
 
-/** Short provider error text. The API key is cut out, should it ever be echoed. */
-async function upstreamMessage(upstream: Response, apiKey: string): Promise<string> {
+/** Short provider error text. API keys are cut out, should they ever be echoed. */
+async function upstreamMessage(upstream: Response, secrets: string[]): Promise<string> {
   let message = `The AI provider returned HTTP ${upstream.status}.`;
   try {
     const parsed: unknown = JSON.parse(await upstream.text());
@@ -271,7 +360,8 @@ async function upstreamMessage(upstream: Response, apiKey: string): Promise<stri
   } catch {
     // Not JSON: keep the generic message.
   }
-  return message.replaceAll(apiKey, "[redacted]").slice(0, 300);
+  for (const secret of secrets) if (secret) message = message.replaceAll(secret, "[redacted]");
+  return message.slice(0, 300);
 }
 
 // ---- /admin/* (owner only) ---------------------------------------------------
