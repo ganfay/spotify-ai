@@ -66,6 +66,10 @@ function Install-SpotifyAi {
   # Written when THIS installer put Spicetify there. Without it, uninstall leaves a
   # Spicetify the user set up themselves alone and removes only our parts.
   $OursMarker = Join-Path $SpicetifyHome '.installed-by-spotify-ai'
+  # Spicetify's "restore" deletes this file of Spotify and never brings it back. A copy
+  # is kept and returned on uninstall, so that Spotify really is as it was.
+  $KeepDir = Join-Path $env:APPDATA 'spotify-ai\originals'
+  $KeepFile = 'native-licenses.html'
   $Extension = 'spotify-ai-adblock.js'
   $AgentApp = 'ai-playlists'
   $Utf8 = New-Object System.Text.UTF8Encoding($false)
@@ -434,9 +438,33 @@ function Install-SpotifyAi {
     Info 'ok'
   }
 
+  function Get-InstalledVersion {
+    if (-not (Test-Path -LiteralPath $SpotifyExe)) { return '' }
+    return "$((Get-Item -LiteralPath $SpotifyExe).VersionInfo.FileVersion)"
+  }
+
+  function Save-OriginalFile {
+    $file = Join-Path $SpotifyDir "Apps\$KeepFile"
+    if (-not (Test-Path -LiteralPath $file)) { return }
+    New-Item -ItemType Directory -Path $KeepDir -Force | Out-Null
+    Copy-Item -LiteralPath $file -Destination (Join-Path $KeepDir $KeepFile) -Force
+    [IO.File]::WriteAllText((Join-Path $KeepDir 'version'), (Get-InstalledVersion))
+  }
+
+  function Restore-OriginalFile {
+    $file = Join-Path $SpotifyDir "Apps\$KeepFile"
+    $kept = Join-Path $KeepDir $KeepFile
+    $version = Join-Path $KeepDir 'version'
+    if (-not (Test-Path -LiteralPath $kept) -or (Test-Path -LiteralPath $file)) { return }
+    # Only into the Spotify version it was taken from.
+    if (-not (Test-Path -LiteralPath $version) -or ([IO.File]::ReadAllText($version) -ne (Get-InstalledVersion))) { return }
+    Copy-Item -LiteralPath $kept -Destination $file -Force -ErrorAction SilentlyContinue
+  }
+
   function Invoke-Apply($options) {
     Say 'Applying to Spotify'
     Stop-Spotify
+    Save-OriginalFile
     $xpui = Join-Path $SpotifyDir 'Apps\xpui'
     # Start from Spotify's own files every time: this is what makes a re-run a repair.
     if (Test-Path -LiteralPath $xpui -PathType Container) {
@@ -462,6 +490,7 @@ function Install-SpotifyAi {
         # Nothing is deleted: the backup Spicetify holds may still be needed.
         throw 'could not restore the Spotify files. Nothing was removed. To reset Spotify, reinstall it from https://www.spotify.com/download and run this again.'
       }
+      Restore-OriginalFile
       Info 'Spotify files restored'
     }
     $ours = Test-Path -LiteralPath $OursMarker

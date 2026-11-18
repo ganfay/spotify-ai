@@ -49,6 +49,11 @@ AGENT_APP="ai-playlists"
 AGENT_SOURCE=""
 MPRIS="org.mpris.MediaPlayer2.spotify"
 OPTIONS_FILE="${HOME}/.config/spotify-ai/options"
+# Spicetify's "restore" deletes this file of Spotify and never brings it back. A copy
+# is kept here and returned on uninstall, so that Spotify really is as it was
+# (on macOS its signature is valid again).
+KEEP_DIR="${HOME}/.config/spotify-ai/originals"
+KEEP_FILE="native-licenses.html"
 # Written when THIS installer put Spicetify there. Without it, uninstall leaves a
 # Spicetify the user set up themselves alone and removes only our parts.
 OURS_MARKER="${SPICETIFY_HOME}/.installed-by-spotify-ai"
@@ -471,9 +476,34 @@ configure() {
   info "ok"
 }
 
+installed_version() {
+  if [[ "${OS}" == "macos" ]]; then
+    defaults read "${SPOTIFY_APP}/Contents/Info" CFBundleShortVersionString 2>/dev/null || true
+  else
+    dpkg-query -W -f='${Version}' spotify-client 2>/dev/null || true
+  fi
+}
+
+keep_original_file() {
+  local file="${SPOTIFY_DIR}/Apps/${KEEP_FILE}"
+  [[ -f "${file}" ]] || return 0
+  mkdir -p "${KEEP_DIR}"
+  cp "${file}" "${KEEP_DIR}/${KEEP_FILE}"
+  installed_version > "${KEEP_DIR}/version"
+}
+
+return_original_file() {
+  local file="${SPOTIFY_DIR}/Apps/${KEEP_FILE}"
+  [[ -f "${KEEP_DIR}/${KEEP_FILE}" && ! -e "${file}" ]] || return 0
+  # Only into the Spotify version it was taken from.
+  [[ "$(cat "${KEEP_DIR}/version" 2>/dev/null)" == "$(installed_version)" ]] || return 0
+  cp "${KEEP_DIR}/${KEEP_FILE}" "${file}" 2>/dev/null || true
+}
+
 apply() {
   say "Applying to Spotify"
   stop_spotify
+  keep_original_file
   # Start from Spotify's own files every time: this is what makes a re-run a repair.
   if [[ -d "${SPOTIFY_DIR}/Apps/xpui" ]]; then
     "${SPICETIFY}" restore >/dev/null 2>&1 \
@@ -496,6 +526,7 @@ uninstall() {
   local restored=1
   if [[ -x "${SPICETIFY}" && -d "${SPOTIFY_DIR}/Apps/xpui" ]]; then
     if "${SPICETIFY}" restore >/dev/null 2>&1; then
+      return_original_file
       info "Spotify files restored"
     else
       restored=0
