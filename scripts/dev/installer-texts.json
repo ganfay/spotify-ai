@@ -1,0 +1,83 @@
+{
+  "newer_1": {
+    "en": "Spotify %s is newer than the tested %s. It usually works; if it does not, uninstalling brings Spotify back.",
+    "uk": "Spotify %s новіший за перевірену версію %s. Зазвичай усе працює; якщо ні — видалення поверне Spotify як був.",
+    "ru": "Spotify %s новее проверенной версии %s. Обычно всё работает; если нет — удаление вернёт Spotify как был.",
+    "de": "Spotify %s ist neuer als die getestete Version %s. Meist funktioniert es; wenn nicht, stellt die Deinstallation Spotify wieder her."
+  },
+  "newer_ask": { "en": "Try anyway?", "uk": "Спробувати?", "ru": "Попробовать?", "de": "Trotzdem versuchen?" },
+  "newer_stop": {
+    "en": "Spotify %s is newer than the newest tested version (%s). Nothing was changed. Run this again and answer yes, or wait for an update of this installer.",
+    "uk": "Spotify %s новіший за останню перевірену версію (%s). Нічого не змінено. Запусти ще раз і відповідай «так», або дочекайся оновлення інсталятора.",
+    "ru": "Spotify %s новее последней проверенной версии (%s). Ничего не изменено. Запусти ещё раз и ответь «да», или дождись обновления установщика.",
+    "de": "Spotify %s ist neuer als die neueste getestete Version (%s). Nichts wurde geändert. Starte es erneut und antworte mit Ja, oder warte auf ein Update dieses Installers."
+  },
+  "newer_force": {
+    "en": "Spotify %s is newer than the tested %s. Trying anyway.",
+    "uk": "Spotify %s новіший за перевірену версію %s. Пробую все одно.",
+    "ru": "Spotify %s новее проверенной версии %s. Пробую всё равно.",
+    "de": "Spotify %s ist neuer als die getestete Version %s. Versuche es trotzdem."
+  },
+  "mod_1": {
+    "en": "This Spotify was modified (another mod, or a cracked copy).",
+    "uk": "Цей Spotify кимось змінено (інший мод або зламана копія).",
+    "ru": "Этот Spotify кем-то изменён (другой мод или взломанная копия).",
+    "de": "Dieses Spotify wurde verändert (eine andere Mod oder eine gecrackte Kopie)."
+  },
+  "mod_2": {
+    "en": "A clean one from Spotify can replace it: you stay logged in, playlists are safe.",
+    "uk": "Його можна замінити чистим від Spotify: вхід в акаунт збережеться, плейлисти в безпеці.",
+    "ru": "Его можно заменить чистым от Spotify: вход в аккаунт сохранится, плейлисты в безопасности.",
+    "de": "Ein sauberes von Spotify kann es ersetzen: Du bleibst angemeldet, Playlists sind sicher."
+  },
+  "mod_3": {
+    "en": "(Keeping it: ads may stay, AI Playlists may not appear, Spotify may open empty.)",
+    "uk": "(Якщо лишити: реклама може лишитись, AI Playlists може не з'явитись, Spotify може відкритись порожнім.)",
+    "ru": "(Если оставить: реклама может остаться, AI Playlists может не появиться, Spotify может открыться пустым.)",
+    "de": "(Wenn du es behältst: Werbung kann bleiben, AI Playlists erscheint vielleicht nicht, Spotify öffnet sich vielleicht leer.)"
+  },
+  "mod_ask": { "en": "Replace it with a clean Spotify?", "uk": "Замінити на чистий Spotify?", "ru": "Заменить на чистый Spotify?", "de": "Durch ein sauberes Spotify ersetzen?" },
+  "mod_keep": {
+    "en": "Keeping the modified Spotify. If something does not work, run this again and answer yes.",
+    "uk": "Лишаю змінений Spotify. Якщо щось не працюватиме — запусти ще раз і відповідай «так».",
+    "ru": "Оставляю изменённый Spotify. Если что-то не будет работать — запусти ещё раз и ответь «да».",
+    "de": "Das veränderte Spotify bleibt. Wenn etwas nicht funktioniert, starte erneut und antworte mit Ja."
+  },
+  "open_once": {
+    "en": "Open Spotify, log in, close it, then run this again.",
+    "uk": "Відкрий Spotify, увійди в акаунт, закрий його і запусти це ще раз.",
+    "ru": "Открой Spotify, войди в аккаунт, закрой его и запусти это ещё раз.",
+    "de": "Öffne Spotify, melde dich an, schließe es und starte das hier erneut."
+  },
+  "app_mgmt": {
+    "en": "macOS does not let this terminal change apps. Open System Settings > Privacy & Security > App Management, switch on your terminal app, quit the terminal completely, open it again and run this again.",
+    "uk": "macOS не дозволяє цьому терміналу змінювати програми. Відкрий Системні налаштування > Конфіденційність і безпека > Керування програмами, увімкни свій термінал, повністю закрий його, відкрий знову і запусти це ще раз.",
+    "ru": "macOS не разрешает этому терминалу изменять программы. Открой Системные настройки > Конфиденциальность и безопасность > Управление приложениями, включи свой терминал, полностью закрой его, открой снова и запусти это ещё раз.",
+    "de": "macOS erlaubt diesem Terminal nicht, Apps zu ändern. Öffne Systemeinstellungen > Datenschutz & Sicherheit > App-Verwaltung, aktiviere deine Terminal-App, beende das Terminal vollständig, öffne es wieder und starte das hier erneut."
+  },
+  "store_1": {
+    "en": "Spotify from the Microsoft Store cannot be modified. It has to be replaced by the normal Spotify; your account and playlists are not touched.",
+    "uk": "Spotify з Microsoft Store змінювати не можна. Його треба замінити звичайним Spotify; акаунт і плейлисти не зачіпаються.",
+    "ru": "Spotify из Microsoft Store изменять нельзя. Его нужно заменить обычным Spotify; аккаунт и плейлисты не затрагиваются.",
+    "de": "Spotify aus dem Microsoft Store kann nicht verändert werden. Es muss durch das normale Spotify ersetzt werden; Konto und Playlists bleiben unberührt."
+  },
+  "store_ask": { "en": "Remove the Store version now?", "uk": "Видалити версію з Store зараз?", "ru": "Удалить версию из Store сейчас?", "de": "Die Store-Version jetzt entfernen?" },
+  "store_stop": {
+    "en": "Uninstall Spotify in Windows Settings > Apps, then run this again.",
+    "uk": "Видали Spotify у Параметри Windows > Програми і запусти це ще раз.",
+    "ru": "Удали Spotify в Параметры Windows > Приложения и запусти это ещё раз.",
+    "de": "Deinstalliere Spotify unter Windows-Einstellungen > Apps und starte das hier erneut."
+  },
+  "done": {
+    "en": "Done. The AI Playlists button is in the top bar of Spotify, left of Home.",
+    "uk": "Готово. Кнопка AI Playlists — у верхній панелі Spotify, зліва від «Головна».",
+    "ru": "Готово. Кнопка AI Playlists — в верхней панели Spotify, слева от «Главная».",
+    "de": "Fertig. Der Button AI Playlists ist in der oberen Leiste von Spotify, links von Start."
+  },
+  "done_un": {
+    "en": "Done. Spotify is back to its original state.",
+    "uk": "Готово. Spotify повернуто до початкового стану.",
+    "ru": "Готово. Spotify возвращён в исходное состояние.",
+    "de": "Fertig. Spotify ist wieder im Originalzustand."
+  }
+}

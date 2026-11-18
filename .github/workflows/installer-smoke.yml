@@ -10,6 +10,12 @@ on:
         description: Try even when Spotify is newer than the supported version
         type: boolean
         default: false
+  # Also run by watch.yml every day.
+  workflow_call:
+    inputs:
+      force:
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -46,6 +52,7 @@ jobs:
           if ($made) { throw 'a folder could be created inside the update block' }
       - name: Install again (repair), switches changed
         run: |
+          $env:SPOTIFY_AI_LANG = 'uk'   # translated messages must print without errors
           powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch -Adblock off ${{ inputs.force && '-Force' || '' }}
           if (Test-Path "$env:APPDATA\Spotify\Apps\xpui\extensions\spotify-ai-adblock.js") { throw 'extension still applied' }
       - name: Install by "irm | iex" (files served locally)
@@ -134,7 +141,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/dev/null 2>&1 &
           sleep 2
-          curl -fsSL http://127.0.0.1:8765/install.sh | SPOTIFY_AI_BASE_URL=http://127.0.0.1:8765 /bin/bash -s -- --adblock off ${{ inputs.force && '--force' || '' }}
+          curl -fsSL http://127.0.0.1:8765/install.sh | SPOTIFY_AI_LANG=uk SPOTIFY_AI_BASE_URL=http://127.0.0.1:8765 /bin/bash -s -- --adblock off ${{ inputs.force && '--force' || '' }}
           sleep 3; pkill -x Spotify || true
           test ! -f /Applications/Spotify.app/Contents/Resources/Apps/xpui/extensions/spotify-ai-adblock.js
       - name: Uninstall

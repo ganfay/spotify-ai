@@ -1,0 +1,91 @@
+# Every day: install on real Windows and macOS machines with whatever Spotify
+# publishes that day. When it stops working, an issue is opened (GitHub mails the
+# owner), with what was found and what to do. When it works again, the issue is closed.
+name: watch
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  normal:
+    uses: ./.github/workflows/installer-smoke.yml
+  # Only when the normal run failed: does it work when told to accept a newer Spotify?
+  forced:
+    needs: normal
+    if: failure()
+    uses: ./.github/workflows/installer-smoke.yml
+    with:
+      force: true
+  spicetify:
+    runs-on: ubuntu-latest
+    outputs:
+      pinned: ${{ steps.compare.outputs.pinned }}
+      latest: ${{ steps.compare.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: compare
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pinned="$(grep '^SPICETIFY_CLI=' versions | cut -d= -f2)"
+          latest="$(gh api repos/spicetify/cli/releases/latest --jq .tag_name | sed 's/^v//')"
+          echo "pinned=${pinned}" >> "$GITHUB_OUTPUT"
+          echo "latest=${latest}" >> "$GITHUB_OUTPUT"
+          echo "Spicetify pinned ${pinned}, latest ${latest}"
+  report:
+    needs: [normal, forced, spicetify]
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      NORMAL: ${{ needs.normal.result }}
+      FORCED: ${{ needs.forced.result }}
+      PINNED: ${{ needs.spicetify.outputs.pinned }}
+      LATEST: ${{ needs.spicetify.outputs.latest }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Open, update or close the issue
+        run: |
+          gh label create watch --color D93F0B --description "Opened by the daily installer check" --force >/dev/null
+          open="$(gh issue list --label watch --state open --json number --jq '.[0].number // empty')"
+          if [ "${NORMAL}" = "success" ]; then
+            if [ -n "${open}" ]; then
+              gh issue close "${open}" --comment "The daily check passes again: ${RUN_URL}"
+            fi
+            exit 0
+          fi
+          {
+            echo "The daily install test on real Windows and macOS machines **failed** on $(date -u +%Y-%m-%d)."
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Normal install | ${NORMAL} |"
+            echo "| Install told to accept a newer Spotify (force) | ${FORCED} |"
+            echo "| Spicetify | pinned ${PINNED}, latest ${LATEST} |"
+            echo
+            echo "Details: ${RUN_URL}"
+            echo
+            echo "**What it usually means**"
+            echo
+            if [ "${FORCED}" = "success" ]; then
+              echo "- Spotify published a version newer than \`SPOTIFY_MAX\` in \`versions\`, and the installer patches it without errors."
+              echo "- People are asked \"Try anyway?\" and can go on, so nothing is broken for them yet."
+              echo "- To do: install it yourself, look at the interface, then raise \`SPOTIFY_MAX\` in \`versions\`."
+            else
+              echo "- The install fails even when forced. Look at the failed step in the run."
+              echo "- If Spotify changed and Spicetify cannot patch it yet: wait for a new Spicetify release, then update \`SPICETIFY_CLI\` and its checksums in \`versions\`."
+              echo "- If a download address or a checksum changed, the log line with ERROR says which."
+            fi
+            if [ "${PINNED}" != "${LATEST}" ]; then
+              echo "- A newer Spicetify (${LATEST}) exists: it may be the fix."
+            fi
+          } > body.md
+          if [ -n "${open}" ]; then
+            gh issue comment "${open}" --body-file body.md
+          else
+            gh issue create --title "Daily check: installing no longer works" --label watch --body-file body.md
+          fi

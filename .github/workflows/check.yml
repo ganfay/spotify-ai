@@ -48,6 +48,8 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseFile("$PWD/install.ps1", [ref]$null, [ref]$errors)
           if ($errors) { $errors | ForEach-Object { Write-Host $_ }; exit 1 }
           if (Select-String -Path install.ps1 -Pattern '[^\x00-\x7F]' -CaseSensitive) { Write-Host 'non-ASCII characters in install.ps1'; exit 1 }
+      - name: Translated installer messages are generated from scripts/dev/installer-texts.json
+        run: python3 scripts/dev/gen-installer-texts.py && git diff --exit-code install.sh install.ps1
       - name: Windows launchers keep CRLF line endings
         run: |
           for f in install.cmd uninstall.cmd; do
