@@ -243,9 +243,10 @@ hold_updates() {
     stop_spotify
     # The updater downloads into this folder. Locked, it cannot (the same thing
     # "spicetify spotify-updates block" does).
-    if [[ -d "${UPDATE_DIR}" ]] && ls -ldO "${UPDATE_DIR}" | grep -q uchg; then
+    if [[ -d "${UPDATE_DIR}" && "$(stat -f %Sf "${UPDATE_DIR}" 2>/dev/null)" == *uchg* ]]; then
       info "already blocked"
     else
+      chflags nouchg "${UPDATE_DIR}" 2>/dev/null || true
       rm -rf "${UPDATE_DIR}"
       mkdir -p "${UPDATE_DIR}"
       chflags uchg "${UPDATE_DIR}" && info "blocked (the uninstaller undoes this)" \
