@@ -135,3 +135,32 @@ function longestIncreasingRun(values: number[]): Set<number> {
   for (let pos = tails[tails.length - 1] ?? -1; pos !== -1; pos = previous[pos]!) keep.add(values[pos]!);
   return keep;
 }
+
+export interface RestorePreview {
+  /** Entries in the playlist now that did not exist at the snapshot: undo removes them. */
+  willRemove: number;
+  /** Snapshot entries that are gone now: undo adds them back. */
+  willAdd: number;
+  /** True when the playlist already equals the snapshot. */
+  nothingToDo: boolean;
+}
+
+/** What an undo would do, without doing it. */
+export async function previewRestore(snapshot: Snapshot): Promise<RestorePreview> {
+  const current = await spotify.getTracks(snapshot.playlistUri);
+  const wanted = new Set(snapshot.entries.map((e) => e.uid));
+  const present = new Set(current.map((t) => t.uid));
+  const willRemove = current.filter((t) => !wanted.has(t.uid)).length;
+  const willAdd = snapshot.entries.filter((e) => !present.has(e.uid)).length;
+  const sameOrder = current.length === snapshot.entries.length && current.every((t, i) => t.uid === snapshot.entries[i]!.uid);
+  return { willRemove, willAdd, nothingToDo: willRemove === 0 && willAdd === 0 && sameOrder };
+}
+
+/**
+ * Undo that can itself be undone: the playlist's current state is saved as a
+ * new undo point before anything is restored.
+ */
+export async function safeRestore(snapshot: Snapshot, backupReason: string): Promise<RestoreResult> {
+  await takeSnapshot(snapshot.playlistUri, snapshot.playlistName, backupReason);
+  return restoreSnapshot(snapshot);
+}

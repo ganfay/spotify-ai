@@ -44,7 +44,8 @@ export function SettingsView({ onBack, onLanguage }: { onBack: () => void; onLan
   const own = settings.mode === "own-key";
   const pickProvider = (id: string) => {
     const next = PROVIDERS.find((p) => p.id === id) ?? provider;
-    update({ provider: next.id, model: next.defaultModel, baseUrl: "" });
+    // The key is cleared: a key for one service must never be sent to another.
+    update({ provider: next.id, model: next.defaultModel, baseUrl: "", apiKey: "" });
   };
 
   const test = async () => {

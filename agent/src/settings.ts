@@ -1,5 +1,7 @@
 // User settings, kept in the Spotify client's local storage on this computer.
-// The API key (own-key mode) never leaves this machine except to Google.
+// The API key (own-key mode) is sent only to the provider the user selected. It is stored
+// unencrypted in the Spotify client's local storage: other Spicetify extensions and any
+// program running as this user could read it (said plainly in docs/PRIVACY.md).
 
 const KEY = "spotify-ai:settings";
 

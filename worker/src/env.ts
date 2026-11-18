@@ -16,6 +16,8 @@ export interface Env {
   PROMPTS_PER_HOUR?: string;
   REQUESTS_PER_PROMPT?: string;
   NEW_INSTALLS_PER_IP_PER_DAY?: string;
+  REQUESTS_PER_INSTALL_PER_DAY?: string;
+  REQUESTS_PER_IP_PER_DAY?: string;
   GLOBAL_REQUESTS_PER_DAY?: string;
   REQUIRE_INVITE?: string;
   KILL_SWITCH?: string;
@@ -26,8 +28,10 @@ export const DEFAULTS = {
   MAX_OUTPUT_TOKENS: 16384,
   ALLOWED_ORIGINS: "https://xpui.app.spotify.com",
   PROMPTS_PER_HOUR: 5,
-  REQUESTS_PER_PROMPT: 40,
+  REQUESTS_PER_PROMPT: 24,
   NEW_INSTALLS_PER_IP_PER_DAY: 5,
+  REQUESTS_PER_INSTALL_PER_DAY: 100,
+  REQUESTS_PER_IP_PER_DAY: 200,
   GLOBAL_REQUESTS_PER_DAY: 400,
 } as const;
 
@@ -42,6 +46,9 @@ export interface LimitConfig {
   promptsPerHour: number;
   requestsPerPrompt: number;
   newInstallsPerIpPerDay: number;
+  /** Stops one install (or one address) from using up the whole shared daily quota. */
+  requestsPerInstallPerDay: number;
+  requestsPerIpPerDay: number;
   globalRequestsPerDay: number;
 }
 
@@ -53,6 +60,8 @@ export function limitConfig(env: Env): LimitConfig {
       env.NEW_INSTALLS_PER_IP_PER_DAY,
       DEFAULTS.NEW_INSTALLS_PER_IP_PER_DAY,
     ),
+    requestsPerInstallPerDay: intVar(env.REQUESTS_PER_INSTALL_PER_DAY, DEFAULTS.REQUESTS_PER_INSTALL_PER_DAY),
+    requestsPerIpPerDay: intVar(env.REQUESTS_PER_IP_PER_DAY, DEFAULTS.REQUESTS_PER_IP_PER_DAY),
     globalRequestsPerDay: intVar(env.GLOBAL_REQUESTS_PER_DAY, DEFAULTS.GLOBAL_REQUESTS_PER_DAY),
   };
 }

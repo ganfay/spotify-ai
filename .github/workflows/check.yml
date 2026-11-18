@@ -1,0 +1,43 @@
+name: check
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # The committed bundle must be exactly what the source builds:
+      # nobody can slip code into agent/release/ without it showing here.
+      - run: node build.mjs
+      - run: diff -r dist/ai-playlists release/ai-playlists
+  worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n install.sh
+      - run: sudo apt-get install -y shellcheck && shellcheck -S warning install.sh

@@ -3,7 +3,7 @@
 
 import { type DuplicateGroup, findDuplicates } from "../features/duplicates";
 import { loadSettings } from "../settings";
-import { deleteSnapshot, listSnapshots, restoreSnapshot, type Snapshot, takeSnapshot } from "../snapshots";
+import { deleteSnapshot, listSnapshots, previewRestore, type RestorePreview, safeRestore, type Snapshot, takeSnapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
 import type { EntryRef, Playlist, Track } from "../spotify/types";
 
@@ -85,7 +85,7 @@ function Duplicates({ playlist, onBack }: { playlist: Playlist; onBack: () => vo
       return { type: "removed", snapshot, removed: entries.length };
     }, true);
   const undo = (snapshot: Snapshot) =>
-    run(t("act.undoing"), async () => ({ type: "undone", exact: (await restoreSnapshot(snapshot)).exact }), true);
+    run(t("act.undoing"), async () => ({ type: "undone", exact: (await safeRestore(snapshot, t("undo.backup", { reason: snapshot.reason }))).exact }), true);
 
   return (
     <div>
@@ -189,27 +189,56 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
   );
 }
 
-/** Undo points of earlier changes, newest first. Shown on the home screen. */
+/**
+ * Undo points of earlier changes, newest first. Shown on the home screen.
+ * An old undo point can be far behind the playlist's current state, so Undo
+ * first shows what it would remove and bring back, asks, and saves the current
+ * state as a new undo point before restoring.
+ */
 function RecentChanges() {
   const { useState } = hooks();
   const [items, setItems] = useState(listSnapshots());
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
+  const [asking, setAsking] = useState(null as { snapshot: Snapshot; preview: RestorePreview } | null);
 
-  const undo = async (snapshot: Snapshot) => {
+  const ask = async (snapshot: Snapshot) => {
     setBusy(snapshot.id);
     setNote("");
+    setAsking(null);
     try {
-      const { exact } = await restoreSnapshot(snapshot);
+      setAsking({ snapshot, preview: await previewRestore(snapshot) });
+    } catch (e) {
+      setNote(message(e));
+    }
+    setBusy("");
+  };
+  const undo = async (snapshot: Snapshot) => {
+    setBusy(snapshot.id);
+    try {
+      const { exact } = await safeRestore(snapshot, t("undo.backup", { reason: snapshot.reason }));
       deleteSnapshot(snapshot.id);
       setNote(t(exact ? "res.undone" : "res.undoneInexact"));
     } catch (e) {
       setNote(message(e));
     }
+    setAsking(null);
     setItems(listSnapshots());
     setBusy("");
   };
+  const forget = (snapshot: Snapshot) => {
+    deleteSnapshot(snapshot.id);
+    setAsking(null);
+    setItems(listSnapshots());
+  };
   const when = (iso: string) => new Date(iso).toLocaleString(language(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const describe = (preview: RestorePreview) => {
+    const parts: string[] = [];
+    if (preview.willRemove) parts.push(t("undo.remove", { tracks: count(preview.willRemove, "track") }));
+    if (preview.willAdd) parts.push(t("undo.restore", { tracks: count(preview.willAdd, "track") }));
+    if (parts.length === 0) parts.push(t("undo.order"));
+    return t("undo.will", { what: parts.join(t("undo.and")) });
+  };
 
   return (
     <div style={{ marginTop: 36 }}>
@@ -217,15 +246,34 @@ function RecentChanges() {
       {items.length === 0 ? <p style={css.muted}>{t("home.noRecent")}</p> : <p style={css.muted}>{t("home.recentHint")}</p>}
       {note && <div style={css.notice} className="sai-in">{note}</div>}
       {items.slice(0, 8).map((snapshot) => (
-        <div key={snapshot.id} className="sai-trackrow" style={{ padding: "10px 12px" }}>
-          <div className="sai-cover" style={{ cursor: "default" }}><Icon name="music" size={18} /></div>
-          <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 700 }}>{snapshot.playlistName}</span>
-            <div style={css.muted}>{snapshot.reason} · {count(snapshot.entries.length, "track")} · {when(snapshot.createdAt)}</div>
-          </span>
-          <button style={{ ...css.small, display: "inline-flex", gap: 8, alignItems: "center" }} disabled={!!busy} onClick={() => undo(snapshot)}>
-            {busy === snapshot.id && <Spinner size={13} />}{t("act.undo")}
-          </button>
+        <div key={snapshot.id}>
+          <div className="sai-trackrow" style={{ padding: "10px 12px" }}>
+            <div className="sai-cover" style={{ cursor: "default" }}><Icon name="music" size={18} /></div>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontWeight: 700 }}>{snapshot.playlistName}</span>
+              <div style={css.muted}>{snapshot.reason} · {count(snapshot.entries.length, "track")} · {when(snapshot.createdAt)}</div>
+            </span>
+            <button style={{ ...css.small, display: "inline-flex", gap: 8, alignItems: "center" }} disabled={!!busy} onClick={() => ask(snapshot)}>
+              {busy === snapshot.id && <Spinner size={13} />}{t("act.undo")}
+            </button>
+          </div>
+          {asking?.snapshot.id === snapshot.id && (
+            <div className="sai-in" style={{ ...css.group, margin: "4px 0 12px 64px" }}>
+              {asking.preview.nothingToDo ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <span style={{ flex: 1 }}>{t("undo.nothing")}</span>
+                  <button style={css.small} onClick={() => forget(snapshot)}>OK</button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ fontWeight: 700 }}>{describe(asking.preview)}</div>
+                  <div style={{ ...css.muted, margin: "4px 0 12px" }}>{t("undo.safe")}</div>
+                  <button style={{ ...css.danger, marginRight: 12 }} disabled={!!busy} onClick={() => undo(snapshot)}>{t("undo.yes")}</button>
+                  <button style={css.secondary} disabled={!!busy} onClick={() => setAsking(null)}>{t("act.cancel")}</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -279,7 +327,7 @@ function App() {
   } else if (tool === "agent") {
     body = <AgentView onBack={home} onSettings={() => setTool("settings")} />;
   } else if (feature?.ai && selected) {
-    body = <AgentView onBack={home} onSettings={() => setTool("settings")} initialPrompt={t(`p.${feature.id}` as Key, { name: selected.name })} />;
+    body = <AgentView onBack={home} onSettings={() => setTool("settings")} playlist={selected} initialPrompt={t(`p.${feature.id}` as Key, { name: selected.name })} />;
   } else if (feature && tool !== "settings") {
     body = <PlaylistPicker title={t(`f.${feature.id}.title` as Key)} onPick={setSelected} onBack={home} />;
   } else if (tool === "settings") {

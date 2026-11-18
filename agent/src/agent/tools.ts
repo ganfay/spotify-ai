@@ -194,7 +194,17 @@ export class Toolbox {
   /** Set by the agent: progress of long-running tools, counted over the whole playlist. */
   notify: (done: number, total: number) => void = () => {};
 
-  constructor(private readonly spotify: SpotifyPort) {}
+  /**
+   * onlyPlaylistUri: when the user picked a playlist on a card, the model can
+   * see and propose changes for that playlist only. Text inside playlist or
+   * track names cannot steer it to another playlist.
+   */
+  constructor(private readonly spotify: SpotifyPort, private readonly onlyPlaylistUri?: string) {}
+
+  private async loadPlaylists(): Promise<Playlist[]> {
+    const all = await this.spotify.listPlaylists();
+    return this.onlyPlaylistUri ? all.filter((p) => p.uri === this.onlyPlaylistUri) : all;
+  }
 
   /** Runs a tool. Problems come back as { error } so the model can correct itself. */
   async call(name: string, args: Args): Promise<Result> {
@@ -218,16 +228,15 @@ export class Toolbox {
   }
 
   private async listPlaylists(): Promise<Result> {
-    this.playlists = await this.spotify.listPlaylists();
+    this.playlists = await this.loadPlaylists();
     return {
-      playlists: this.playlists.map((p, i) => ({
-        id: `p${i + 1}`, name: p.name, tracks: p.trackCount, owner: p.ownerName, can_edit: p.editable,
-      })),
+      // Owner names are not sent: the model only needs to know whether the user can edit.
+      playlists: this.playlists.map((p, i) => ({ id: `p${i + 1}`, name: p.name, tracks: p.trackCount, can_edit: p.editable })),
     };
   }
 
   private async playlist(id: unknown): Promise<{ playlist: Playlist; tracks: Track[] }> {
-    if (!this.playlists) this.playlists = await this.spotify.listPlaylists();
+    if (!this.playlists) this.playlists = await this.loadPlaylists();
     const index = typeof id === "string" && /^p\d+$/.test(id) ? Number(id.slice(1)) - 1 : -1;
     const playlist = this.playlists[index];
     if (!playlist) throw new Error(`No playlist with id "${String(id)}". Call list_playlists and use an id from it.`);
@@ -377,7 +386,7 @@ export class Toolbox {
   }
 
   private async proposeNewPlaylist(args: Args): Promise<Result> {
-    const { tracks } = await this.playlist(args.source_playlist_id);
+    const { playlist: source, tracks } = await this.playlist(args.source_playlist_id);
     const name = String(args.name ?? "").trim();
     if (!name) return { error: "name is required." };
     const bad: string[] = [];
@@ -394,8 +403,7 @@ export class Toolbox {
     if (hasInclude) {
       chosen = this.pick(tracks, args.track_ids, bad);
     } else {
-      const { playlist } = await this.playlist(args.source_playlist_id);
-      const problem = this.unread(playlist, tracks);
+      const problem = this.unread(source, tracks);
       if (problem) return { error: problem };
       const excluded = new Set(this.pick(tracks, args.exclude_track_ids, bad).map((t) => t.uid));
       chosen = tracks.filter((t) => !excluded.has(t.uid));
@@ -410,7 +418,7 @@ export class Toolbox {
     if (list.length + unsureTracks.length === 0) return { error: "The proposal has no tracks." };
     const id = this.newId();
     this.proposals.push({
-      id, kind: "new_playlist", name, description: String(args.description ?? ""), summary: String(args.summary ?? ""),
+      id, kind: "new_playlist", source, name, description: String(args.description ?? ""), summary: String(args.summary ?? ""),
       tracks: [...unsureTracks, ...list],
     });
     return {

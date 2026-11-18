@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Run a JavaScript file inside the running Spotify client and print the result.
+// DEVELOPMENT ONLY. Run a JavaScript file inside the running Spotify client and print the result.
+// The debugging port lets any local program control Spotify: never leave Spotify running
+// with it, and never start it this way for normal use.
 //
 //   spotify --remote-debugging-port=9222 --remote-allow-origins='*'
 //   node scripts/dev/cdp-eval.mjs scripts/dev/api-probe.js

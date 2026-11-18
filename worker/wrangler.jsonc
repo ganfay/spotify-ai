@@ -20,8 +20,10 @@
     "MAX_OUTPUT_TOKENS": "16384",
     "ALLOWED_ORIGINS": "https://xpui.app.spotify.com",
     "PROMPTS_PER_HOUR": "5",
-    "REQUESTS_PER_PROMPT": "40",
+    "REQUESTS_PER_PROMPT": "24",
     "NEW_INSTALLS_PER_IP_PER_DAY": "5",
+    "REQUESTS_PER_INSTALL_PER_DAY": "100",
+    "REQUESTS_PER_IP_PER_DAY": "200",
     "GLOBAL_REQUESTS_PER_DAY": "400",
     "REQUIRE_INVITE": "false",
     "KILL_SWITCH": "false"

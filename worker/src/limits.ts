@@ -12,7 +12,8 @@ import type { Env, LimitConfig } from "./env";
  * What is stored (and nothing else — never prompt text or model output):
  *   installs  install id, invite code used, first/last seen time
  *   prompts   install id, prompt id, first-seen time, request count
- *   daily     per-UTC-day counters: "global", and "ip:<hashed ip>" (new installs)
+ *   daily     per-UTC-day counters: "global", "ip:<hashed ip>" (new installs),
+ *             "ipreq:<hashed ip>" and "inst:<install id>" (requests)
  *   invites   code, label, created time, revoked flag
  */
 
@@ -175,6 +176,17 @@ export class Limits extends DurableObject<Env> {
       return this.limited("global", secondsUntilNextUtcDay(now));
     }
 
+    // 2b. Daily caps per install and per address, so that one caller cannot
+    //     use up the quota that everybody shares.
+    const installKey = `inst:${installId}`;
+    const ipRequestsKey = `ipreq:${ipHash}`;
+    if (this.dailyCount(day, installKey) >= limits.requestsPerInstallPerDay) {
+      return this.limited("install", secondsUntilNextUtcDay(now));
+    }
+    if (this.dailyCount(day, ipRequestsKey) >= limits.requestsPerIpPerDay) {
+      return this.limited("ip", secondsUntilNextUtcDay(now));
+    }
+
     // 3. New installs per IP per day. Known installs skip this check.
     const known =
       this.count("SELECT COUNT(*) AS n FROM installs WHERE install_id = ?", installId) > 0;
@@ -234,6 +246,8 @@ export class Limits extends DurableObject<Env> {
       now,
     );
     this.bumpDaily(day, "global");
+    this.bumpDaily(day, installKey);
+    this.bumpDaily(day, ipRequestsKey);
     return { ok: true };
   }
 

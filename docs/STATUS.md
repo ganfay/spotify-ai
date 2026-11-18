@@ -15,8 +15,8 @@ The repository `ganfay/spotify-ai` is still **private**.
 | Part | Where | State |
 |---|---|---|
 | Installer | `install.sh`, `versions` | One command. Holds the apt package, installs Spicetify 2.46.7, the ad blocker (adblockify at a pinned commit, checksum-verified, wrapped in a flag check) and the AI Playlists app. Re-running repairs. `--uninstall`, `--adblock on\|off`, `--block-reports on\|off`. Full cycle tested by the owner. |
-| AI Playlists app | `agent/` (TypeScript, esbuild), prebuilt copy in `agent/release/` | Home with six cards, duplicate finder (no AI), AI agent with five features (duplicates, language filter, split by mood, clean-up, recommendations), Settings, "Recent changes" with Undo. Interface in English, Ukrainian, Russian, German. 23 unit tests. No code runs at Spotify startup. |
-| Proxy | `worker/` (Cloudflare Worker, 40 tests) | Deployed by the owner; address in `agent/proxy-url.txt`. Holds the Gemini key as a secret. Limits: 5 prompts/hour per install id, cap on new installs per IP, global daily cap, kill switch. Invite mode exists, off. `ADMIN_TOKEN` not set → admin routes off. |
+| AI Playlists app | `agent/` (TypeScript, esbuild), prebuilt copy in `agent/release/` | Home with six cards, duplicate finder (no AI), AI agent with five features (duplicates, language filter, split by mood, clean-up, recommendations), Settings, "Recent changes" with Undo. Interface in English, Ukrainian, Russian, German. 24 unit tests. No code runs at Spotify startup. |
+| Proxy | `worker/` (Cloudflare Worker, 44 tests) | Deployed by the owner; address in `agent/proxy-url.txt`. Holds the Gemini key as a secret. Limits: 5 prompts/hour per install id, cap on new installs per IP, global daily cap, kill switch. Invite mode exists, off. `ADMIN_TOKEN` not set → admin routes off. |
 | Measuring tools | `scripts/bench/bench.py`, `scripts/dev/` | Performance and ad counter; helpers that run checks inside the live client through a debugging port. |
 
 Design rules that must not be broken (see DECISIONS.md): the model has no tool that changes data; every change needs a click and saves an undo point; only internal client APIs, all in `agent/src/spotify/`; listening statistics are never blocked; every new text is translated into all four languages in the same change (a test enforces it).
@@ -44,11 +44,33 @@ Design rules that must not be broken (see DECISIONS.md): the model has no tool t
 - Spotify adapter error texts and provider key hints are English only.
 - `Platform.LifecycleAPI.restart()` closes Spotify on Linux without reopening it — not used; "Apply now" reloads the window instead.
 
+## Security review (2026-11-18)
+
+An independent reviewer read the whole repository and its git history. No critical or high findings; no secrets in the tree or the history; the committed bundle is byte-identical to a rebuild from source.
+
+Fixed after the review:
+
+- **Proxy:** daily caps per install (100) and per address (200) so one caller cannot use up the shared quota; requests per prompt 40 → 24; only this app's ten function names, and only text / function-call parts, are accepted (no Google Search, code execution, files or media); IP addresses are stored as a keyed hash. 44 tests. **Not deployed yet — the owner must run `npx wrangler deploy` in `worker/`.**
+- **Undo:** an old undo point first shows what it would remove and bring back and asks; the current state is saved as a new undo point before anything is restored.
+- **Agent:** started from a card, it can see and change only the picked playlist; owner names are no longer sent; the card headline is written by the app, the model's summary is plain text under it; no rows are hidden; an API key is cleared when the provider is changed.
+- **Installer:** the wrapper keeps the extension's strict mode; uninstall refuses to delete anything when restoring failed, and leaves a Spicetify setup that was there before us.
+- **Docs:** PRIVACY.md corrected (playlist names are sent, Cloudflare sees shared-mode requests, real retention times, where the own key lives); README says plainly what installing changes on the computer.
+- **CI:** `.github/workflows/check.yml` runs type checks and tests for agent and worker, and fails if `agent/release/` differs from a fresh build.
+- The proxy's tests had silently stopped running (wrong package versions in `package.json`) — fixed.
+
+Left open on purpose:
+
+- A determined attacker with many addresses can still use up the shared free quota for a day (result: the shared mode pauses until tomorrow; own-key mode is unaffected).
+- The system prompt still comes from the client, so within the caps the proxy can be used for other text tasks with this app's function names.
+- `/v1/status` is not throttled (a Cloudflare rate-limit rule can be added in the dashboard).
+- Owning only `/usr/share/spotify/Apps` instead of the whole folder was not tested (needs sudo on the owner's machine).
+- Commits carry the owner's real name (e-mail is the no-reply address) — his decision before going public.
+
 ## Phase 5 — in progress
 
-1. Research: how to install on Windows and macOS without SpotX (pinned Spotify version, unattended Spicetify, update blocking). *Running.*
-2. Security review by an independent reviewer (secrets in history, Worker, client, prompt injection, installer, dependencies, honesty of the docs). *Running.*
-3. Fix what the review finds.
+1. Research: how to install on Windows and macOS without SpotX — done. Result: versioned installers cannot be downloaded from Spotify's servers (signed links); the installer will accept the current official Spotify, check it against the supported ceiling (1.3.9 for Spicetify 2.46.7) and stop with a clear message if it is newer (expected gap 0–6 days). Update blocking: `chflags uchg` on the Update folder (macOS), a locked `Update` file (Windows); Spicetify's own command is broken on Windows. Asset names and checksums for Spicetify 2.46.7 on both systems are known.
+2. Security review — done, see above.
+3. Fix what the review finds — done, except deploying the hardened proxy (owner).
 4. Write `install.ps1` (Windows) and the macOS branch of the installer. **Needs testers with a Windows and a Mac machine** — none yet.
 5. Final README, last check of the history, then make the repository public — only after the owner says yes.
 

@@ -83,8 +83,9 @@ export class Agent {
     this.cancelled = true;
   }
 
-  constructor(settings: Settings, spotify: SpotifyPort, fetchFn?: FetchFn) {
-    this.toolbox = new Toolbox(spotify);
+  /** onlyPlaylistUri ties the whole conversation to one playlist (see Toolbox). */
+  constructor(settings: Settings, spotify: SpotifyPort, fetchFn?: FetchFn, onlyPlaylistUri?: string) {
+    this.toolbox = new Toolbox(spotify, onlyPlaylistUri);
     this.session = createSession(settings, { system: SYSTEM_PROMPT, tools: TOOL_DECLARATIONS }, () => this.promptId, fetchFn);
   }
 

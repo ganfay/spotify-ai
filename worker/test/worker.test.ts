@@ -234,7 +234,7 @@ describe("happy path", () => {
       body: {
         systemInstruction: "be short",
         contents: [{ role: "user", parts: [{ text: "hello" }] }],
-        tools: [{ functionDeclarations: [{ name: "play" }] }],
+        tools: [{ functionDeclarations: [{ name: "list_playlists" }] }],
         generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
       },
     });
@@ -250,7 +250,7 @@ describe("happy path", () => {
     expect(call.body).toEqual({
       systemInstruction: { parts: [{ text: "be short" }] },
       contents: [{ role: "user", parts: [{ text: "hello" }] }],
-      tools: [{ functionDeclarations: [{ name: "play" }] }],
+      tools: [{ functionDeclarations: [{ name: "list_playlists" }] }],
       generationConfig: {
         temperature: 0.2,
         responseMimeType: "application/json",
@@ -380,10 +380,10 @@ describe("limits", () => {
     expect((await generate({ env, install })).status).toBe(200);
   });
 
-  it("default requests per prompt is 40", async () => {
+  it("default requests per prompt is 24", async () => {
     const install = uuid();
     const prompt = uuid();
-    for (let i = 0; i < 40; i++) expect((await generate({ install, prompt })).status).toBe(200);
+    for (let i = 0; i < 24; i++) expect((await generate({ install, prompt })).status).toBe(200);
     expect((await generate({ install, prompt })).status).toBe(429);
   });
 
@@ -578,5 +578,69 @@ describe("admin + invites", () => {
       { install: b.slice(0, 8), prompts: 1, requests: 1 },
     ]);
     expect(JSON.stringify(stats)).not.toContain(a);
+  });
+});
+
+describe("hardening after the security review", () => {
+  const user = (parts: unknown[]) => ({ contents: [{ role: "user", parts }] });
+
+  it("refuses built-in Gemini tools and functions that are not this app's", async () => {
+    for (const tools of [[{ googleSearch: {} }], [{ codeExecution: {} }], [{ urlContext: {} }], [{ functionDeclarations: [{ name: "send_email" }] }], [{ functionDeclarations: [] }]]) {
+      const res = await generate({ body: { ...user([{ text: "x" }]), tools } });
+      expect(res.status).toBe(400);
+    }
+    expect(upstreamCalls).toHaveLength(0);
+    const ok = await generate({ body: { ...user([{ text: "x" }]), tools: [{ functionDeclarations: [{ name: "get_tracks" }, { name: "propose_split" }] }] } });
+    expect(ok.status).toBe(200);
+  });
+
+  it("refuses files, inline media and unknown content fields; accepts function calls and results", async () => {
+    for (const body of [
+      user([{ inlineData: { mimeType: "image/png", data: "AAAA" } }]),
+      user([{ fileData: { fileUri: "https://example.com/x" } }]),
+      user([{ executableCode: { code: "1" } }]),
+      { contents: [{ role: "system", parts: [{ text: "x" }] }] },
+      { contents: [{ role: "user", parts: [] }] },
+      { contents: [{ role: "user", parts: [{ text: "x" }], extra: 1 }] },
+      { ...user([{ text: "x" }]), generationConfig: { responseMimeType: "image/png" } },
+    ]) {
+      expect((await generate({ body })).status).toBe(400);
+    }
+    const ok = await generate({
+      body: {
+        contents: [
+          { role: "user", parts: [{ text: "x" }] },
+          { role: "model", parts: [{ functionCall: { name: "list_playlists", args: {} }, thoughtSignature: "s" }] },
+          { role: "user", parts: [{ functionResponse: { name: "list_playlists", response: { playlists: [] } } }] },
+        ],
+      },
+    });
+    expect(ok.status).toBe(200);
+  });
+
+  it("one install cannot use more than its daily share", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-03-10T10:00:00Z"));
+    const env = makeEnv({ REQUESTS_PER_INSTALL_PER_DAY: "3", PROMPTS_PER_HOUR: "50" });
+    const install = uuid();
+    for (let i = 0; i < 3; i++) expect((await generate({ env, install })).status).toBe(200);
+    const res = await generate({ env, install });
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { scope: string }).scope).toBe("install");
+    // another install from another address is not affected
+    expect((await generate({ env, ip: "198.51.100.77" })).status).toBe(200);
+    vi.setSystemTime(new Date("2026-03-11T00:00:05Z"));
+    expect((await generate({ env, install })).status).toBe(200);
+    vi.useRealTimers();
+  });
+
+  it("one address cannot use more than its daily share, even with several installs", async () => {
+    const env = makeEnv({ REQUESTS_PER_IP_PER_DAY: "4", NEW_INSTALLS_PER_IP_PER_DAY: "50" });
+    const ip = "198.51.100.200";
+    for (let i = 0; i < 4; i++) expect((await generate({ env, ip })).status).toBe(200);
+    const res = await generate({ env, ip });
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { scope: string }).scope).toBe("ip");
+    expect((await generate({ env, ip: "198.51.100.201" })).status).toBe(200);
   });
 });

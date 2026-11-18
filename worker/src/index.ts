@@ -134,7 +134,7 @@ async function generate(request: Request, env: Env): Promise<Response> {
   const verdict = await limitsStub(env).consume({
     installId: installId.toLowerCase(),
     promptId: promptId.toLowerCase(),
-    ipHash: await hashIp(ip, env.IP_SALT),
+    ipHash: await hashIp(ip, env.IP_SALT, env.GEMINI_API_KEY),
     inviteCode,
     requireInvite,
     limits: limitConfig(env),

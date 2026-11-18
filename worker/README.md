@@ -20,7 +20,7 @@ The Worker stores only what it needs for counting:
 - prompt ids with a timestamp and a request count (ids only, no text);
 - daily counters (all requests; new installs per IP);
 - a **hash** of the IP address, never the IP itself. The hash is mixed with a
-  secret salt and is deleted after 2 days;
+  secret key (`IP_SALT` if you set it, otherwise a key derived from the Gemini key) and is deleted after about 2–3 days;
 - invite codes (code, label, created time, revoked or not) and which code an
   install used.
 
@@ -69,7 +69,9 @@ Open `wrangler.jsonc`, edit the values under `"vars"`, then run
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `PROMPTS_PER_HOUR` | `5` | New prompts one install may start in any 60 minutes |
-| `REQUESTS_PER_PROMPT` | `40` | Requests allowed inside one prompt (the agent loop) |
+| `REQUESTS_PER_PROMPT` | `24` | Requests allowed inside one prompt (the agent loop needs at most 17) |
+| `REQUESTS_PER_INSTALL_PER_DAY` | `100` | Requests one install may make per day (UTC) |
+| `REQUESTS_PER_IP_PER_DAY` | `200` | Requests one internet address may make per day (UTC) |
 | `NEW_INSTALLS_PER_IP_PER_DAY` | `5` | New install ids one IP may register per day (UTC) |
 | `GLOBAL_REQUESTS_PER_DAY` | `400` | All requests from everybody per day (UTC) |
 | `MODEL` | `gemini-3.5-flash-lite` | Gemini model. The client cannot choose it |

@@ -33,6 +33,8 @@ interface Base {
 /** Make one new playlist. `tracks` = candidates; ticked ones go in. */
 export interface NewPlaylistProposal extends Base {
   kind: "new_playlist";
+  /** The playlist the tracks come from. */
+  source: Playlist;
   name: string;
   description: string;
   tracks: ProposedTrack[];

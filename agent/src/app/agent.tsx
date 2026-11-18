@@ -7,10 +7,10 @@ import {
   type Proposal, type ProposedTrack, type SplitProposal, type SpotifyPort,
 } from "../agent/proposals";
 import { isConfigured, loadSettings } from "../settings";
-import { restoreSnapshot } from "../snapshots";
+import { safeRestore, type Snapshot } from "../snapshots";
 import * as spotify from "../spotify/adapter";
 import { getTrackData } from "../spotify/facts";
-import type { Track } from "../spotify/types";
+import type { Playlist, Track } from "../spotify/types";
 import { count, type Key, t } from "./i18n";
 import { errorText } from "./settings";
 import { BackLink, css, Dots, duration, hooks, Icon, ProgressBar, Spinner, TrackRow } from "./ui";
@@ -18,7 +18,8 @@ import { BackLink, css, Dots, duration, hooks, Icon, ProgressBar, Spinner, Track
 declare const Spicetify: any;
 
 const port: SpotifyPort = { ...spotify, getTrackData, getRecommendations: (uri) => spotify.getRecommendations(uri), searchTracks: (q) => spotify.searchTracks(q) };
-const MAX_ROWS = 300;
+// High enough that nothing is hidden in practice: a ticked row the user cannot see must not exist.
+const MAX_ROWS = 3000;
 
 const scroll = { maxHeight: 420, overflowY: "auto", margin: "8px 0", paddingRight: 6 } as const;
 const turn = { display: "flex", gap: 12, margin: "18px 0 6px", alignItems: "flex-start" } as const;
@@ -134,8 +135,9 @@ function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
   const toggle = (uid: string) => setTracks((x) => (x.track.uid === uid ? { ...x, selected: !x.selected } : x));
   const all = (selected: boolean) => setTracks((x) => ({ ...x, selected }));
   const open = (uri: string) => Spicetify.Platform.History.push(`/playlist/${uri.split(":")[2]}`);
-  const undo = (snapshot: Parameters<typeof restoreSnapshot>[0]) =>
-    run(t("act.undoing"), async () => ({ kind: "undone", exact: (await restoreSnapshot(snapshot)).exact }));
+  const undo = (snapshot: Snapshot) =>
+    run(t("act.undoing"), async () => ({ kind: "undone", exact: (await safeRestore(snapshot, t("undo.backup", { reason: snapshot.reason }))).exact }));
+  const target = proposal.kind === "removal" || proposal.kind === "additions" ? proposal.playlist : proposal.source;
   const working = busy && <span style={{ ...css.muted, display: "inline-flex", gap: 8, alignItems: "center" }}><Spinner size={14} />{busy}</span>;
 
   let body;
@@ -255,8 +257,12 @@ function ProposalCard({ initial }: { initial: Proposal; key?: string }) {
   }
   return (
     <div style={{ ...css.group, border: "1px solid rgba(255,255,255,.12)" }} className="sai-in">
+      {/* The headline is written by the app from real data; the model's own summary is plain text below it. */}
       <div className="sai-kind">{t(`pr.kind.${proposal.kind}` as Key)}</div>
-      <div style={{ fontWeight: 700, fontSize: 16, margin: "4px 0 2px", lineHeight: 1.35 }}>{proposal.summary || t("pr.fallback")}</div>
+      <div style={{ fontWeight: 700, fontSize: 16, margin: "4px 0 2px", lineHeight: 1.35 }}>
+        {t(`pr.kind.${proposal.kind}` as Key)} {t("pr.for", { name: target.name })}
+      </div>
+      {proposal.summary && <div style={{ ...css.muted, fontSize: 14 }}>{proposal.summary}</div>}
       {error && <p style={css.error}>{error}</p>}
       {body}
     </div>
@@ -276,7 +282,7 @@ interface Progress {
 
 const EXAMPLES: Key[] = ["ex.1", "ex.2", "ex.3", "ex.4", "ex.5"];
 
-export function AgentView({ onBack, onSettings, initialPrompt = "" }: { onBack: () => void; onSettings: () => void; initialPrompt?: string }) {
+export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: { onBack: () => void; onSettings: () => void; initialPrompt?: string; playlist?: Playlist }) {
   const { useRef, useState } = hooks();
   const [settings] = useState(loadSettings());
   const [agent, setAgent] = useState(null as Agent | null);
@@ -292,7 +298,7 @@ export function AgentView({ onBack, onSettings, initialPrompt = "" }: { onBack: 
     event.preventDefault();
     const text = prompt.trim();
     if (!text || progress || !ready) return;
-    const current = agent ?? new Agent(settings, port);
+    const current = agent ?? new Agent(settings, port, undefined, playlist?.uri);
     if (!agent) setAgent(current);
     const id = ++runId.current;
     running.current = current;

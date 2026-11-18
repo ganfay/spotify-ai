@@ -36,6 +36,10 @@ AGENT_APP="ai-playlists"
 AGENT_SOURCE="${HERE}/agent/release/${AGENT_APP}"
 MPRIS="org.mpris.MediaPlayer2.spotify"
 OPTIONS_FILE="${HOME}/.config/spotify-ai/options"
+# Written when THIS installer put Spicetify there. Without it, uninstall leaves a
+# Spicetify the user set up themselves alone and removes only our parts.
+OURS_MARKER="${SPICETIFY_HOME}/.installed-by-spotify-ai"
+ME="$(id -un)"
 
 # Defaults; overwritten by the saved choices and then by command-line flags.
 ADBLOCK="on"
@@ -99,12 +103,12 @@ fix_permissions() {
   say "Folder permissions"
   if [[ -w "${SPOTIFY_DIR}" && -w "${SPOTIFY_DIR}/Apps" ]] \
      && ! find "${SPOTIFY_DIR}/Apps" ! -writable -print -quit | grep -q .; then
-    info "already writable by ${USER}"
+    info "already writable by ${ME}"
   else
     # Only this user gets write access (narrower than the usual 'chmod a+wr').
-    sudo chown "${USER}" "${SPOTIFY_DIR}"
-    sudo chown -R "${USER}" "${SPOTIFY_DIR}/Apps"
-    info "${USER} now owns ${SPOTIFY_DIR} and ${SPOTIFY_DIR}/Apps"
+    sudo chown "${ME}" "${SPOTIFY_DIR}"
+    sudo chown -R "${ME}" "${SPOTIFY_DIR}/Apps"
+    info "${ME} now owns ${SPOTIFY_DIR} and ${SPOTIFY_DIR}/Apps"
   fi
 }
 
@@ -114,6 +118,8 @@ install_spicetify() {
     info "already installed"
     return
   fi
+  local fresh=1
+  [[ -e "${SPICETIFY_HOME}" || -e "${SPICETIFY_CONFIG_DIR}" ]] && fresh=0
   local tmp
   tmp="$(mktemp -d)"
   curl -fsSL -o "${tmp}/spicetify.tar.gz" \
@@ -122,13 +128,14 @@ install_spicetify() {
   mkdir -p "${SPICETIFY_HOME}"
   tar -xzf "${tmp}/spicetify.tar.gz" -C "${SPICETIFY_HOME}"
   rm -rf "${tmp}"
+  [[ "${fresh}" == 1 ]] && : > "${OURS_MARKER}"
   info "installed into ${SPICETIFY_HOME}"
 }
 
 install_adblockify() {
   say "adblockify (${ADBLOCKIFY_COMMIT:0:7})"
   local target="${SPICETIFY_CONFIG_DIR}/Extensions/${EXTENSION}"
-  local marker="adblockify ${ADBLOCKIFY_COMMIT} sha256:${ADBLOCKIFY_SHA256} wrapper:1"
+  local marker="adblockify ${ADBLOCKIFY_COMMIT} sha256:${ADBLOCKIFY_SHA256} wrapper:2"
   if [[ -f "${target}" ]] && grep -qF "${marker}" "${target}"; then
     info "already installed"
     return
@@ -147,8 +154,12 @@ install_adblockify() {
     printf '(function () {\n'
     printf '  try { if (localStorage.getItem("spotify-ai:adblock") === "off") return; } catch (e) {}\n'
     printf '  window.__spotifyAiAdblock = true;\n'
+    # The original file goes into its own function, unchanged, so that its
+    # leading "use strict" is still the first statement of a function body.
+    printf '  (function () {\n'
     cat "${tmp}"
-    printf '\n})();\n'
+    printf '\n  })();\n'
+    printf '})();\n'
   } > "${target}"
   rm -f "${tmp}" "${SPICETIFY_CONFIG_DIR}/Extensions/${OLD_EXTENSION}"
   info "installed"
@@ -240,16 +251,42 @@ apply() {
 uninstall() {
   say "Uninstalling"
   stop_spotify
+  local restored=1
   if [[ -x "${SPICETIFY}" && -d "${SPOTIFY_DIR}/Apps/xpui" ]]; then
-    "${SPICETIFY}" restore >/dev/null 2>&1 && info "Spotify files restored" \
-      || info "WARNING: restore failed — run: sudo apt install --reinstall spotify-client"
+    if "${SPICETIFY}" restore >/dev/null 2>&1; then
+      info "Spotify files restored"
+    else
+      restored=0
+    fi
   fi
-  rm -rf "${SPICETIFY_HOME}" "${SPICETIFY_CONFIG_DIR}" "$(dirname "${OPTIONS_FILE}")"
-  info "Spicetify removed"
-  info "asking for sudo to give the Spotify folder back to root and allow updates"
-  sudo chown -R root "${SPOTIFY_DIR}/Apps" && sudo chown root "${SPOTIFY_DIR}" && info "folder owner restored"
-  sudo apt-mark unhold spotify-client >/dev/null && info "updates allowed again"
-  say "Done. Spotify is back to its original state."
+  if [[ "${restored}" == 0 ]]; then
+    # Nothing is deleted: the backup Spicetify holds may still be needed.
+    die "could not restore Spotify's files. Nothing was removed. To reset Spotify run: sudo apt install --reinstall spotify-client   and then run this again."
+  fi
+
+  if [[ -f "${OURS_MARKER}" ]]; then
+    rm -rf "${SPICETIFY_HOME}" "${SPICETIFY_CONFIG_DIR}"
+    info "Spicetify removed"
+  elif [[ -x "${SPICETIFY}" ]]; then
+    # Spicetify was here before us: remove only what this installer added.
+    rm -f "${SPICETIFY_CONFIG_DIR}/Extensions/${EXTENSION}"
+    rm -rf "${SPICETIFY_CONFIG_DIR}/CustomApps/${AGENT_APP}"
+    "${SPICETIFY}" config extensions "${EXTENSION}-" custom_apps "${AGENT_APP}-" >/dev/null 2>&1 || true
+    "${SPICETIFY}" backup apply >/dev/null 2>&1 || true
+    info "our extension and app removed; your own Spicetify setup was kept"
+  fi
+  rm -rf "$(dirname "${OPTIONS_FILE}")"
+
+  if [[ -f "${OURS_MARKER}" || ! -x "${SPICETIFY}" ]]; then
+    info "asking for sudo to give the Spotify folder back to root and allow updates"
+    sudo chown -R root "${SPOTIFY_DIR}/Apps" && sudo chown root "${SPOTIFY_DIR}" && info "folder owner restored"
+    sudo apt-mark unhold spotify-client >/dev/null && info "updates allowed again"
+    say "Done. Spotify is back to its original state."
+  else
+    say "Done. Our parts are removed; Spicetify itself, the folder permissions and the update hold were left as they are."
+  fi
+  info "Note: settings saved inside Spotify (including an API key you entered) are not removed."
+  info "To clear them: AI Playlists > Settings before uninstalling, or delete Spotify's local data."
 }
 
 main() {

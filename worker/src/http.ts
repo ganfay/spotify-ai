@@ -133,12 +133,20 @@ export async function secretsEqual(a: string, b: string): Promise<boolean> {
 }
 
 /**
- * Hash the client IP with a per-deployment salt. Only this hash is stored.
+ * Keyed hash (HMAC-SHA-256) of the client IP. Only this hash is stored.
+ * The key must be secret: with a public key every IPv4 address could be tried
+ * in seconds. IP_SALT is used when set; otherwise the key is derived from the
+ * Gemini API key, which is always present and never leaves the Worker.
  * IPv6 addresses are cut to their /64 prefix first: one home connection owns a
  * whole /64, so hashing the full address would make the per-IP limit useless.
  */
-export async function hashIp(ip: string, salt: string | undefined): Promise<string> {
-  return sha256Hex(`${salt || "spotify-ai-proxy"}|${normalizeIp(ip)}`);
+export async function hashIp(ip: string, salt: string | undefined, fallbackSecret: string | undefined): Promise<string> {
+  const secret = salt || (fallbackSecret ? `ip-salt|${fallbackSecret}` : "");
+  // No secret at all can only happen without an API key, where no request is served anyway.
+  const keyBytes = new TextEncoder().encode(secret || crypto.randomUUID());
+  const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(normalizeIp(ip)));
+  return [...new Uint8Array(mac)].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
 export function normalizeIp(ip: string): string {

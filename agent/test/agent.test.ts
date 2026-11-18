@@ -264,3 +264,20 @@ test("An exclude-list or a split is refused until every track of a big playlist 
   const ok = await box.call("propose_new_playlist", { source_playlist_id: "p1", name: "x", summary: "s", exclude_track_ids: ["t2"] });
   assert.equal(ok.tracks_in_playlist, 1199);
 });
+
+test("list_playlists does not send owner names; a locked agent sees only the picked playlist", async () => {
+  const { port } = fakeSpotify();
+  const other: Playlist = { ...PLAYLIST, uri: "spotify:playlist:b", name: "Private diary", ownerName: "Real Name" };
+  const two: SpotifyPort = { ...port, listPlaylists: async () => [other, PLAYLIST] };
+  const open = await new Toolbox(two).call("list_playlists", {});
+  assert.equal(JSON.stringify(open).includes("Real Name"), false);
+  assert.equal((open.playlists as unknown[]).length, 2);
+  const locked = new Toolbox(two, PLAYLIST.uri);
+  const seen = await locked.call("list_playlists", {});
+  assert.deepEqual(seen.playlists, [{ id: "p1", name: "Mix", tracks: 4, can_edit: true }]);
+  assert.match(String((await locked.call("get_tracks", { playlist_id: "p2" })).error), /No playlist/);
+  await locked.call("get_tracks", { playlist_id: "p1" });
+  await locked.call("propose_new_playlist", { source_playlist_id: "p1", name: "n", summary: "s", exclude_track_ids: [] });
+  const proposal = locked.proposals[0]!;
+  assert.equal(proposal.kind === "new_playlist" && proposal.source.uri, PLAYLIST.uri);
+});
