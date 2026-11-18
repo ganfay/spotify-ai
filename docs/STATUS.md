@@ -50,7 +50,7 @@ An independent reviewer read the whole repository and its git history. No critic
 
 Fixed after the review:
 
-- **Proxy:** daily caps per install (100) and per address (200) so one caller cannot use up the shared quota; requests per prompt 40 → 24; only this app's ten function names, and only text / function-call parts, are accepted (no Google Search, code execution, files or media); IP addresses are stored as a keyed hash. 44 tests. **Not deployed yet — the owner must run `npx wrangler deploy` in `worker/`.**
+- **Proxy:** daily caps per install (100) and per address (200) so one caller cannot use up the shared quota; requests per prompt 40 → 24; only this app's ten function names, and only text / function-call parts, are accepted (no Google Search, code execution, files or media); IP addresses are stored as a keyed hash. 44 tests. Deployed by the owner on 2026-11-18 and checked with real requests: a Google Search tool, a foreign function name, inline media and a `model` field are refused with 400 without using quota; a foreign origin gets 403; a normal request with an app tool returns a function call and uses one prompt; admin routes answer 404.
 - **Undo:** an old undo point first shows what it would remove and bring back and asks; the current state is saved as a new undo point before anything is restored.
 - **Agent:** started from a card, it can see and change only the picked playlist; owner names are no longer sent; the card headline is written by the app, the model's summary is plain text under it; no rows are hidden; an API key is cleared when the provider is changed.
 - **Installer:** the wrapper keeps the extension's strict mode; uninstall refuses to delete anything when restoring failed, and leaves a Spicetify setup that was there before us.
@@ -70,7 +70,7 @@ Left open on purpose:
 
 1. Research: how to install on Windows and macOS without SpotX — done. Result: versioned installers cannot be downloaded from Spotify's servers (signed links); the installer will accept the current official Spotify, check it against the supported ceiling (1.3.9 for Spicetify 2.46.7) and stop with a clear message if it is newer (expected gap 0–6 days). Update blocking: `chflags uchg` on the Update folder (macOS), a locked `Update` file (Windows); Spicetify's own command is broken on Windows. Asset names and checksums for Spicetify 2.46.7 on both systems are known.
 2. Security review — done, see above.
-3. Fix what the review finds — done, except deploying the hardened proxy (owner).
+3. Fix what the review finds — done; the hardened proxy is deployed and checked.
 4. Write `install.ps1` (Windows) and the macOS branch of the installer. **Needs testers with a Windows and a Mac machine** — none yet.
 5. Final README, last check of the history, then make the repository public — only after the owner says yes.
 
