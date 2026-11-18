@@ -289,7 +289,7 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
  */
 function RecentChanges() {
   const { useState } = hooks();
-  const [items, setItems] = useState(listSnapshots());
+  const [items, setItems] = useState(() => listSnapshots());
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
   const [asking, setAsking] = useState(null as { snapshot: Snapshot; preview: RestorePreview } | null);

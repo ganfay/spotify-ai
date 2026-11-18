@@ -29,13 +29,13 @@ const avatar = {
   background: "var(--spice-button, #1ed760)", color: "#000",
 } as const;
 const mine = {
-  background: "rgba(255,255,255,.1)", borderRadius: "18px 18px 4px 18px", padding: "10px 16px", maxWidth: "75%",
+  background: "rgba(var(--spice-rgb-text, 255,255,255),.1)", borderRadius: "18px 18px 4px 18px", padding: "10px 16px", maxWidth: "75%",
   marginLeft: "auto", whiteSpace: "pre-wrap", lineHeight: 1.45,
 } as const;
 const answer = { whiteSpace: "pre-wrap", lineHeight: 1.5, paddingTop: 3, flex: 1, minWidth: 0 } as const;
 const composer = {
   display: "flex", alignItems: "center", gap: 8, padding: "6px 6px 6px 18px", borderRadius: 500,
-  background: "var(--spice-card, #181818)", border: "1px solid rgba(255,255,255,.14)", transition: "border-color .15s",
+  background: "var(--spice-card, #181818)", border: "1px solid rgba(var(--spice-rgb-text, 255,255,255),.14)", transition: "border-color .15s",
 } as const;
 const composerInput = { flex: 1, minWidth: 0, background: "transparent", border: 0, color: "var(--spice-text, #fff)", fontSize: 15, padding: "8px 0" } as const;
 const actions = { ...css.bar, margin: "12px 0 4px" } as const;
@@ -259,7 +259,7 @@ function ProposalCard({ initial, onApplied }: { initial: Proposal; onApplied?: (
     );
   }
   return (
-    <div style={{ ...css.group, border: "1px solid rgba(255,255,255,.12)" }} className="sai-in">
+    <div style={{ ...css.group, border: "1px solid rgba(var(--spice-rgb-text, 255,255,255),.12)" }} className="sai-in">
       {/* The headline is written by the app from real data; the model's own summary is plain text below it. */}
       <div className="sai-kind">{t(`pr.kind.${proposal.kind}` as Key)}</div>
       <div style={{ fontWeight: 700, fontSize: 16, margin: "4px 0 2px", lineHeight: 1.35 }}>
@@ -283,7 +283,7 @@ const EXAMPLES: Key[] = ["ex.1", "ex.2", "ex.3", "ex.4", "ex.5"];
 
 export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: { onBack: () => void; onSettings: () => void; initialPrompt?: string; playlist?: Playlist }) {
   const { useRef, useState } = hooks();
-  const [settings] = useState(loadSettings());
+  const [settings] = useState(loadSettings);
   const [agent, setAgent] = useState(null as Agent | null);
   const [messages, setMessages] = useState([] as Message[]);
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -298,7 +298,7 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
 
   // Recent chats (this computer only). chatId is empty until the first answer is saved.
   const chatId = useRef("");
-  const [chats, setChats] = useState(listChats(playlist?.uri));
+  const [chats, setChats] = useState(() => listChats(playlist?.uri));
   const [reopened, setReopened] = useState(false);
   const latest = useRef(messages);
   latest.current = messages;
@@ -475,7 +475,7 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
         )}
       </div>
 
-      <form onSubmit={send} style={{ position: "sticky", bottom: 0, padding: "14px 0 18px", background: "linear-gradient(transparent, var(--spice-main, #121212) 30%)" }}>
+      <form onSubmit={send} className="sai-dock" style={{ position: "sticky", bottom: 0, padding: "14px 0 18px", background: "linear-gradient(transparent, var(--spice-main, #121212) 30%)" }}>
         <div className="sai-composer" style={{ ...composer, opacity: ready ? 1 : 0.5 }}>
           <input style={composerInput} value={prompt} disabled={!ready || !!progress}
                  placeholder={t(messages.length ? "ag.placeholderReply" : "ag.placeholder")}

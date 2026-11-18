@@ -10,6 +10,10 @@ import { BackLink, css, hooks, Icon } from "./ui";
 
 declare const Spicetify: any;
 
+// The startup extension's own function when it is there: it remembers what it switched
+// on (the cover follower of Glass), so only it can switch that off again.
+const apply: typeof applyAppearance = (window as unknown as { __spotifyAiAppearance?: typeof applyAppearance }).__spotifyAiAppearance ?? applyAppearance;
+
 const HEX = /^[0-9a-fA-F]{6}$/;
 const section = { ...css.muted, textTransform: "uppercase", letterSpacing: ".08em", fontWeight: 700, fontSize: 11, margin: "26px 0 10px" } as const;
 const row = { display: "flex", alignItems: "center", gap: 12, margin: "10px 0" } as const;
@@ -72,28 +76,28 @@ const preview = (c: Choice): string =>
 
 export function AppearanceView({ onBack }: { onBack: () => void }) {
   const { useState } = hooks();
-  const [saved, setSaved] = useState(loadAppearance() !== null);
-  const [choice, setChoice] = useState(fromAppearance(loadAppearance()));
-  const works = looksReady();
+  const [saved, setSaved] = useState(() => loadAppearance() !== null);
+  const [choice, setChoice] = useState(() => fromAppearance(loadAppearance()));
+  const [works] = useState(looksReady);
 
   const use = (next: Choice | null) => {
     if (next === null) {
       localStorage.removeItem(APPEARANCE_KEY);
-      applyAppearance(null);
+      apply(null);
       setChoice({ ...STOCK });
       setSaved(false);
       return;
     }
     const look = toAppearance(next);
     localStorage.setItem(APPEARANCE_KEY, JSON.stringify(look));
-    applyAppearance(look);
+    apply(look);
     setChoice(next);
     setSaved(true);
   };
   const useTheme = (theme: Theme) => {
     const look = themeAppearance(theme);
     localStorage.setItem(APPEARANCE_KEY, JSON.stringify(look));
-    applyAppearance(look);
+    apply(look);
     setChoice({ background: theme.background, accent: theme.accent, gradient: null, preset: themeMark(theme.id) });
     setSaved(true);
   };
@@ -143,7 +147,7 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
 
       <div style={section}>{t("look.gradient")}</div>
       <label style={{ ...row, cursor: "pointer" }}>
-        <input type="checkbox" checked={!!gradient}
+        <input type="checkbox" style={{ accentColor: "var(--spice-button, #1ed760)" }} checked={!!gradient}
                onChange={() => edit({ gradient: gradient ? null : { colors: [choice.accent, choice.background], angle: 160, intensity: 0.5 } })} />
         <span>{t("look.gradientOn")}</span>
       </label>

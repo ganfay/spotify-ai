@@ -5,7 +5,8 @@ import { t } from "./i18n";
 declare const Spicetify: any;
 
 export interface Hooks {
-  useState<T>(initial: T): [T, (value: T) => void];
+  /** A function as the initial value runs once (do this for anything read from storage). */
+  useState<T>(initial: T | (() => T)): [T, (value: T) => void];
   useEffect(effect: () => void, deps?: unknown[]): void;
   useRef<T>(initial: T): { current: T };
 }
@@ -30,19 +31,19 @@ export const css = {
   muted: { color: "var(--spice-subtext, #b3b3b3)", fontSize: 13 },
   row: {
     display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "8px 10px",
-    borderBottom: "1px solid rgba(255,255,255,.07)", cursor: "pointer", borderRadius: 4,
+    borderBottom: "1px solid rgba(var(--spice-rgb-text, 255,255,255),.07)", cursor: "pointer", borderRadius: 4,
   },
   group: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "14px 18px", margin: "12px 0" },
   entry: { display: "flex", alignItems: "center", gap: 14, padding: "8px 0", cursor: "pointer" },
-  tag: { fontSize: 11, padding: "1px 7px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 6 },
+  tag: { fontSize: 11, padding: "1px 7px", borderRadius: 10, background: "rgba(var(--spice-rgb-text, 255,255,255),.12)", marginLeft: 6 },
   bar: { display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", margin: "28px 0 40px" },
-  primary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "#000" },
+  primary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "var(--spice-button, #1ed760)", color: "var(--sai-on-accent, #000)" },
   secondary: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)" },
   danger: { padding: "12px 28px", borderRadius: 500, fontSize: 14, border: 0, fontWeight: 700, cursor: "pointer", background: "#e22134", color: "#fff" },
   cards: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginTop: 24 },
   small: { padding: "7px 16px", borderRadius: 500, fontSize: 13, border: "1px solid var(--spice-subtext, #b3b3b3)", fontWeight: 700, cursor: "pointer", background: "transparent", color: "var(--spice-text, #fff)", flex: "none" },
   card: { background: "var(--spice-card, #181818)", borderRadius: 8, padding: "20px 22px", minHeight: 104 },
-  badge: { fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,.12)", marginLeft: 8 },
+  badge: { fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(var(--spice-rgb-text, 255,255,255),.12)", marginLeft: 8 },
   notice: { background: "rgba(30,215,96,.12)", borderRadius: 8, padding: "12px 14px", margin: "14px 0" },
   error: { color: "#f15e6c", margin: "10px 0" },
 } as const;
@@ -68,16 +69,16 @@ export function GlobalStyles() {
       .sai-link { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; color: var(--spice-subtext, #b3b3b3); font-size: 13px; transition: color .15s; }
       .sai-link:hover { color: var(--spice-text, #fff); }
       .sai-chatrow { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 8px; cursor: pointer; transition: background .15s; }
-      .sai-chatrow:hover { background: rgba(255,255,255,.07); }
-      .sai-range { -webkit-appearance: none; appearance: none; flex: 1; width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,.18); outline: none; cursor: pointer; }
-      .sai-range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); transition: transform .12s; }
+      .sai-chatrow:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.07); }
+      .sai-range { -webkit-appearance: none; appearance: none; flex: 1; width: 100%; height: 6px; border-radius: 3px; background: rgba(var(--spice-rgb-text, 255,255,255),.18); outline: none; cursor: pointer; }
+      .sai-range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--spice-text, #fff); border: 2px solid var(--spice-main, #121212); box-shadow: 0 1px 4px rgba(0,0,0,.5); transition: transform .12s; }
       .sai-range::-webkit-slider-thumb:hover { transform: scale(1.2); }
-      .sai-swatch { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); cursor: pointer; transition: transform .12s; }
+      .sai-swatch { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid rgba(var(--spice-rgb-text, 255,255,255),.35); cursor: pointer; transition: transform .12s; }
       .sai-swatch:hover { transform: scale(1.08); }
-      .sai-hex { width: 92px; background: rgba(255,255,255,.07); color: var(--spice-text, #fff); border: 1px solid transparent; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: ui-monospace, monospace; }
+      .sai-hex { width: 92px; background: rgba(var(--spice-rgb-text, 255,255,255),.07); color: var(--spice-text, #fff); border: 1px solid transparent; border-radius: 6px; padding: 6px 8px; font-size: 13px; font-family: ui-monospace, monospace; }
       .sai-hex:focus { border-color: var(--spice-button, #1ed760); outline: none; }
-      .sai-look { cursor: pointer; border-radius: 10px; padding: 6px; background: rgba(255,255,255,.05); border: 2px solid transparent; transition: transform .15s, background .15s, border-color .15s; }
-      .sai-look:hover { transform: translateY(-2px); background: rgba(255,255,255,.1); }
+      .sai-look { cursor: pointer; border-radius: 10px; padding: 6px; background: rgba(var(--spice-rgb-text, 255,255,255),.05); border: 2px solid transparent; transition: transform .15s, background .15s, border-color .15s; }
+      .sai-look:hover { transform: translateY(-2px); background: rgba(var(--spice-rgb-text, 255,255,255),.1); }
       .sai-look.on { border-color: var(--spice-button, #1ed760); }
       .sai-look .pic { position: relative; height: 64px; border-radius: 6px; }
       .sai-look .dot { position: absolute; right: 8px; bottom: 8px; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
@@ -90,51 +91,55 @@ export function GlobalStyles() {
       .sai-theme-glass .word { padding: 8px 20px; border-radius: 14px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(10px); font-weight: 700; font-size: 22px; }
       .sai-theme-neon { background: radial-gradient(90% 120% at 10% 0%, rgba(255,62,165,.55), transparent 60%), radial-gradient(90% 120% at 100% 100%, rgba(34,211,238,.45), transparent 60%), linear-gradient(180deg, #170a34, #06030e); box-shadow: inset 0 0 0 1px rgba(255,62,165,.5); }
       .sai-theme-neon .word { background: linear-gradient(92deg, #fff, #ffb3dc, #8be9f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 12px rgba(255,62,165,.7)); }
-      .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }
-      .sai-tour-btn:hover { background: rgba(255,255,255,.18); transform: scale(1.03); }
-      .sai-tour-btn.primary { background: var(--spice-button, #1ed760); color: #000; }
+      html[data-sai-theme="noir"] #main :is(.sai-swatch, .sai-look .dot, .sai-round) { border-radius: 999px !important; }
+      html[data-sai-theme="noir"] #main .sai-theme-glass, html[data-sai-theme="noir"] #main .sai-theme-glass .word { border-radius: 14px !important; }
+      html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .sai-dock { background: transparent !important; }
+      .sai-look .pic { box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-text, 255,255,255), .14); }
+      .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(var(--spice-rgb-text, 255,255,255),.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }
+      .sai-tour-btn:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.18); transform: scale(1.03); }
+      .sai-tour-btn.primary { background: var(--spice-button, #1ed760); color: var(--sai-on-accent, #000); }
       .sai-tour-btn.primary:hover { background: var(--spice-button-active, #3be477); }
       .sai-iconbtn { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; color: var(--spice-subtext, #b3b3b3); transition: background .15s, color .15s; }
-      .sai-iconbtn:hover { background: rgba(255,255,255,.1); color: var(--spice-text, #fff); }
-      .sai-chip { cursor: pointer; padding: 8px 14px; border-radius: 500px; background: rgba(255,255,255,.07); font-size: 13px; transition: background .15s; }
-      .sai-chip:hover { background: rgba(255,255,255,.14); }
+      .sai-iconbtn:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.1); color: var(--spice-text, #fff); }
+      .sai-chip { cursor: pointer; padding: 8px 14px; border-radius: 500px; background: rgba(var(--spice-rgb-text, 255,255,255),.07); font-size: 13px; transition: background .15s; }
+      .sai-chip:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.14); }
       @keyframes sai-rise { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
       .sai-card { cursor: pointer; display: flex; gap: 14px; align-items: flex-start; animation: sai-rise .38s cubic-bezier(.2,.8,.2,1) both; transition: background .2s, transform .2s, box-shadow .2s; }
-      .sai-card:hover { background: rgba(255,255,255,.09) !important; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.35); }
-      .sai-card .ico { width: 42px; height: 42px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.07); color: var(--spice-subtext, #b3b3b3); transition: background .2s, color .2s, transform .2s; }
-      .sai-card:hover .ico { background: var(--spice-button, #1ed760); color: #000; transform: scale(1.06) rotate(-4deg); }
-      .sai-pill { -webkit-app-region: no-drag; position: relative; z-index: 1; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px 8px 12px; border-radius: 500px; border: 0; background: rgba(255,255,255,.07); color: var(--spice-text, #fff); font-size: 13px; font-weight: 700; transition: background .15s, transform .15s; }
-      .sai-pill:hover { background: rgba(255,255,255,.14); }
+      .sai-card:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.09) !important; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,.35); }
+      .sai-card .ico { width: 42px; height: 42px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; background: rgba(var(--spice-rgb-text, 255,255,255),.07); color: var(--spice-subtext, #b3b3b3); transition: background .2s, color .2s, transform .2s; }
+      .sai-card:hover .ico { background: var(--spice-button, #1ed760); color: var(--sai-on-accent, #000); transform: scale(1.06) rotate(-4deg); }
+      .sai-pill { -webkit-app-region: no-drag; position: relative; z-index: 1; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px 8px 12px; border-radius: 500px; border: 0; background: rgba(var(--spice-rgb-text, 255,255,255),.07); color: var(--spice-text, #fff); font-size: 13px; font-weight: 700; transition: background .15s, transform .15s; }
+      .sai-pill:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.14); }
       .sai-pill svg { transition: transform .35s; }
       .sai-pill:hover svg { transform: rotate(60deg); }
       .sai-kind { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--spice-button, #1ed760); }
-      .sai-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden; margin-top: 8px; width: 260px; max-width: 100%; }
+      .sai-bar { height: 4px; border-radius: 2px; background: rgba(var(--spice-rgb-text, 255,255,255),.12); overflow: hidden; margin-top: 8px; width: 260px; max-width: 100%; }
       .sai-bar > div { height: 100%; background: var(--spice-button, #1ed760); border-radius: 2px; transition: width .3s ease; }
-      .sai-select { background: var(--spice-card, #181818); color: var(--spice-text, #fff); border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 4px 6px; font-size: 12px; max-width: 150px; }
+      .sai-select { background: var(--spice-card, #181818); color: var(--spice-text, #fff); border: 1px solid rgba(var(--spice-rgb-text, 255,255,255),.18); border-radius: 6px; padding: 4px 6px; font-size: 12px; max-width: 150px; }
       .sai-groupname { background: transparent; border: 0; border-bottom: 1px solid transparent; color: var(--spice-text, #fff); font-weight: 700; font-size: 15px; padding: 2px 0; min-width: 0; flex: 1; }
-      .sai-groupname:hover, .sai-groupname:focus { border-bottom-color: rgba(255,255,255,.35); outline: none; }
+      .sai-groupname:hover, .sai-groupname:focus { border-bottom-color: rgba(var(--spice-rgb-text, 255,255,255),.35); outline: none; }
       @media (prefers-reduced-motion: reduce) { .sai-card, .sai-in { animation: none !important; } .sai-card:hover { transform: none; } }
-      .sai-send { cursor: pointer; width: 36px; height: 36px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; background: var(--spice-button, #1ed760); color: #000; transition: transform .12s, opacity .15s; flex: none; }
+      .sai-send { cursor: pointer; width: 36px; height: 36px; border-radius: 50%; border: 0; display: flex; align-items: center; justify-content: center; background: var(--spice-button, #1ed760); color: var(--sai-on-accent, #000); transition: transform .12s, opacity .15s; flex: none; }
       .sai-send:hover:not(:disabled) { transform: scale(1.06); }
       .sai-send:disabled { opacity: .35; cursor: default; }
       .sai-tile { cursor: pointer; padding: 12px; border-radius: 8px; transition: background .15s; min-width: 0; }
-      .sai-tile:hover { background: rgba(255,255,255,.08); }
-      .sai-tile .cover { width: 100%; aspect-ratio: 1; border-radius: 6px; object-fit: cover; background: rgba(255,255,255,.07); display: flex; align-items: center; justify-content: center; color: var(--spice-subtext, #b3b3b3); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+      .sai-tile:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.08); }
+      .sai-tile .cover { width: 100%; aspect-ratio: 1; border-radius: 6px; object-fit: cover; background: rgba(var(--spice-rgb-text, 255,255,255),.07); display: flex; align-items: center; justify-content: center; color: var(--spice-subtext, #b3b3b3); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
       .sai-tile .name { font-weight: 700; margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .sai-adv summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; color: var(--spice-subtext, #b3b3b3); font-size: 13px; }
       .sai-adv summary::-webkit-details-marker { display: none; }
       .sai-adv summary svg { transition: transform .15s; }
       .sai-adv[open] summary svg { transform: rotate(90deg); }
-      .sai-cover { position: relative; width: 40px; height: 40px; border-radius: 4px; overflow: hidden; flex: none; cursor: pointer; background: rgba(255,255,255,.07); display: flex; align-items: center; justify-content: center; color: var(--spice-subtext, #b3b3b3); }
+      .sai-cover { position: relative; width: 40px; height: 40px; border-radius: 4px; overflow: hidden; flex: none; cursor: pointer; background: rgba(var(--spice-rgb-text, 255,255,255),.07); display: flex; align-items: center; justify-content: center; color: var(--spice-subtext, #b3b3b3); }
       .sai-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
       .sai-cover .play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.55); color: #fff; opacity: 0; transition: opacity .12s; }
       .sai-trackrow:hover .sai-cover .play, .sai-cover.on .play { opacity: 1; }
       .sai-cover.on .play { color: var(--spice-button, #1ed760); }
       .sai-trackrow { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 6px; transition: background .12s; }
-      .sai-trackrow:hover { background: rgba(255,255,255,.06); }
+      .sai-trackrow:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.06); }
       .sai-trackrow .title { cursor: pointer; }
       .sai-trackrow .title:hover { text-decoration: underline; }
-      .sai-composer:focus-within { border-color: rgba(255,255,255,.35) !important; }
+      .sai-composer:focus-within { border-color: rgba(var(--spice-rgb-text, 255,255,255),.35) !important; }
       .sai-composer input { outline: none; }
     `}</style>
   );

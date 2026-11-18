@@ -28,7 +28,7 @@ export function errorText(e: unknown): string {
 
 export function SettingsView({ onBack, onLanguage, onTour }: { onBack: () => void; onLanguage: (choice: Settings["language"]) => void; onTour?: () => void }) {
   const { useEffect, useState } = hooks();
-  const [settings, setSettings] = useState(loadSettings());
+  const [settings, setSettings] = useState(loadSettings);
   const [check, setCheck] = useState(null as null | { ok: boolean; title: string; detail: string });
   const [busy, setBusy] = useState(false);
   const [unlock, setUnlock] = useState("locked" as "locked" | "asking" | "open");

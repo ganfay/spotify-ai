@@ -8,8 +8,19 @@
 /* A gradient over the whole window. The colours themselves stay solid (Spotify
    also uses them for icons and for the fade of long titles); only the big panels
    below get a see-through background, of the strength --sai-panel (0.2 … 1). */
-html[data-sai-gradient="on"] { background: var(--sai-gradient) fixed !important; }
+/* The gradient is one layer of its own, fixed behind everything and painted once.
+   (Not `background-attachment: fixed`: that can make scrolling repaint on the main thread.) */
+html[data-sai-gradient="on"] { background: var(--spice-main) !important; }
 html[data-sai-gradient="on"] body { background: transparent !important; }
+html[data-sai-gradient="on"]:not([data-sai-theme]) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--sai-gradient);
+  will-change: transform;
+}
 
 /* ------------------------------------------------------- see-through panels
    Used by the gradient and by the Glass and Neon themes. Everything outside the
@@ -37,6 +48,30 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
   background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
 }
 
+/* ---------------------------------------------- see-through: inner wrappers
+   Spotify paints the part of a page below its header with the page colour. The
+   names of those boxes change between versions, so they are found by what they
+   contain: the stable .contentSpacing box, or the action-bar background. */
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view div:has(> .contentSpacing),
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .playlist-playlist-concertsFooter,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .artist-artistDiscography-headerContainer,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-view-container__mh-footer-container,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-entryPoints,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) #Desktop_PanelContainer_Id::before,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-mainWrapper {
+  background-color: transparent !important;
+}
+/* Fades at the edges of carousels are drawn in the page colour: off. */
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .search-searchCategory-contentArea {
+  --carousel-start-chevron-gradient: transparent;
+  --carousel-end-chevron-gradient: transparent;
+}
+/* "Now playing", older layout: the veils over the video end in the solid page colour. */
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-contextItemInfo::before,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-canvasVisualEnhancement::before,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
+
 /* ------------------------------------------------------------- any look on
    Things Spotify colours by itself (from the cover of what is open) or leaves
    plain grey. They follow the chosen look instead. */
@@ -59,6 +94,37 @@ html[data-sai-look] :is(.Root__globalNav, .Root__nav-bar, .Root__main-view, .Roo
   --background-highlight: rgba(var(--spice-rgb-text), .07);
   --background-press: rgba(var(--spice-rgb-text), .04);
 }
+/* Solid "raised" colours, for the few things inside the panels that must hide what
+   is behind them: drop-down lists and small pop-ups that Spotify draws in place. */
+html[data-sai-look] {
+  --sai-raised: color-mix(in srgb, var(--spice-main), var(--spice-text) 9%);
+  --sai-raised-hi: color-mix(in srgb, var(--spice-main), var(--spice-text) 15%);
+}
+html[data-sai-look] :is(.Root__globalNav, .Root__nav-bar, .Root__main-view, .Root__right-sidebar, .Root__now-playing-bar) :is(
+    .main-globalNav-searchInputWrapper [role="listbox"],     /* search suggestions */
+    #assisted-curation-recent-searches,                      /* recent searches in "add to playlist" */
+    [data-testid="progress-label"],                          /* time under the pointer on the progress bar */
+    [data-testid="thumbnail-preview"],
+    .os-scrollbar-handle[data-group-by],                     /* the letter shown while dragging the library scrollbar */
+    .search-searchCategory-carouselButton,                   /* round arrows over carousels */
+    [data-testid="market-selector-trigger"] + div,
+    [data-testid="artist-pick-with-background-container"],
+    [data-testid="artist-pick-merch-container"]
+  ),
+html[data-sai-look] :is(.Root__globalNav, .Root__nav-bar, .Root__main-view, .Root__right-sidebar, .Root__now-playing-bar) :is(.main-globalNav-searchInputWrapper [role="listbox"], #assisted-curation-recent-searches) :is(.encore-dark-theme, .encore-base-set) {
+  --spice-main-elevated: var(--sai-raised);
+  --spice-highlight: var(--sai-raised);
+  --spice-highlight-elevated: var(--sai-raised-hi);
+  --spice-tab-active: var(--sai-raised-hi);
+  --spice-card: var(--sai-raised);
+  --background-elevated-base: var(--sai-raised);
+  --background-elevated-highlight: var(--sai-raised-hi);
+  --background-elevated-press: var(--sai-raised);
+  --background-highlight: var(--sai-raised);
+  --background-press: var(--spice-sidebar);
+}
+/* Native drop-downs (Settings): the opened list must be solid. */
+html[data-sai-look] select option { background-color: var(--sai-raised); color: var(--spice-text); }
 /* Inside the search field the magnifier and "browse" are bare icons: no second circle. */
 html[data-sai-look] .main-globalNav-searchSection button { background-color: transparent !important; }
 /* Playlist, album and artist headers: the cover's colour stays as a soft glow that fades out. */
@@ -68,23 +134,80 @@ html[data-sai-look] .main-home-homeHeader {
   -webkit-mask-image: linear-gradient(#000 30%, transparent);
   mask-image: linear-gradient(#000 30%, transparent);
 }
-html[data-sai-look] [class*="actionBarBackground-background"] { opacity: 0; }
-/* Bars that stay in place while the page scrolls under them: frosted, in the look's colour. */
+html[data-sai-look] .main-actionBarBackground-background,
+html[data-sai-look] .playlist-playlist-actionBarBackground-background { visibility: hidden; }
+/* Bars that stay in place while the page scrolls under them. A blur behind them
+   (backdrop-filter) is redone on every frame of scrolling and was the main thing
+   that made a look feel less smooth than stock, so they are a thick tint instead.
+   Only the Glass theme, which is about frosted glass, blurs. */
 html[data-sai-look] .main-home-filterChipsSection { background-color: transparent !important; background-image: none !important; }
 html[data-sai-look] .main-topBar-background {
-  background-color: rgba(var(--spice-rgb-main), .45) !important;
+  background-color: rgba(var(--spice-rgb-main), .88) !important;
   background-image: none !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.4);
-  backdrop-filter: blur(22px) saturate(1.4);
 }
 html[data-sai-look] .main-topBar-overlay { background-color: transparent !important; }
-/* The column titles of a track list stick too. Spotify only marks the "stuck" state
-   with a name that changes between versions, so this one is frosted all the time:
-   with nothing under it (page not scrolled) that is almost invisible. */
+/* The column titles of a track list: clear while they sit in the page, tinted only
+   while stuck to the top. "Stuck" is asked from the browser itself (a scroll-state
+   container query), because Spotify marks it with a name that changes between versions. */
 html[data-sai-look] .main-trackList-trackListHeader {
-  background-color: rgba(var(--spice-rgb-main), .28) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.4);
-  backdrop-filter: blur(22px) saturate(1.4);
+  container-type: scroll-state;
+  background: transparent !important;
+}
+html[data-sai-look] .main-trackList-trackListHeader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: transparent;
+}
+@container scroll-state(stuck: top) {
+  html[data-sai-look] .main-trackList-trackListHeader::before { background-color: rgba(var(--spice-rgb-main), .9); }
+}
+
+/* More bars that stay in place while the page scrolls under them (search chips, the
+   discography bar, the column titles of the expanded library): the same thick tint. */
+html[data-sai-look] .Root__main-view div:has(> .contentSpacing > .search-searchCategory-contentArea),
+html[data-sai-look] .artist-artistDiscography-topBar.artist-artistDiscography-topBarScrolled,
+html[data-sai-look] .main-yourLibraryX-libraryContainer div:has(> * > [role="columnheader"]) {
+  background-color: rgba(var(--spice-rgb-main), .9) !important;
+}
+
+/* ------------------------------------------------------------ row spacing
+   Two highlighted rows next to each other must not share an edge. Row heights are
+   fixed by Spotify's virtual lists, so only the painted highlight shrinks. */
+html[data-sai-look] {
+  --sai-row-gap: 2px;                                   /* per side: 4px between two highlights */
+  --sai-selected: rgba(var(--spice-rgb-text), .12);
+  --sai-selected-hover: rgba(var(--spice-rgb-text), .17);
+  --sai-selected-ring: rgba(var(--spice-rgb-text), .14);
+}
+/* List rows of the library, the queue and the side panel: the hover and press fill is
+   a separate layer (::after), so it can be inset without moving anything. */
+html[data-sai-look] :is(.Root__nav-bar, .Root__main-view, .Root__right-sidebar) [data-encore-id="listRow"]:is(:hover, :active)::after {
+  inset: var(--sai-row-gap) 0 !important;
+}
+/* Library, the open playlist: Spotify fills the row itself. The fill moves to the
+   same inset layer and gets a hairline ring, so it differs from plain hover. */
+html[data-sai-look] .main-yourLibraryX-listItem[aria-selected="true"] [class*="legacy-box--tinted"] {
+  background-color: transparent !important;
+}
+html[data-sai-look] .main-yourLibraryX-listItem[aria-selected="true"] [class*="legacy-box--tinted"]::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: var(--sai-row-gap) 0 !important;
+  border-radius: var(--encore-corner-radius-larger, 6px);
+  background-color: var(--sai-selected) !important;
+  box-shadow: inset 0 0 0 1px var(--sai-selected-ring);
+}
+html[data-sai-look] .main-yourLibraryX-listItem[aria-selected="true"] [class*="legacy-box--tinted"]:hover::after {
+  background-color: var(--sai-selected-hover) !important;
+}
+/* Track rows already have a 1px clear border: the fill stays out of it (2px between rows). */
+html[data-sai-look] .main-trackList-trackListRow {
+  background-clip: padding-box;
+  border-radius: 4px;
 }
 
 /* =================================================================== NOIR
@@ -108,9 +231,10 @@ html[data-sai-theme="noir"] .main-yourLibraryX-listItem:hover img { filter: none
 /* Spotify paints headers in a colour taken from the cover: gone. */
 html[data-sai-theme="noir"] .main-entityHeader-backgroundColor,
 html[data-sai-theme="noir"] .main-actionBarBackground-background,
-html[data-sai-theme="noir"] .main-topBar-background,
 html[data-sai-theme="noir"] .main-entityHeader-shadow { background: transparent !important; background-image: none !important; box-shadow: none !important; }
 html[data-sai-theme="noir"] .main-nowPlayingView-section { background: transparent !important; border: 1px solid rgba(255,255,255,.16); }
+html[data-sai-theme="noir"] .main-topBar-background,
+html[data-sai-theme="noir"] .main-trackList-trackListHeader::before { background: #000 !important; border-bottom: 1px solid rgba(255,255,255,.16); }
 /* Hairline frames around the panels. */
 html[data-sai-theme="noir"] .Root__nav-bar,
 html[data-sai-theme="noir"] .Root__main-view,
@@ -186,16 +310,15 @@ html[data-sai-theme="glass"] .main-yourLibraryX-library,
 html[data-sai-theme="glass"] .Root__main-view,
 html[data-sai-theme="glass"] .Root__right-sidebar-peek,
 html[data-sai-theme="glass"] .Root__now-playing-bar {
-  -webkit-backdrop-filter: blur(26px) saturate(1.5);
-  backdrop-filter: blur(26px) saturate(1.5);
+  /* No blur here: what is behind these panels is already a blurred picture, so a second
+     blur changes nothing visible and costs a full pass on every frame of scrolling. */
   border: 1px solid rgba(255,255,255,.10);
   box-shadow: 0 12px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08);
   border-radius: 20px !important;
   overflow: hidden;
 }
 html[data-sai-theme="glass"] .Root__now-playing-bar { margin: 0 8px 8px; }
-html[data-sai-theme="glass"] .main-entityHeader-backgroundColor,
-html[data-sai-theme="glass"] .main-actionBarBackground-background { opacity: .28; }
+html[data-sai-theme="glass"] .main-entityHeader-backgroundColor { opacity: .28; }
 html[data-sai-theme="glass"] .main-nowPlayingView-section { border-radius: 16px !important; border: 1px solid rgba(255,255,255,.08); }
 html[data-sai-theme="glass"] .main-trackList-trackListRow { border-radius: 12px !important; }
 html[data-sai-theme="glass"] .main-image-image,
@@ -252,7 +375,6 @@ html[data-sai-theme="neon"] .Root__right-sidebar-peek {
 }
 html[data-sai-theme="neon"] .Root__now-playing-bar { box-shadow: 0 -1px 0 rgba(34,211,238,.35), 0 -14px 40px rgba(124,58,237,.18); }
 html[data-sai-theme="neon"] .main-entityHeader-backgroundColor { background: linear-gradient(135deg, rgba(255,62,165,.40), rgba(124,58,237,.30) 55%, rgba(34,211,238,.22)) !important; }
-html[data-sai-theme="neon"] .main-actionBarBackground-background { background: linear-gradient(180deg, rgba(124,58,237,.22), transparent) !important; }
 html[data-sai-theme="neon"] .main-entityHeader-title,
 html[data-sai-theme="neon"] .main-entityHeader-title * {
   background: linear-gradient(92deg, #ffffff 10%, #ffb3dc 45%, #8be9f7 90%);
@@ -277,3 +399,9 @@ html[data-sai-theme="neon"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgb
 html[data-sai-theme="neon"] .main-nowPlayingWidget-coverArt img { box-shadow: 0 0 18px rgba(255,62,165,.55); border-radius: 8px !important; }
 html[data-sai-theme="neon"] .main-connectBar-connectBar { background: linear-gradient(90deg, var(--sai-pink), var(--sai-violet), var(--sai-cyan)) !important; color: #fff !important; }
 html[data-sai-theme="neon"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }
+
+/* ----------------------------------------------------------- small, any look */
+/* The volume pop-out is drawn in a "raised grey" that is see-through inside the bar. */
+html[data-sai-look] .volume-bar__slider-container { background-color: var(--sai-raised-hi) !important; }
+/* Cinema mode has a black frame of its own; over a backdrop it is a black box. */
+html[data-sai-look] .Root__cinema-view { outline-color: transparent; }

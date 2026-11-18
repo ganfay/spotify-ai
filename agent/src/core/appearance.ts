@@ -83,6 +83,12 @@ export function applyAppearance(look: Appearance | null): void {
     root.style.setProperty(`--spice-${name}`, `#${hex}`);
     root.style.setProperty(`--spice-rgb-${name}`, [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(","));
   }
+  // Text and icons drawn ON the accent colour: black on a bright accent, white on a dark one.
+  const accent = look.colors?.button;
+  if (accent && HEX.test(accent)) {
+    const lum = [0, 2, 4].reduce((sum, i, k) => sum + [0.2126, 0.7152, 0.0722][k]! * (parseInt(accent.slice(i, i + 2), 16) / 255) ** 2.2, 0);
+    root.style.setProperty("--sai-on-accent", lum > 0.18 ? "#000" : "#fff");
+  }
   const gradient = look.gradient;
   if (gradient && gradient.colors.length >= 2 && gradient.colors.every((c) => HEX.test(c))) {
     const strength = Math.max(0, Math.min(1, Number(gradient.intensity) || 0));
