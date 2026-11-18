@@ -98,6 +98,7 @@ Read this before you install:
 - **Spotify stops updating.** You keep the tested version, but you also stop getting Spotify's security fixes for its built-in browser engine until you update on purpose. Linux: `apt-mark hold`. Windows: a locked file named `Update` in `%LOCALAPPDATA%\Spotify`. macOS: the folder `~/Library/Application Support/Spotify/PersistentCache/Update` is locked.
 - **Linux: your user becomes the owner of `/usr/share/spotify`** (normally owned by root). Spicetify needs this to patch the client. The price: any program running as your user can now change Spotify's files without asking for a password. (On Windows and macOS your user can change them already.)
 - **Windows and macOS: Spicetify is installed** into `%LOCALAPPDATA%\spicetify` and `%APPDATA%\spicetify`, or `~/.spicetify` and `~/.config/spicetify`.
+- **macOS: the "downloaded from the internet" mark is removed from Spotify.** A patched Spotify no longer matches its signature, and with that mark macOS would call it "damaged" and refuse to open it. The copy the installer downloads itself is checked against Spotify's signature before anything is changed.
 - Uninstalling undoes all of this.
 - Modifying the Spotify client and blocking ads is against Spotify's terms of use. No account bans are known for this setup, but nobody can promise there will never be one. You use it at your own risk.
 
