@@ -1,45 +1,67 @@
 #!/usr/bin/env bash
-# spotify-ai installer v0 — Linux, Spotify from the official apt repository.
+# spotify-ai installer — Linux (Spotify from the official apt repository) and macOS.
 #
+# From a copy of the repository:
 #   ./install.sh                     install or repair (safe to run again)
-#   ./install.sh --adblock off       do not install the ad blocker at all (default: on;
-#                                    when installed it can also be switched in the app's Settings)
-#   ./install.sh --block-reports off let Spotify send crash reports and interface
-#                                    logs to its developers (on = stop them, the default)
-#   ./install.sh --uninstall         return Spotify to its original state
+# Without one (downloads what it needs from GitHub):
+#   curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh | bash
+#   (options then go after "bash -s --", for example: ... | bash -s -- --uninstall)
 #
-# Choices are remembered, so a later plain ./install.sh keeps them.
+#   --adblock off         do not install the ad blocker at all (default: on;
+#                         when installed it can also be switched in the app's Settings)
+#   --block-reports off   let Spotify send crash reports and interface logs to its
+#                         developers (on = stop them, the default)
+#   --force               macOS: try even when Spotify is newer than the tested version
+#   --uninstall           return Spotify to its original state
+#
+# Choices are remembered, so a later plain run keeps them.
 # Listening statistics (Recently played, Wrapped) are never blocked.
 #
 # What it does (variant B, docs/DECISIONS.md):
-#   1. stops Spotify auto-updates (apt hold);
-#   2. lets your user write to the Spotify folder (needed by Spicetify);
-#   3. installs Spicetify at a pinned version into ~/.spicetify;
-#   4. installs the adblockify extension at a pinned commit;
-#   5. installs the AI Playlists app from this repository;
-#   6. applies everything to Spotify.
-# Everything is downloaded from the official repositories and checked by SHA-256.
+#   1. macOS only: installs Spotify from Spotify's own server if it is missing;
+#   2. stops Spotify auto-updates (Linux: apt hold; macOS: a locked updater folder);
+#   3. Linux only: lets your user write to the Spotify folder (needed by Spicetify);
+#   4. installs Spicetify at a pinned version into ~/.spicetify;
+#   5. installs the adblockify extension at a pinned commit;
+#   6. installs the AI Playlists app;
+#   7. applies everything to Spotify.
+# Downloads are checked by SHA-256 (Spotify's own disk image: by its code signature).
+# Windows has its own installer: install.cmd / install.ps1.
+# Must run with the bash 3.2 that macOS ships.
 
 set -euo pipefail
 
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=versions
-source "${HERE}/versions"
+BASE_URL="${SPOTIFY_AI_BASE_URL:-https://raw.githubusercontent.com/ganfay/spotify-ai/main}"
+HERE=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+WORK=""   # temporary folder, removed on exit
 
-SPOTIFY_DIR="/usr/share/spotify"
 SPICETIFY_HOME="${HOME}/.spicetify"
 SPICETIFY="${SPICETIFY_HOME}/spicetify"
 SPICETIFY_CONFIG_DIR="${HOME}/.config/spicetify"
 EXTENSION="spotify-ai-adblock.js"
 OLD_EXTENSION="adblock.js"   # name used by earlier versions of this installer
 AGENT_APP="ai-playlists"
-AGENT_SOURCE="${HERE}/agent/release/${AGENT_APP}"
+AGENT_SOURCE=""
 MPRIS="org.mpris.MediaPlayer2.spotify"
 OPTIONS_FILE="${HOME}/.config/spotify-ai/options"
 # Written when THIS installer put Spicetify there. Without it, uninstall leaves a
 # Spicetify the user set up themselves alone and removes only our parts.
 OURS_MARKER="${SPICETIFY_HOME}/.installed-by-spotify-ai"
 ME="$(id -un)"
+
+# Set by detect_os.
+OS=""              # linux | macos
+ARCH=""            # amd64 | arm64 (as in Spicetify's file names)
+SPOTIFY_DIR=""     # the folder that holds Apps/
+SPOTIFY_APP="/Applications/Spotify.app"
+PREFS=""
+PROCESS=""
+REINSTALL_HINT=""
+UPDATE_DIR="${HOME}/Library/Application Support/Spotify/PersistentCache/Update"
+FORCE=0
 
 # Defaults; overwritten by the saved choices and then by command-line flags.
 ADBLOCK="on"
@@ -51,33 +73,159 @@ die()  { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
 need() { command -v "$1" >/dev/null || die "'$1' is required but not installed."; }
 
+cleanup() { [[ -z "${WORK}" ]] || rm -rf "${WORK}"; }
+
+detect_os() {
+  case "$(uname -s)-$(uname -m)" in
+    Linux-x86_64)
+      OS="linux"; ARCH="amd64"
+      SPOTIFY_DIR="/usr/share/spotify"
+      PREFS="${HOME}/.config/spotify/prefs"
+      PROCESS="spotify"
+      REINSTALL_HINT="sudo apt install --reinstall spotify-client"
+      ;;
+    Darwin-arm64|Darwin-x86_64)
+      OS="macos"; ARCH="arm64"
+      [[ "$(uname -m)" == "x86_64" ]] && ARCH="amd64"
+      SPOTIFY_DIR="${SPOTIFY_APP}/Contents/Resources"
+      PREFS="${HOME}/Library/Application Support/Spotify/prefs"
+      PROCESS="Spotify"
+      REINSTALL_HINT="delete Spotify from Applications and install it again from https://www.spotify.com/download"
+      ;;
+    *) die "this system ($(uname -s) $(uname -m)) is not supported. Linux x86_64 and macOS only; Windows uses install.cmd." ;;
+  esac
+}
+
+# The files of this repository: next to this script, or downloaded from GitHub.
+load_sources() {
+  if [[ -n "${HERE}" && -f "${HERE}/versions" && -f "${HERE}/agent/release/${AGENT_APP}/index.js" ]]; then
+    AGENT_SOURCE="${HERE}/agent/release/${AGENT_APP}"
+  else
+    say "Downloading spotify-ai"
+    need curl
+    AGENT_SOURCE="${WORK}/${AGENT_APP}"
+    mkdir -p "${AGENT_SOURCE}"
+    local file
+    curl -fsSL -o "${WORK}/versions" "${BASE_URL}/versions" || die "could not download from ${BASE_URL}. Check the internet connection."
+    for file in index.js manifest.json; do
+      curl -fsSL -o "${AGENT_SOURCE}/${file}" "${BASE_URL}/agent/release/${AGENT_APP}/${file}" \
+        || die "could not download ${file} from ${BASE_URL}."
+    done
+    HERE="${WORK}"
+    info "ok"
+  fi
+  # shellcheck source=versions
+  source "${HERE}/versions"
+}
+
+sha256_of() {
+  if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d' ' -f1; else shasum -a 256 "$1" | cut -d' ' -f1; fi
+}
+
+# True when version $1 is newer than $2 (only the first three numbers count).
+version_gt() {
+  awk -v a="$1" -v b="$2" 'BEGIN { split(a, x, "."); split(b, y, ".");
+    for (i = 1; i <= 3; i++) { if (x[i] + 0 > y[i] + 0) exit 0; if (x[i] + 0 < y[i] + 0) exit 1 }
+    exit 1 }'
+}
+
 check_sha256() { # file expected
   local actual
-  actual="$(sha256sum "$1" | cut -d' ' -f1)"
+  actual="$(sha256_of "$1")"
   [[ "${actual}" == "$2" ]] || die "checksum mismatch for $(basename "$1") — refusing to continue."
 }
 
 stop_spotify() {
-  pgrep -x spotify >/dev/null || return 0
+  pgrep -x "${PROCESS}" >/dev/null || return 0
   info "closing Spotify"
-  # Spotify ignores SIGTERM for a long time; its own Quit command works at once.
-  busctl --user call "${MPRIS}" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2 Quit >/dev/null 2>&1 \
-    || pkill -x spotify || true
-  for _ in $(seq 1 50); do
-    pgrep -x spotify >/dev/null || return 0
+  if [[ "${OS}" == "macos" ]]; then
+    osascript -e 'quit app "Spotify"' >/dev/null 2>&1 || pkill -x "${PROCESS}" || true
+  else
+    # Spotify ignores SIGTERM for a long time; its own Quit command works at once.
+    busctl --user call "${MPRIS}" /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2 Quit >/dev/null 2>&1 \
+      || pkill -x "${PROCESS}" || true
+  fi
+  local i
+  for i in $(seq 1 50); do
+    pgrep -x "${PROCESS}" >/dev/null || return 0
+    # macOS: the polite request can be ignored (a dialog is open); insist after 4 seconds.
+    [[ "${OS}" == "macos" && "${i}" == 20 ]] && { pkill -x "${PROCESS}" || true; }
     sleep 0.2
   done
   die "Spotify is still running. Close it and run the installer again."
 }
 
-check_system() {
+prefs_ready() { grep -q 'app.last-launched-version' "${PREFS}" 2>/dev/null; }
+
+wait_prefs() { # seconds
+  local i
+  for i in $(seq 1 "$1"); do
+    prefs_ready && return 0
+    sleep 1
+  done
+  return 1
+}
+
+install_spotify_macos() {
+  say "Installing Spotify"
+  local name="Spotify.dmg"
+  [[ "${ARCH}" == "arm64" ]] && name="SpotifyARM64.dmg"
+  local dmg="${WORK}/Spotify.dmg" mount="${WORK}/spotify-dmg"
+  info "downloading https://download.scdn.co/${name}"
+  curl -fSL --progress-bar -o "${dmg}" "https://download.scdn.co/${name}" || die "could not download Spotify."
+  hdiutil attach "${dmg}" -nobrowse -readonly -quiet -mountpoint "${mount}" || die "could not open the Spotify disk image."
+  local ok=1
+  codesign --verify --deep --strict "${mount}/Spotify.app" >/dev/null 2>&1 || ok=0
+  codesign -dv --verbose=2 "${mount}/Spotify.app" 2>&1 | grep -q '^Authority=Developer ID Application: Spotify' || ok=0
+  if [[ "${ok}" == 1 ]]; then
+    ditto "${mount}/Spotify.app" "${SPOTIFY_APP}" || ok=2
+  fi
+  hdiutil detach "${mount}" -quiet || true
+  [[ "${ok}" != 0 ]] || die "the downloaded Spotify is not signed by Spotify — refusing to install it."
+  [[ "${ok}" != 2 ]] || die "could not copy Spotify into Applications. Install it from https://www.spotify.com/download and run this again."
+  info "Spotify installed"
+}
+
+check_macos() {
+  for tool in curl tar shasum defaults awk osascript chflags; do need "${tool}"; done
+  if [[ ! -d "${SPOTIFY_APP}" ]]; then
+    [[ ! -d "${HOME}/Applications/Spotify.app" ]] \
+      || die "Spotify is in your personal Applications folder. Move it to the main Applications folder and run this again."
+    [[ "${1}" == "install" ]] || die "Spotify is not installed: nothing to uninstall."
+    for tool in hdiutil codesign ditto; do need "${tool}"; done
+    install_spotify_macos
+  fi
+  if [[ "${1}" == "install" ]] && ! prefs_ready; then
+    info "Spotify has not been opened yet: opening it once"
+    open "${SPOTIFY_APP}" || true
+    wait_prefs 90 || die "open Spotify, log in, close it, then run the installer again."
+  fi
+  [[ "${1}" == "install" ]] || return 0
+  local installed
+  installed="$(defaults read "${SPOTIFY_APP}/Contents/Info" CFBundleShortVersionString 2>/dev/null || true)"
+  if [[ -z "${installed}" ]]; then
+    info "WARNING: cannot read the Spotify version. Continuing."
+  elif ! version_gt "${installed}" "${SPOTIFY_MAX}"; then
+    info "Spotify ${installed} (supported)"
+  elif [[ "${FORCE}" == 1 ]]; then
+    info "WARNING: Spotify ${installed} is newer than the tested ${SPOTIFY_MAX}. Trying anyway (--force)."
+  else
+    die "Spotify ${installed} is newer than the newest version this installer supports (${SPOTIFY_MAX}). Spotify was not changed. Support usually follows within a week: run the newest installer again then."
+  fi
+}
+
+check_system() { # install | uninstall
   say "Checking the system"
-  [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]] || die "v0 supports Linux x86_64 only."
-  [[ "${EUID}" -ne 0 ]] || die "run as your normal user, not as root (sudo is asked for when needed)."
+  [[ "${EUID}" -ne 0 ]] || die "run as your normal user, not as root (the password is asked for when needed)."
+  local tool
+  if [[ "${OS}" == "macos" ]]; then
+    check_macos "$1"
+    return
+  fi
   for tool in curl tar sha256sum dpkg-query sudo; do need "${tool}"; done
   [[ -x "${SPOTIFY_DIR}/spotify" ]] \
-    || die "Spotify not found in ${SPOTIFY_DIR}. v0 supports the official apt package only (not snap/flatpak)."
-  [[ -f "${HOME}/.config/spotify/prefs" ]] \
+    || die "Spotify not found in ${SPOTIFY_DIR}. On Linux only the official apt package is supported (not snap/flatpak)."
+  [[ -f "${PREFS}" ]] \
     || die "open Spotify once and log in, then run the installer again."
   local installed
   installed="$(dpkg-query -W -f='${Version}' spotify-client 2>/dev/null | sed 's/^[0-9]*://')"
@@ -91,6 +239,20 @@ check_system() {
 
 hold_updates() {
   say "Blocking Spotify auto-updates"
+  if [[ "${OS}" == "macos" ]]; then
+    stop_spotify
+    # The updater downloads into this folder. Locked, it cannot (the same thing
+    # "spicetify spotify-updates block" does).
+    if [[ -d "${UPDATE_DIR}" ]] && ls -ldO "${UPDATE_DIR}" | grep -q uchg; then
+      info "already blocked"
+    else
+      rm -rf "${UPDATE_DIR}"
+      mkdir -p "${UPDATE_DIR}"
+      chflags uchg "${UPDATE_DIR}" && info "blocked (the uninstaller undoes this)" \
+        || info "WARNING: could not lock the updater folder. After a Spotify update just run the installer again."
+    fi
+    return
+  fi
   if apt-mark showhold | grep -qx spotify-client; then
     info "already on hold"
   else
@@ -101,6 +263,15 @@ hold_updates() {
 
 fix_permissions() {
   say "Folder permissions"
+  if [[ "${OS}" == "macos" ]]; then
+    local probe="${SPOTIFY_DIR}/.spotify-ai-write-test"
+    if ( : > "${probe}" ) 2>/dev/null; then
+      rm -f "${probe}"
+      info "this terminal may change Spotify"
+      return
+    fi
+    die "macOS does not let this terminal change apps. Open System Settings > Privacy & Security > App Management, switch on the terminal app you are using (Terminal), close the terminal completely, open it again and run the installer again."
+  fi
   if [[ -w "${SPOTIFY_DIR}" && -w "${SPOTIFY_DIR}/Apps" ]] \
      && ! find "${SPOTIFY_DIR}/Apps" ! -writable -print -quit | grep -q .; then
     info "already writable by ${ME}"
@@ -122,9 +293,15 @@ install_spicetify() {
   [[ -e "${SPICETIFY_HOME}" || -e "${SPICETIFY_CONFIG_DIR}" ]] && fresh=0
   local tmp
   tmp="$(mktemp -d)"
+  local asset expected
+  case "${OS}-${ARCH}" in
+    linux-amd64) asset="linux-amd64";  expected="${SPICETIFY_CLI_SHA256_LINUX_AMD64}" ;;
+    macos-arm64) asset="darwin-arm64"; expected="${SPICETIFY_CLI_SHA256_DARWIN_ARM64}" ;;
+    macos-amd64) asset="darwin-amd64"; expected="${SPICETIFY_CLI_SHA256_DARWIN_AMD64}" ;;
+  esac
   curl -fsSL -o "${tmp}/spicetify.tar.gz" \
-    "https://github.com/spicetify/cli/releases/download/v${SPICETIFY_CLI}/spicetify-${SPICETIFY_CLI}-linux-amd64.tar.gz"
-  check_sha256 "${tmp}/spicetify.tar.gz" "${SPICETIFY_CLI_SHA256_LINUX_AMD64}"
+    "https://github.com/spicetify/cli/releases/download/v${SPICETIFY_CLI}/spicetify-${SPICETIFY_CLI}-${asset}.tar.gz"
+  check_sha256 "${tmp}/spicetify.tar.gz" "${expected}"
   mkdir -p "${SPICETIFY_HOME}"
   tar -xzf "${tmp}/spicetify.tar.gz" -C "${SPICETIFY_HOME}"
   rm -rf "${tmp}"
@@ -235,7 +412,7 @@ apply() {
   # Start from Spotify's own files every time: this is what makes a re-run a repair.
   if [[ -d "${SPOTIFY_DIR}/Apps/xpui" ]]; then
     "${SPICETIFY}" restore >/dev/null 2>&1 \
-      || die "Spotify files are modified but Spicetify has no backup. Reinstall Spotify (sudo apt install --reinstall spotify-client) and run again."
+      || die "Spotify files are modified but Spicetify has no backup. Reinstall Spotify (${REINSTALL_HINT}) and run again."
   fi
   "${SPICETIFY}" clear >/dev/null 2>&1 || true
   "${SPICETIFY}" backup apply >/dev/null 2>&1 || die "Spicetify could not patch this Spotify version."
@@ -261,10 +438,12 @@ uninstall() {
   fi
   if [[ "${restored}" == 0 ]]; then
     # Nothing is deleted: the backup Spicetify holds may still be needed.
-    die "could not restore Spotify's files. Nothing was removed. To reset Spotify run: sudo apt install --reinstall spotify-client   and then run this again."
+    die "could not restore Spotify's files. Nothing was removed. To reset Spotify: ${REINSTALL_HINT} — and then run this again."
   fi
 
-  if [[ -f "${OURS_MARKER}" ]]; then
+  local ours=0
+  [[ -f "${OURS_MARKER}" ]] && ours=1
+  if [[ "${ours}" == 1 ]]; then
     rm -rf "${SPICETIFY_HOME}" "${SPICETIFY_CONFIG_DIR}"
     info "Spicetify removed"
   elif [[ -x "${SPICETIFY}" ]]; then
@@ -277,7 +456,18 @@ uninstall() {
   fi
   rm -rf "$(dirname "${OPTIONS_FILE}")"
 
-  if [[ -f "${OURS_MARKER}" || ! -x "${SPICETIFY}" ]]; then
+  if [[ "${OS}" == "macos" ]]; then
+    if [[ "${ours}" == 1 || ! -x "${SPICETIFY}" ]]; then
+      if [[ -d "${UPDATE_DIR}" ]]; then
+        chflags nouchg "${UPDATE_DIR}" 2>/dev/null || true
+        rm -rf "${UPDATE_DIR}" && info "updates allowed again"
+      fi
+      rm -rf "${HOME}/.local/state/spicetify"
+      say "Done. Spotify is back to its original state."
+    else
+      say "Done. Our parts are removed; Spicetify itself and the update block were left as they are."
+    fi
+  elif [[ "${ours}" == 1 || ! -x "${SPICETIFY}" ]]; then
     info "asking for sudo to give the Spotify folder back to root and allow updates"
     sudo chown -R root "${SPOTIFY_DIR}/Apps" && sudo chown root "${SPOTIFY_DIR}" && info "folder owner restored"
     sudo apt-mark unhold spotify-client >/dev/null && info "updates allowed again"
@@ -290,19 +480,24 @@ uninstall() {
 }
 
 main() {
+  detect_os
+  WORK="$(mktemp -d)"
+  trap cleanup EXIT
   load_options
   local action="install"
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --uninstall) action="uninstall" ;;
+      --force) FORCE=1 ;;
       --adblock) on_off "${2:-}" "--adblock"; ADBLOCK="$2"; shift ;;
       --block-reports) on_off "${2:-}" "--block-reports"; BLOCK_REPORTS="$2"; shift ;;
-      *) die "unknown option '$1'. See the top of this file for the options." ;;
+      *) die "unknown option '$1'. See the top of install.sh for the options." ;;
     esac
     shift
   done
 
-  check_system
+  load_sources
+  check_system "${action}"
   if [[ "${action}" == "uninstall" ]]; then
     uninstall
     return
@@ -316,6 +511,10 @@ main() {
   configure
   apply
   say "Done. Start Spotify as usual. The AI Playlists button is in the top bar, left of Home."
+  if [[ "${OS}" == "macos" ]]; then
+    info "starting Spotify"
+    open "${SPOTIFY_APP}" || true
+  fi
 }
 
 main "$@"

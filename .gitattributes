@@ -1,0 +1,4 @@
+# Windows launchers must keep CRLF line endings exactly as committed.
+*.cmd -text
+*.sh text eol=lf
+versions text eol=lf
