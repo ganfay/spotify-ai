@@ -1,0 +1,12 @@
+{
+  // The proxy's config for the tests only: the same as ../wrangler.jsonc, but
+  // WITHOUT the Workers AI binding. That binding always talks to the real
+  // Cloudflare and needs a login; the tests give a fake one where they need it.
+  "name": "spotify-ai-proxy-test",
+  "main": "../src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "durable_objects": {
+    "bindings": [{ "name": "LIMITS", "class_name": "Limits" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Limits"] }]
+}
