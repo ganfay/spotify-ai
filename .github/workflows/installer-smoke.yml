@@ -5,6 +5,11 @@
 name: installer-smoke
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: Try even when Spotify is newer than the supported version
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -22,7 +27,7 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseFile("$PWD\install.ps1", [ref]$null, [ref]$errors)
           if ($errors) { $errors | ForEach-Object { Write-Host $_ }; exit 1 }
       - name: Install (from the folder)
-        run: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch ${{ inputs.force && '-Force' || '' }}
       - name: Check the result
         run: |
           $xpui = "$env:APPDATA\Spotify\Apps\xpui"
@@ -41,14 +46,15 @@ jobs:
           if ($made) { throw 'a folder could be created inside the update block' }
       - name: Install again (repair), switches changed
         run: |
-          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch -Adblock off
+          powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -NoLaunch -Adblock off ${{ inputs.force && '-Force' || '' }}
           if (Test-Path "$env:APPDATA\Spotify\Apps\xpui\extensions\spotify-ai-adblock.js") { throw 'extension still applied' }
       - name: Install by "irm | iex" (files served locally)
         run: |
           $server = Start-Process python -ArgumentList '-m', 'http.server', '8765', '--bind', '127.0.0.1' -PassThru -WindowStyle Hidden
           Start-Sleep -Seconds 3
           $env:SPOTIFY_AI_BASE_URL = 'http://127.0.0.1:8765'
-          Invoke-RestMethod http://127.0.0.1:8765/install.ps1 | Invoke-Expression
+          $script = Invoke-RestMethod http://127.0.0.1:8765/install.ps1
+          if ('${{ inputs.force }}' -eq 'true') { & ([scriptblock]::Create($script)) -Force } else { $script | Invoke-Expression }
           Stop-Process -Id $server.Id -Force
           Get-Process -Name Spotify -ErrorAction SilentlyContinue | Stop-Process -Force
           if (Test-Path "$env:APPDATA\Spotify\Apps\xpui\extensions\spotify-ai-adblock.js") { throw 'the saved "adblock off" choice was not kept' }
@@ -68,7 +74,7 @@ jobs:
       - name: Syntax (the bash that macOS ships)
         run: /bin/bash --version | head -1 && /bin/bash -n install.sh
       - name: Install (from the folder)
-        run: /bin/bash install.sh
+        run: /bin/bash install.sh ${{ inputs.force && '--force' || '' }}
       - name: Check the result
         run: |
           R=/Applications/Spotify.app/Contents/Resources
@@ -91,7 +97,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/dev/null 2>&1 &
           sleep 2
-          curl -fsSL http://127.0.0.1:8765/install.sh | SPOTIFY_AI_BASE_URL=http://127.0.0.1:8765 /bin/bash -s -- --adblock off
+          curl -fsSL http://127.0.0.1:8765/install.sh | SPOTIFY_AI_BASE_URL=http://127.0.0.1:8765 /bin/bash -s -- --adblock off ${{ inputs.force && '--force' || '' }}
           sleep 3; pkill -x Spotify || true
           test ! -f /Applications/Spotify.app/Contents/Resources/Apps/xpui/extensions/spotify-ai-adblock.js
       - name: Uninstall

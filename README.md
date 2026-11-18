@@ -1,6 +1,6 @@
 # spotify-ai (working title)
 
-> **Status: early. Linux only for now. Ad blocking and the AI Playlists app install with one command.**
+> **Status: early. Linux is tested by the author; the Windows and macOS installers are new. Ad blocking and the AI Playlists app install with one command.**
 
 A desktop Spotify setup for Windows, macOS and Linux:
 
@@ -17,7 +17,42 @@ It is built from three parts, installed by one command:
 
 Spicetify and adblockify are **not** part of this repository. The installer downloads pinned versions from their official repositories and verifies their checksums. One thing is not pinned: when Spicetify patches Spotify it downloads its own current "CSS map" from the Spicetify repository on GitHub.
 
-## Install (Linux, Spotify from the official apt repository)
+## Install
+
+Your account, playlists and likes are never touched by the installer. Something broke later? Run the installer again — it repairs the setup.
+
+### Windows 10 / 11
+
+1. Download [install.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/install.cmd).
+2. Double-click it. If Windows shows "Windows protected your PC", press **More info → Run anyway**.
+
+That is all: no administrator rights, no git. If Spotify is not installed, the installer gets it from Spotify's own server. Spotify from the Microsoft Store cannot be modified — the installer offers to replace it with the normal one.
+
+Prefer one command? Press <kbd>Win</kbd>+<kbd>R</kbd>, paste this, press Enter:
+
+```
+powershell -NoExit -c "irm https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.ps1 | iex"
+```
+
+Remove everything: download and double-click [uninstall.cmd](https://github.com/ganfay/spotify-ai/releases/latest/download/uninstall.cmd).
+
+### macOS (Ventura or newer, Apple Silicon and Intel)
+
+Open the **Terminal** app, paste this, press Enter:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh | bash
+```
+
+If Spotify is not installed, the installer gets it from Spotify's own server. The first time, macOS may refuse to let Terminal change apps. The installer then tells you what to do: System Settings → Privacy & Security → **App Management** → switch on Terminal, reopen Terminal, run the same command again.
+
+Remove everything:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ganfay/spotify-ai/main/install.sh | bash -s -- --uninstall
+```
+
+### Linux (x86_64, Spotify from the official apt repository)
 
 Open Spotify once and log in, then:
 
@@ -25,22 +60,34 @@ Open Spotify once and log in, then:
 git clone https://github.com/ganfay/spotify-ai.git && cd spotify-ai && ./install.sh
 ```
 
-Something broke? Run `./install.sh` again — it repairs the setup.
-Remove everything: `./install.sh --uninstall`.
+Remove everything: `./install.sh --uninstall`. The installer asks for `sudo` twice on the first run: to stop Spotify auto-updates (`apt-mark hold`) and to let your user write to `/usr/share/spotify`.
 
-Ad blocking can be switched in AI Playlists → Settings. Installer options (remembered for later runs): `./install.sh --adblock off` does not install the blocker at all; `./install.sh --block-reports off` lets Spotify send crash reports and interface logs to its developers again. Listening statistics are never blocked. What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
+### Options
 
-The installer asks for `sudo` twice on the first run: to stop Spotify auto-updates (`apt-mark hold`) and to let your user write to `/usr/share/spotify`. Windows and macOS are not supported yet.
+Ad blocking can be switched in AI Playlists → Settings. Installer options are remembered for later runs:
+
+| Linux / macOS | Windows (`install.ps1`) | What it does |
+|---|---|---|
+| `--adblock off` | `-Adblock off` | do not install the blocker at all |
+| `--block-reports off` | `-BlockReports off` | let Spotify send crash reports and interface logs to its developers again |
+| `--force` (macOS) | `-Force` | try even when Spotify is newer than the tested version |
+
+Listening statistics are never blocked. What data goes where: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 Side effect to know about: the ad blocker switches the client to a "premium" state (for example unlimited skips). Server-side premium features (downloads, higher quality) stay locked.
 
-## What installing changes on your computer (Linux)
+### "Spotify is newer than the newest version this installer supports"
+
+On Windows and macOS Spotify can only be downloaded in its current version. Now and then Spotify publishes a new version a few days before Spicetify supports it. The installer then stops without changing anything. Try again a few days later.
+
+## What installing changes on your computer
 
 Read this before you install:
 
-- **Spotify stops updating** (`apt-mark hold`). You keep the tested version, but you also stop getting Spotify's security fixes for its built-in browser engine until you update on purpose.
-- **Your user becomes the owner of `/usr/share/spotify`** (normally owned by root). Spicetify needs this to patch the client. The price: any program running as your user can now change Spotify's files without asking for a password.
-- `./install.sh --uninstall` undoes both.
+- **Spotify stops updating.** You keep the tested version, but you also stop getting Spotify's security fixes for its built-in browser engine until you update on purpose. Linux: `apt-mark hold`. Windows: a locked file named `Update` in `%LOCALAPPDATA%\Spotify`. macOS: the folder `~/Library/Application Support/Spotify/PersistentCache/Update` is locked.
+- **Linux: your user becomes the owner of `/usr/share/spotify`** (normally owned by root). Spicetify needs this to patch the client. The price: any program running as your user can now change Spotify's files without asking for a password. (On Windows and macOS your user can change them already.)
+- **Windows and macOS: Spicetify is installed** into `%LOCALAPPDATA%\spicetify` and `%APPDATA%\spicetify`, or `~/.spicetify` and `~/.config/spicetify`.
+- Uninstalling undoes all of this.
 - Modifying the Spotify client and blocking ads is against Spotify's terms of use. No account bans are known for this setup, but nobody can promise there will never be one. You use it at your own risk.
 
 ## Docs
