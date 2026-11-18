@@ -114,8 +114,15 @@ jobs:
           if touch "$U/x" 2>/dev/null; then echo "a file could be created in the locked folder"; exit 1; fi
           codesign --verify --deep --strict /Applications/Spotify.app && echo "signature: still valid" || echo "signature: no longer valid (expected after patching)"
           sleep 5; pkill -x Spotify || true
-      - name: Patched Spotify still starts
+      - name: Patched Spotify still starts, also when macOS had marked it as downloaded
         run: |
+          # Some terminals mark everything they create as "from the internet"; macOS then
+          # calls a patched app "damaged". A repair run must clear that mark.
+          xattr -rw com.apple.quarantine "0081;00000000;Terminal;" /Applications/Spotify.app
+          /bin/bash install.sh ${{ inputs.force && '--force' || '' }}
+          sleep 3; pkill -x Spotify || true
+          if xattr -r /Applications/Spotify.app | grep -c com.apple.quarantine; then echo "quarantine mark is still there"; exit 1; fi
+          spctl --assess --type execute -vv /Applications/Spotify.app || true
           open /Applications/Spotify.app
           sleep 20
           pgrep -x Spotify && echo "running"

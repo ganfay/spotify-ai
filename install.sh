@@ -179,6 +179,15 @@ wait_prefs() { # seconds
 # killed by the closed pipe, and the whole test counts as FAILED on some machines.
 # Read the output into a variable, or let grep read to the end (>/dev/null).
 
+# macOS marks files that came from the internet ("quarantine") and checks such an
+# app's signature when it is opened. A patched Spotify no longer matches its
+# signature, so with the mark macOS says "Spotify is damaged" and refuses to open
+# it. The mark is removed; the copy we install ourselves was verified before that.
+clear_quarantine() {
+  [[ "${OS}" == "macos" ]] || return 0
+  xattr -dr com.apple.quarantine "${SPOTIFY_APP}" 2>/dev/null || true
+}
+
 # True when the app carries Spotify's own developer signature.
 signed_by_spotify() { # path to Spotify.app
   local details
@@ -213,11 +222,12 @@ install_spotify_macos() {
   [[ -z "${problem}" ]] || die "the downloaded Spotify did not pass the signature check, so it was not installed and nothing was changed. Reason: ${problem}"
   rm -rf "${SPOTIFY_APP}"
   mv "${fresh}" "${SPOTIFY_APP}" || die "could not put the new Spotify in place. It is in ${fresh}: rename it to Spotify.app."
+  clear_quarantine
   info "Spotify installed"
 }
 
 check_macos() {
-  for tool in curl tar shasum defaults awk osascript chflags; do need "${tool}"; done
+  for tool in curl tar shasum defaults awk osascript chflags xattr; do need "${tool}"; done
   if [[ ! -d "${SPOTIFY_APP}" ]]; then
     [[ ! -d "${HOME}/Applications/Spotify.app" ]] \
       || die "Spotify is in your personal Applications folder. Move it to the main Applications folder and run this again."
@@ -537,6 +547,7 @@ apply() {
     [[ ! -f "${SPOTIFY_DIR}/Apps/xpui/extensions/${EXTENSION}" ]] || die "the ad-blocking extension is still applied."
   fi
   compgen -G "${SPOTIFY_DIR}/Apps/xpui/spicetify-routes-${AGENT_APP}*" >/dev/null || die "the AI Playlists app was not applied."
+  clear_quarantine
   info "done"
 }
 
