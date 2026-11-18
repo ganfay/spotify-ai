@@ -4,7 +4,7 @@ Last update: 2026-11-17
 
 ## Current phase
 
-**Phases 0–3 done (2026-11-18).** Linux only. Next: Phase 4 (toggles), then Phase 5 (Windows, macOS, security review, going public).
+**Phases 0–4 done (2026-11-18).** Linux only. Next: Phase 5 (Windows, macOS, security review, going public).
 
 ## Done
 
@@ -36,7 +36,8 @@ Last update: 2026-11-17
 3e. Known rough edges: the agent returned 5 recommendations where 10–20 were asked for; taste of mood splits needs tuning (owner's note); the agent stops politely when the model goes in circles (max 16 steps).
 4. `install.sh` installs the agent app too, from the prebuilt copy in `agent/release/` (refresh it with `cd agent && npm run release` and commit).
 4a. Phase 3 done: interface in English, Ukrainian, Russian and German (`agent/src/app/i18n.ts`, 163 texts each; default = Spotify's language, changeable in Settings); home cards with icons and a staggered entrance + hover animation; proposal cards with a kind label, select all / none, and a split editor (rename groups, move tracks between groups); progress bar for long reads; Stop button; covers and click-to-play with a pause state that follows the real player. 23 unit tests + end-to-end checks in the client.
-4b. Small things left: the track count on a playlist tile can differ from the real count by 1–2 (Spotify's cached number); Spotify adapter error texts and provider key hints are English only; the agent's taste for mood splits and the number of recommendations still need tuning.
+4b. Phase 4 done: `./install.sh --adblock on|off` and `--block-reports on|off` (choices are remembered in `~/.config/spotify-ai/options`); Settings shows whether ad blocking is applied and the command to change it; Spicetify's own update check is turned off (pinned versions); [PRIVACY.md](PRIVACY.md) says what goes where. A runtime in-app toggle for ads is not possible: adblockify takes effect when Spotify starts.
+4c. Small things left: the track count on a playlist tile can differ from the real count by 1–2 (Spotify's cached number); Spotify adapter error texts and provider key hints are English only; the agent's taste for mood splits and the number of recommendations still need tuning.
 5. Before Phase 5: research how to install a pinned Spotify version on Windows/macOS without SpotX.
 
 ## Blockers / open questions
