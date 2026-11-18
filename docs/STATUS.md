@@ -6,7 +6,7 @@ A new chat should read this file first, then [DECISIONS.md](DECISIONS.md) and [P
 
 ## Where we are
 
-**Phases 0–4 are done. Linux only. Phase 5 is in progress** (Windows, macOS, security review, going public).
+**Phases 0–4 are done and tested by the owner on Linux. Phase 5 is in progress:** security review done, Windows and macOS installers written and machine-tested, going public is left.
 
 The repository `ganfay/spotify-ai` is still **private**.
 
@@ -14,7 +14,8 @@ The repository `ganfay/spotify-ai` is still **private**.
 
 | Part | Where | State |
 |---|---|---|
-| Installer | `install.sh`, `versions` | One command. Holds the apt package, installs Spicetify 2.46.7, the ad blocker (adblockify at a pinned commit, checksum-verified, wrapped in a flag check) and the AI Playlists app. Re-running repairs. `--uninstall`, `--adblock on\|off`, `--block-reports on\|off`. Full cycle tested by the owner. |
+| Installer, Windows and macOS | `install.ps1`, `install.cmd`, `uninstall.cmd`, `install.sh` | No clone needed: the scripts download `versions` and the app from this repository when they are not next to them. Install Spotify from Spotify's server when missing (signature checked), stop when Spotify is newer than `SPOTIFY_MAX`, block updates, same Spicetify steps as Linux. Passed a full cycle on GitHub's Windows and macOS machines (see below). **Not yet run by a person.** |
+| Installer, Linux | `install.sh`, `versions` | One command. Holds the apt package, installs Spicetify 2.46.7, the ad blocker (adblockify at a pinned commit, checksum-verified, wrapped in a flag check) and the AI Playlists app. Re-running repairs. `--uninstall`, `--adblock on\|off`, `--block-reports on\|off`. Full cycle tested by the owner. |
 | AI Playlists app | `agent/` (TypeScript, esbuild), prebuilt copy in `agent/release/` | Home with six cards, duplicate finder (no AI), AI agent with five features (duplicates, language filter, split by mood, clean-up, recommendations), Settings, "Recent changes" with Undo. Interface in English, Ukrainian, Russian, German. 24 unit tests. No code runs at Spotify startup. |
 | Proxy | `worker/` (Cloudflare Worker, 44 tests) | Deployed by the owner; address in `agent/proxy-url.txt`. Holds the Gemini key as a secret. Limits: 5 prompts/hour per install id, cap on new installs per IP, global daily cap, kill switch. Invite mode exists, off. `ADMIN_TOKEN` not set → admin routes off. |
 | Measuring tools | `scripts/bench/bench.py`, `scripts/dev/` | Performance and ad counter; helpers that run checks inside the live client through a debugging port. |
@@ -71,10 +72,15 @@ Left open on purpose:
 1. Research: how to install on Windows and macOS without SpotX — done. Result: versioned installers cannot be downloaded from Spotify's servers (signed links); the installer will accept the current official Spotify, check it against the supported ceiling (1.3.9 for Spicetify 2.46.7) and stop with a clear message if it is newer (expected gap 0–6 days). Update blocking: `chflags uchg` on the Update folder (macOS), a locked `Update` file (Windows); Spicetify's own command is broken on Windows. Asset names and checksums for Spicetify 2.46.7 on both systems are known.
 2. Security review — done, see above.
 3. Fix what the review finds — done; the hardened proxy is deployed and checked.
-4. Write `install.ps1` (Windows) and the macOS branch of the installer. **Needs testers with a Windows and a Mac machine** — none yet.
-5. Final README, last check of the history, then make the repository public — only after the owner says yes.
+4. `install.ps1` (Windows) and macOS support in `install.sh` — written. The manual workflow `installer-smoke` ran both on GitHub's machines (Windows Server with PowerShell 5.1; macOS 26 on Apple Silicon): Spotify installed from Spotify's server, patched, re-run as a repair with a changed switch, installed again through the "paste one command" way, uninstalled; the update block could not be deleted or written into; patched Spotify started on macOS.
+   - **Found:** the official Spotify is 1.3.10 since about 2026-11-18, Spicetify 2.46.7 supports up to 1.3.9. Without `-Force` / `--force` both installers stop at the version check, as designed. The run above used the force option: Spicetify patched 1.3.10 without an error, but nobody has looked at the interface, so `SPOTIFY_MAX` stays 1.3.9.
+   - **Not covered by the machine test:** what the interface looks like, whether ads are blocked, whether the update block really stops an update, the Microsoft Store path, the "App Management" refusal on macOS, Intel Macs, Windows on ARM, SmartScreen on `install.cmd`, a non-administrator Windows user (the test machine runs as administrator).
+   - The download way (`raw.githubusercontent.com`) works only when the repository is public; until then test from a downloaded ZIP of the repository (`install.cmd` in it uses the files next to it).
+   - The README links `install.cmd` / `uninstall.cmd` from the latest release: a release with these two files must be created when going public.
+5. Final README, last check of the history, create the release, then make the repository public — only after the owner says yes.
 
 ## Waiting on the owner
 
-- Testers for Windows and macOS.
+- A run of the Windows installer on his own machine (dual boot) and of the macOS one by his friend, with a look at the interface and the ads.
+- When Spicetify supports Spotify 1.3.10: raise `SPOTIFY_MAX` (and the Spicetify version if a new one is needed).
 - The three checks listed under "Not verified yet" that only he can do (ads after switching off, language filter on the big playlist, stats on the phone).
