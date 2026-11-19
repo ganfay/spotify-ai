@@ -267,6 +267,10 @@ html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [d
   --background-base: transparent !important;
   background-color: transparent !important;
 }
+/* Its title bar darkens the top with a black fade, which shows as a dark band over a
+   look's background. A fade in the look's own background colour keeps the title readable. */
+html[data-sai-look] .Root__cinema-view > div[style*="--header-text-color"]::before {
+  background: linear-gradient(rgba(var(--spice-rgb-main), .55), rgba(var(--spice-rgb-main), 0)) !important; }
 /* With the cinema view see-through, the right panel underneath would show through it. */
 html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container:has(> .Root__cinema-view) > .Root__right-sidebar { visibility: hidden; }
 /* The small lyrics card in "Now playing" keeps a card of its own. */
@@ -371,6 +375,9 @@ html[data-sai-theme="noir"] body::after {
 /* Everything inside the window is monochrome: one colour filter on the whole layout
    instead of one per picture (covers, canvas videos, the lyrics page, accents). */
 html[data-sai-theme="noir"] .Root__top-container { filter: grayscale(1) contrast(1.06); }
+/* Spotify animates leaving the lyrics view with a view transition; its pictures are drawn
+   above the page, outside the grey filter, so the colours flashed back for a moment. */
+html[data-sai-theme="noir"]::view-transition { filter: grayscale(1); }
 
 /* Islands: black glass with a cold white edge. */
 html[data-sai-theme="noir"] :is(.main-yourLibraryX-library, .Root__main-view, .Root__right-sidebar-peek) {

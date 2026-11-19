@@ -402,8 +402,23 @@ function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: 
 }
 
 function App() {
-  const { useState } = hooks();
+  const { useEffect, useState } = hooks();
   const [tool, setTool] = useState("" as string);
+  // Spotify closes the big lyrics view only when the page changes. Our button in the top
+  // bar points at the page that is already open under the lyrics, so a press would do
+  // nothing: close the lyrics ourselves when the press leaves us on this page.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (!(e.target as Element | null)?.closest?.(".main-globalNav-navLink")) return;
+      const path = Spicetify.Platform.History.location.pathname;
+      setTimeout(() => {
+        if (Spicetify.Platform.History.location.pathname !== path || !document.querySelector(".Root__cinema-view")) return;
+        (document.querySelector('[data-testid="lyrics-button"]') as HTMLElement | null)?.click();
+      }, 150);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, []);
   const [selected, setSelected] = useState(null as Playlist | null);
   // Re-rendering the whole page after a language change is enough: every text is read through t().
   const [lang, setLang] = useState(setLanguage(loadSettings().language));
