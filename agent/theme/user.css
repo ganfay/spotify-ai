@@ -184,25 +184,43 @@ html[data-sai-look] .main-home-homeHeader {
 html[data-sai-look] .main-actionBarBackground-background,
 html[data-sai-look] .playlist-playlist-actionBarBackground-background { visibility: hidden; }
 /* Bars that stay in place while the page scrolls under them. A blur behind them
-   (backdrop-filter) is redone on every frame of scrolling and was the main thing
-   that made a look feel less smooth than stock, so they are a thick tint instead.
-   Only the Glass theme, which is about frosted glass, blurs. */
+   (backdrop-filter) is redone on every frame of scrolling and would degrade scroll FPS,
+   so when scrolled they use a solid surface (--sai-sticky-bg) matching the panel tint
+   with zero track-row bleed-through. */
+html[data-sai-look] {
+  --sai-sticky-bg: color-mix(in srgb, var(--spice-main), var(--spice-text) 7%);
+  --sai-sticky-border: rgba(var(--spice-rgb-text), .09);
+}
+html[data-sai-theme="noir"] {
+  --sai-sticky-bg: #0b0b0b;
+  --sai-sticky-border: rgba(255, 255, 255, .12);
+}
+html[data-sai-theme="glass"] {
+  --sai-sticky-bg: #141320;
+  --sai-sticky-border: rgba(255, 255, 255, .11);
+}
+html[data-sai-theme="neon"] {
+  --sai-sticky-bg: #14082e;
+  --sai-sticky-border: rgba(255, 62, 165, .24);
+}
 html[data-sai-look] .main-home-filterChipsSection { background-color: transparent !important; background-image: none !important; }
 /* "Is the page scrolled?" is asked from Spotify's own scroll timeline of the main view,
-   made visible to the whole panel. Where that is not supported the bars just stay tinted. */
+   made visible to the whole panel. Where that is not supported the bars stay solid. */
 html[data-sai-look] .Root__main-view { timeline-scope: --main-view-scroll; }
 @keyframes sai-bar-in { from { opacity: 0; } to { opacity: 1; } }
 html[data-sai-look] .main-topBar-background {
-  background-color: rgba(var(--spice-rgb-main), .88) !important;
-  background-image: none !important;
+  background-color: var(--sai-sticky-bg) !important;
+  background-image: linear-gradient(180deg, rgba(var(--spice-rgb-text), .03), transparent) !important;
 }
 html[data-sai-look] .main-topBar-overlay { background-color: transparent !important; }
-/* The column titles of a track list: clear while they sit in the page, tinted only
+/* The column titles of a track list: clear while they sit in the page, solid only
    while stuck to the top. "Stuck" is asked from the browser itself (a scroll-state
    container query), because Spotify marks it with a name that changes between versions. */
 html[data-sai-look] .main-trackList-trackListHeader {
   container-type: scroll-state;
   background: transparent !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid rgba(var(--spice-rgb-text), .06) !important;
 }
 html[data-sai-look] .main-trackList-trackListHeader::before {
   content: "";
@@ -213,14 +231,21 @@ html[data-sai-look] .main-trackList-trackListHeader::before {
   background-color: transparent;
 }
 @container scroll-state(stuck: top) {
-  html[data-sai-look] .main-trackList-trackListHeader::before { background-color: rgba(var(--spice-rgb-main), .9); }
+  html[data-sai-look] .main-trackList-trackListHeader {
+    border-bottom-color: var(--sai-sticky-border) !important;
+  }
+  html[data-sai-look] .main-trackList-trackListHeader::before {
+    background-color: var(--sai-sticky-bg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+    inset: -1px 0 0;
+  }
 }
 
-/* More bars that stay in place while the page scrolls under them (search chips, the
-   discography bar, the column titles of the expanded library): the same thick tint. */
+/* More bars that stay in place while the page scrolls under them (the discography bar,
+   the column titles of the expanded library): the same solid --sai-sticky-bg surface. */
 html[data-sai-look] .artist-artistDiscography-topBar.artist-artistDiscography-topBarScrolled,
 html[data-sai-look] .main-yourLibraryX-libraryContainer div:has(> * > [role="columnheader"]) {
-  background-color: rgba(var(--spice-rgb-main), .9) !important;
+  background-color: var(--sai-sticky-bg) !important;
 }
 
 /* The chips row of search results sticks at the very top, so it is clear while the
@@ -234,7 +259,7 @@ html[data-sai-look] .Root__main-view div:has(> .contentSpacing > .search-searchC
   inset: 0 0 -10px;
   z-index: -1;
   pointer-events: none;
-  background-color: color-mix(in srgb, var(--spice-main), var(--spice-text) 7%);
+  background-color: var(--sai-sticky-bg);
   -webkit-mask-image: linear-gradient(#000 calc(100% - 10px), transparent);
   mask-image: linear-gradient(#000 calc(100% - 10px), transparent);
   animation: sai-bar-in linear both;
