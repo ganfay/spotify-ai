@@ -284,7 +284,7 @@ html[data-sai-look] .main-trackList-trackListRow {
 html[data-sai-theme="noir"] {
   --sai-panel-rgb: 0,0,0;
   --sai-panel: .82;
-  --sai-glow: 0 0 1px #fff, 0 0 10px rgba(255,255,255,.75), 0 0 28px rgba(255,255,255,.45), 0 0 60px rgba(255,255,255,.22);
+  --sai-glow: 0 0 1px rgba(255,255,255,.7), 0 0 9px rgba(255,255,255,.38), 0 0 26px rgba(255,255,255,.16);
   background: #000 !important;
 }
 html[data-sai-theme="noir"] body { background: transparent !important; }
@@ -328,20 +328,28 @@ html[data-sai-theme="noir"] :is(.main-yourLibraryX-library, .Root__main-view, .R
   outline-offset: -1px;
   box-shadow: 0 0 28px rgba(255,255,255,.05), 0 0 2px rgba(255,255,255,.08);
 }
-html[data-sai-theme="noir"] .Root__now-playing-bar { background-color: rgba(0,0,0,.72) !important; }
+/* The player bar belongs to the smoke around the islands, not to the islands. */
+html[data-sai-theme="noir"] .Root__now-playing-bar { background-color: transparent !important; }
 /* The panels are almost black; a cold light falls on their top edge. */
 html[data-sai-theme="noir"] :is(.main-yourLibraryX-library, .Root__right-sidebar-peek) {
   background-image: linear-gradient(rgba(255,255,255,.035), transparent 40%) !important;
 }
 
 /* Blackletter titles that glow. */
-html[data-sai-theme="noir"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2) {
+html[data-sai-theme="noir"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2,
+  .main-entityHeader-topbarTitle, .main-yourLibraryX-header h1, .main-nowPlayingView-sectionHeaderText,
+  [data-npv-root] [class*="encore-text-title"], .main-nowPlayingWidget-trackInfo .main-trackInfo-name) {
   font-family: "Sai Gothic", "UnifrakturMaguntia", "Old English Text MT", Georgia, serif !important;
   font-weight: 600 !important;
   letter-spacing: .01em !important;
   text-shadow: var(--sai-glow);
 }
-html[data-sai-theme="noir"] .Root__main-view h2 { text-shadow: 0 0 1px rgba(255,255,255,.8), 0 0 14px rgba(255,255,255,.28); }
+html[data-sai-theme="noir"] :is(.Root__main-view h2, .main-nowPlayingView-sectionHeaderText, .main-yourLibraryX-header h1, .main-nowPlayingWidget-trackInfo .main-trackInfo-name) {
+  text-shadow: 0 0 1px rgba(255,255,255,.6), 0 0 10px rgba(255,255,255,.22);
+}
+/* Blackletter is narrow and low: one step bigger where Spotify's text is small. */
+html[data-sai-theme="noir"] :is(.main-yourLibraryX-header h1, .main-nowPlayingView-sectionHeaderText) { font-size: 20px !important; }
+html[data-sai-theme="noir"] .main-nowPlayingWidget-trackInfo .main-trackInfo-name { font-size: 17px !important; }
 /* The page header keeps no colour of its own: a glow from above instead. */
 html[data-sai-theme="noir"] .main-entityHeader-backgroundColor,
 html[data-sai-theme="noir"] .main-home-homeHeader {
@@ -351,14 +359,14 @@ html[data-sai-theme="noir"] .main-home-homeHeader {
 html[data-sai-theme="noir"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgba(255,255,255,.18), 0 0 46px rgba(255,255,255,.16) !important; }
 
 /* Light: buttons, the playing title, the progress bar. */
-html[data-sai-theme="noir"] [class*="button-primary__inner"] {
-  background: #fff !important;
-  color: #000 !important;
-  box-shadow: 0 0 18px rgba(255,255,255,.55), 0 0 44px rgba(255,255,255,.18) !important;
+html[data-sai-theme="noir"] [class*="button-primary__inner"] { background: #fff !important; color: #000 !important; }
+html[data-sai-theme="noir"] :is(.main-actionBar-ActionBarPlayButtonContainer, .main-playButton-PlayButton, [data-testid="control-button-playpause"]) [class*="button-primary__inner"],
+html[data-sai-theme="noir"] [data-testid="control-button-playpause"] {
+  box-shadow: 0 0 14px rgba(255,255,255,.4), 0 0 34px rgba(255,255,255,.14) !important;
 }
 html[data-sai-theme="noir"] .main-trackList-trackListRow[aria-selected="true"] .main-trackList-rowTitle,
 html[data-sai-theme="noir"] .main-nowPlayingWidget-trackInfo a { text-shadow: 0 0 10px rgba(255,255,255,.5); }
-html[data-sai-theme="noir"] .playback-progressbar { filter: drop-shadow(0 0 5px rgba(255,255,255,.75)); }
+html[data-sai-theme="noir"] .playback-progressbar-container .playback-progressbar { filter: drop-shadow(0 0 3px rgba(255,255,255,.45)); }
 html[data-sai-theme="noir"] .progress-bar { --fg-color: #fff; --is-active-fg-color: #fff; --bg-color: rgba(255,255,255,.18); }
 
 /* Rows and cards light up instead of turning grey. */
