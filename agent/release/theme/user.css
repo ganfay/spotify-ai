@@ -522,30 +522,24 @@ html[data-sai-theme="neon"] .Root__right-sidebar-peek {
   border-radius: 14px !important;
   box-shadow: inset 0 0 0 1px rgba(255,62,165,.30), 0 0 28px rgba(255,62,165,.10), 0 0 60px rgba(34,211,238,.06);
 }
-html[data-sai-theme="neon"] .Root__now-playing-bar { box-shadow: 0 -1px 0 rgba(34,211,238,.35), 0 -14px 40px rgba(124,58,237,.18); }
+/* The player bar belongs to the light around the islands, not to the islands. */
+html[data-sai-theme="neon"] .Root__now-playing-bar { background-color: transparent !important; }
 html[data-sai-theme="neon"] .main-entityHeader-backgroundColor { background: linear-gradient(135deg, rgba(255,62,165,.40), rgba(124,58,237,.30) 55%, rgba(34,211,238,.22)) !important; }
-html[data-sai-theme="neon"] .main-entityHeader-title,
-html[data-sai-theme="neon"] .main-entityHeader-title * {
-  background: linear-gradient(92deg, #ffffff 10%, #ffb3dc 45%, #8be9f7 90%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 16px rgba(255,62,165,.45));
-}
-html[data-sai-theme="neon"] [class*="button-primary__inner"] {
-  background: linear-gradient(135deg, var(--sai-pink), var(--sai-violet) 55%, var(--sai-cyan)) !important;
+html[data-sai-theme="neon"] .main-entityHeader-title :is(h1, span, [data-encore-id="adaptiveTitle"]) {
   color: #fff !important;
-  box-shadow: 0 0 22px rgba(255,62,165,.65), 0 0 46px rgba(34,211,238,.25) !important;
+  text-shadow: 0 0 2px rgba(255,255,255,.6), 0 0 14px rgba(255,62,165,.55), 0 0 34px rgba(124,58,237,.35);
 }
-html[data-sai-theme="neon"] .x-progressBar-fillColor {
-  background: linear-gradient(90deg, var(--sai-pink), var(--sai-cyan)) !important;
-  box-shadow: 0 0 12px rgba(255,62,165,.8);
+html[data-sai-theme="neon"] [class*="button-primary__inner"] { background: var(--sai-pink) !important; color: #fff !important; }
+html[data-sai-theme="neon"] :is(.main-actionBar-ActionBarPlayButtonContainer, .main-playButton-PlayButton) [class*="button-primary__inner"] {
+  background: linear-gradient(135deg, var(--sai-pink), var(--sai-violet)) !important;
+  box-shadow: 0 0 16px rgba(255,62,165,.45), 0 0 34px rgba(124,58,237,.2) !important;
 }
+html[data-sai-theme="neon"] .playback-progressbar-container .progress-bar { --fg-color: var(--sai-pink); --is-active-fg-color: var(--sai-cyan); }
 html[data-sai-theme="neon"] .main-trackList-trackListRow { border-radius: 10px !important; transition: box-shadow .18s, background .18s; }
 html[data-sai-theme="neon"] .main-trackList-trackListRow:hover { box-shadow: inset 3px 0 0 var(--sai-pink), inset 0 0 0 1px rgba(255,62,165,.22), 0 0 22px rgba(255,62,165,.12); }
 html[data-sai-theme="neon"] .main-nowPlayingView-section { border-radius: 12px !important; box-shadow: inset 0 0 0 1px rgba(34,211,238,.25); }
-html[data-sai-theme="neon"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgba(255,62,165,.5), 0 0 46px rgba(255,62,165,.35), 0 0 90px rgba(34,211,238,.18) !important; border-radius: 10px !important; }
-html[data-sai-theme="neon"] .main-nowPlayingWidget-coverArt img { box-shadow: 0 0 18px rgba(255,62,165,.55); border-radius: 8px !important; }
+html[data-sai-theme="neon"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgba(255,62,165,.4), 0 0 32px rgba(255,62,165,.22) !important; border-radius: 10px !important; }
+html[data-sai-theme="neon"] .main-nowPlayingWidget-coverArt img { border-radius: 8px !important; }
 html[data-sai-theme="neon"] .main-connectBar-connectBar { background: linear-gradient(90deg, var(--sai-pink), var(--sai-violet), var(--sai-cyan)) !important; color: #fff !important; }
 html[data-sai-theme="neon"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }
 
