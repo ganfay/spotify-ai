@@ -1,6 +1,8 @@
 // Interface languages. English is the source; a key missing in another language
 // falls back to English. The default language is the one Spotify itself uses.
 
+import { SHUFFLE_TEXTS } from "../core/shuffle-texts";
+
 declare const Spicetify: any;
 
 export type Lang = "en" | "uk" | "ru" | "de";
@@ -10,6 +12,14 @@ export const LANGUAGES: { id: Lang; label: string }[] = [
   { id: "ru", label: "Русский" },
   { id: "de", label: "Deutsch" },
 ];
+
+const shuffleKeys = (lang: Lang) => ({
+  "shuffle.off": SHUFFLE_TEXTS[lang].off,
+  "shuffle.spotify": SHUFFLE_TEXTS[lang].spotify,
+  "shuffle.true": SHUFFLE_TEXTS[lang].trueShuffle,
+  "shuffle.smart": SHUFFLE_TEXTS[lang].smartShuffle,
+  "shuffle.unavailable": SHUFFLE_TEXTS[lang].unavailable,
+});
 
 const en = {
   "app.tagline": "Nothing in your library changes until you confirm it.",
@@ -276,6 +286,7 @@ const en = {
   "tag.version": "version",
   "play": "Play",
   "pause": "Pause",
+  ...shuffleKeys("en"),
 };
 
 export type Key = keyof typeof en;
@@ -548,6 +559,7 @@ const uk: Dict = {
   "tag.version": "версія",
   "play": "Грати",
   "pause": "Пауза",
+  ...shuffleKeys("uk"),
 };
 
 const ru: Dict = {
@@ -815,6 +827,7 @@ const ru: Dict = {
   "tag.version": "версия",
   "play": "Играть",
   "pause": "Пауза",
+  ...shuffleKeys("ru"),
 };
 
 const de: Dict = {
@@ -1082,6 +1095,7 @@ const de: Dict = {
   "tag.version": "Version",
   "play": "Abspielen",
   "pause": "Pause",
+  ...shuffleKeys("de"),
 };
 
 const DICTS: Record<Lang, Dict> = { en, uk, ru, de };
