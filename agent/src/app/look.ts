@@ -131,7 +131,7 @@ export interface Theme {
   cover?: boolean;
 }
 export const THEMES: Theme[] = [
-  { id: "noir", name: "Noir", background: "000000", accent: "ffffff", colors: { subtext: "a8a8a8", sidebar: "000000", player: "000000", card: "111111", "main-elevated": "0d0d0d", "tab-active": "262626" } },
+  { id: "noir", name: "Noir", background: "000000", accent: "ffffff", colors: { subtext: "a9a9a9", sidebar: "000000", player: "000000", card: "111111", "main-elevated": "141414", "tab-active": "262626" }, cover: true },
   { id: "glass", name: "Glass", background: "12121a", accent: "ffffff", colors: { subtext: "cfcfdc", "main-elevated": "2a2a3a" }, cover: true },
   { id: "neon", name: "Neon", background: "0e0620", accent: "ff3ea5", colors: { subtext: "c7b8e6", "button-active": "ff7cc4", "main-elevated": "1c0f3a" } },
 ];

@@ -85,15 +85,13 @@ export function GlobalStyles() {
       .sai-look .name { font-size: 13px; font-weight: 700; padding: 7px 2px 2px; }
       .sai-theme .pic { height: 104px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
       .sai-theme .word { font-size: 26px; font-weight: 800; color: #fff; }
-      .sai-theme-noir { background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); border-radius: 0 !important; }
-      .sai-theme-noir .word { font-family: "Playfair Display", "Bodoni 72", Didot, Georgia, serif; font-style: italic; font-weight: 400; font-size: 34px; }
+      .sai-theme-noir { background: radial-gradient(60% 70% at 25% 10%, rgba(255,255,255,.22), transparent 70%), radial-gradient(50% 60% at 90% 100%, rgba(255,255,255,.12), transparent 70%), #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+      .sai-theme-noir .word { font-family: "Sai Gothic", "UnifrakturMaguntia", Georgia, serif; font-weight: 600; font-size: 40px; text-shadow: 0 0 2px #fff, 0 0 16px rgba(255,255,255,.6), 0 0 36px rgba(255,255,255,.25); }
       .sai-theme-glass { background: radial-gradient(70% 80% at 15% 20%, #5b3fd6, transparent 70%), radial-gradient(70% 80% at 90% 30%, #0e7fa8, transparent 70%), radial-gradient(80% 80% at 55% 110%, #a8327e, transparent 70%), #0b0b14; border-radius: 14px !important; }
       .sai-theme-glass .word { padding: 8px 20px; border-radius: 14px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(10px); font-weight: 700; font-size: 22px; }
       .sai-theme-neon { background: radial-gradient(90% 120% at 10% 0%, rgba(255,62,165,.55), transparent 60%), radial-gradient(90% 120% at 100% 100%, rgba(34,211,238,.45), transparent 60%), linear-gradient(180deg, #170a34, #06030e); box-shadow: inset 0 0 0 1px rgba(255,62,165,.5); }
       .sai-theme-neon .word { background: linear-gradient(92deg, #fff, #ffb3dc, #8be9f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 12px rgba(255,62,165,.7)); }
-      html[data-sai-theme="noir"] #main :is(.sai-swatch, .sai-look .dot, .sai-round) { border-radius: 999px !important; }
-      html[data-sai-theme="noir"] #main .sai-theme-glass, html[data-sai-theme="noir"] #main .sai-theme-glass .word { border-radius: 14px !important; }
-      html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .sai-dock { background: transparent !important; }
+      html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .sai-dock { background: transparent !important; }
       .sai-look .pic { box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-text, 255,255,255), .14); }
       .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(var(--spice-rgb-text, 255,255,255),.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }
       .sai-tour-btn:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.18); transform: scale(1.03); }

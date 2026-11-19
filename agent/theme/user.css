@@ -26,25 +26,25 @@ html[data-sai-gradient="on"]:not([data-sai-theme]) body::before {
    Used by the gradient and by the Glass and Neon themes. Everything outside the
    panels (top bar, gaps) is clear, so the backdrop is one seamless surface; the
    panels are a tint of the background colour. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__top-container,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__globalNav,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__nav-bar,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__right-sidebar,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-libraryContainer,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .playlist-playlist-playlistContent,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-testid="artist-page"] > div > div,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) #Desktop_PanelContainer_Id,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-npv-root] {
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__globalNav,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__nav-bar,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-libraryContainer,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-playlistContent,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="artist-page"] > div > div,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] {
   background-color: transparent !important;
 }
 /* "Now playing": Spotify lays dark veils over the cover or video (plain empty
    boxes with a dark gradient). On a see-through panel they turn it black, so they
    are thinned — not removed, the title over a video still needs them. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-npv-root] div:empty { opacity: .45; }
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-yourLibraryX-library,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__right-sidebar-peek,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__now-playing-bar {
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] div:empty { opacity: .45; }
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-library,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar-peek,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__now-playing-bar {
   background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
 }
 
@@ -77,32 +77,32 @@ html[data-sai-gradient="on"]:not([data-sai-theme]) :is(.Root__nav-bar, .Root__ma
    Spotify paints the part of a page below its header with the page colour. The
    names of those boxes change between versions, so they are found by what they
    contain: the stable .contentSpacing box, or the action-bar background. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view div:has(> .contentSpacing),
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .playlist-playlist-concertsFooter,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .artist-artistDiscography-headerContainer,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-view-container__mh-footer-container,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) #Desktop_PanelContainer_Id::before,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-mainWrapper {
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> .contentSpacing),
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-concertsFooter,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .artist-artistDiscography-headerContainer,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-view-container__mh-footer-container,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id::before,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-mainWrapper {
   background-color: transparent !important;
 }
 /* Artist pages: Spotify washes the whole page with the artist's colour at 70 %. On
    its own dark page that is a soft tint; on a see-through panel it is a solid slab. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-testid="overscroll-background"] {
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="overscroll-background"] {
   opacity: .3;
   -webkit-mask-image: linear-gradient(#000 20%, transparent 75%);
   mask-image: linear-gradient(#000 20%, transparent 75%);
 }
 /* Fades at the edges of carousels are drawn in the page colour: off. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .search-searchCategory-contentArea,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view [data-shelf="carousel"] {
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .search-searchCategory-contentArea,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view [data-shelf="carousel"] {
   --carousel-start-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
   --carousel-end-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
 }
 /* "Now playing", older layout: the veils over the video end in the solid page colour. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-contextItemInfo::before,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-canvasVisualEnhancement::before,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-contextItemInfo::before,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::before,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
 
 /* ------------------------------------------------------------- any look on
    Things Spotify colours by itself (from the cover of what is open) or leaves
@@ -265,56 +265,119 @@ html[data-sai-look] .main-trackList-trackListRow {
 }
 
 /* =================================================================== NOIR
-   Black and white. Square corners, hairline frames, serif headlines; pictures
-   lose their colour and get it back under the pointer. */
-html[data-sai-theme="noir"] body { background: #000 !important; }
-html[data-sai-theme="noir"] #main *,
-html[data-sai-theme="noir"] #main *::before,
-html[data-sai-theme="noir"] #main *::after { border-radius: 0 !important; }
-html[data-sai-theme="noir"] img,
-html[data-sai-theme="noir"] video,
-html[data-sai-theme="noir"] .main-image-image,
-html[data-sai-theme="noir"] [style*="background-image"] {
-  filter: grayscale(1) contrast(1.12);
-  transition: filter .45s ease;
+   Gothic black and white. The cover of the playing song, drained of colour and
+   blown up into smoke, fills the window; light glows white out of the dark;
+   titles are blackletter. Everything — covers, videos, the lyrics page — is
+   monochrome. */
+@font-face {
+  font-family: "Sai Gothic";
+  src: url(font:GrenzeGotisch-SemiBold) format("woff2");
+  font-display: swap;
+  unicode-range: U+0020-024F, U+2010-205E;
 }
-html[data-sai-theme="noir"] img:hover,
-html[data-sai-theme="noir"] .main-image-image:hover,
-html[data-sai-theme="noir"] .main-trackList-trackListRow:hover img,
-html[data-sai-theme="noir"] .main-yourLibraryX-listItem:hover img { filter: none; }
-/* Spotify paints headers in a colour taken from the cover: gone. */
+@font-face {
+  font-family: "Sai Gothic";
+  src: url(font:RuslanDisplay-Cyrillic) format("woff2");
+  font-display: swap;
+  unicode-range: U+0400-045F, U+0490-0491, U+2116;
+}
+html[data-sai-theme="noir"] {
+  --sai-panel-rgb: 0,0,0;
+  --sai-panel: .82;
+  --sai-glow: 0 0 1px #fff, 0 0 10px rgba(255,255,255,.75), 0 0 28px rgba(255,255,255,.45), 0 0 60px rgba(255,255,255,.22);
+  background: #000 !important;
+}
+html[data-sai-theme="noir"] body { background: transparent !important; }
+
+/* Smoke: the cover, grey, high contrast, blurred. One fixed layer, painted once per song. */
+html[data-sai-theme="noir"] body::before {
+  content: "";
+  position: fixed;
+  inset: -80px;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #000;
+  background-image: var(--sai-cover, radial-gradient(40% 50% at 30% 40%, #3a3a3a, transparent 70%));
+  background-size: cover;
+  background-position: center;
+  /* Crushed blacks: only the brightest parts of the cover survive, as smoke. */
+  filter: grayscale(1) contrast(2.6) brightness(.3) blur(30px);
+  transition: background-image 1.6s ease;
+}
+/* Haze of light in two corners and film grain over everything behind the panels. */
+html[data-sai-theme="noir"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(45% 40% at 6% 0%, rgba(255,255,255,.09), transparent 70%),
+    radial-gradient(40% 45% at 100% 100%, rgba(255,255,255,.06), transparent 70%);
+  opacity: .42;
+}
+
+/* Everything inside the window is monochrome: one colour filter on the whole layout
+   instead of one per picture (covers, canvas videos, the lyrics page, accents). */
+html[data-sai-theme="noir"] .Root__top-container { filter: grayscale(1) contrast(1.06); }
+
+/* Islands: black glass with a cold white edge. */
+html[data-sai-theme="noir"] :is(.main-yourLibraryX-library, .Root__main-view, .Root__right-sidebar-peek) {
+  outline: 1px solid rgba(255,255,255,.13);
+  outline-offset: -1px;
+  box-shadow: 0 0 28px rgba(255,255,255,.05), 0 0 2px rgba(255,255,255,.08);
+}
+html[data-sai-theme="noir"] .Root__now-playing-bar { background-color: rgba(0,0,0,.72) !important; }
+/* The panels are almost black; a cold light falls on their top edge. */
+html[data-sai-theme="noir"] :is(.main-yourLibraryX-library, .Root__right-sidebar-peek) {
+  background-image: linear-gradient(rgba(255,255,255,.035), transparent 40%) !important;
+}
+
+/* Blackletter titles that glow. */
+html[data-sai-theme="noir"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2) {
+  font-family: "Sai Gothic", "UnifrakturMaguntia", "Old English Text MT", Georgia, serif !important;
+  font-weight: 600 !important;
+  letter-spacing: .01em !important;
+  text-shadow: var(--sai-glow);
+}
+html[data-sai-theme="noir"] .Root__main-view h2 { text-shadow: 0 0 1px rgba(255,255,255,.8), 0 0 14px rgba(255,255,255,.28); }
+/* The page header keeps no colour of its own: a glow from above instead. */
 html[data-sai-theme="noir"] .main-entityHeader-backgroundColor,
-html[data-sai-theme="noir"] .main-actionBarBackground-background,
-html[data-sai-theme="noir"] .main-entityHeader-shadow { background: transparent !important; background-image: none !important; box-shadow: none !important; }
-html[data-sai-theme="noir"] .main-nowPlayingView-section { background: transparent !important; border: 1px solid rgba(255,255,255,.16); }
-html[data-sai-theme="noir"] .main-topBar-background,
-html[data-sai-theme="noir"] .main-trackList-trackListHeader::before { background: #000 !important; border-bottom: 1px solid rgba(255,255,255,.16); }
-/* Hairline frames around the panels. */
-html[data-sai-theme="noir"] .Root__nav-bar,
-html[data-sai-theme="noir"] .Root__main-view,
-html[data-sai-theme="noir"] .Root__right-sidebar { outline: 1px solid rgba(255,255,255,.16); outline-offset: -1px; }
-html[data-sai-theme="noir"] .Root__now-playing-bar { border-top: 1px solid rgba(255,255,255,.16); }
-/* Headlines. */
-html[data-sai-theme="noir"] .main-entityHeader-title,
-html[data-sai-theme="noir"] .main-entityHeader-title *,
-html[data-sai-theme="noir"] .main-nowPlayingView-container a[href*="/track/"],
-html[data-sai-theme="noir"] h1 {
-  font-family: "Playfair Display", "Bodoni 72", Didot, Georgia, "Times New Roman", serif !important;
-  font-weight: 400 !important;
-  font-style: italic;
-  letter-spacing: -.01em !important;
+html[data-sai-theme="noir"] .main-home-homeHeader {
+  background: radial-gradient(70% 120% at 30% 0%, rgba(255,255,255,.14), transparent 70%) !important;
+  opacity: 1;
 }
-html[data-sai-theme="noir"] .main-trackList-trackListHeaderRow,
-html[data-sai-theme="noir"] .main-nowPlayingView-sectionHeaderText,
-html[data-sai-theme="noir"] .main-yourLibraryX-header { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; }
-/* A row under the pointer turns into its negative. */
-html[data-sai-theme="noir"] .main-trackList-trackListRow:hover { background: #fff !important; }
-html[data-sai-theme="noir"] .main-trackList-trackListRow:hover *:not(img) { color: #000 !important; fill: #000 !important; }
-html[data-sai-theme="noir"] .main-trackList-trackListRow { border-bottom: 1px solid rgba(255,255,255,.07); transition: background .12s; }
-/* Controls. */
-html[data-sai-theme="noir"] [class*="button-primary__inner"] { background: #fff !important; color: #000 !important; box-shadow: none !important; }
-html[data-sai-theme="noir"] .x-progressBar-progressBarBg { height: 2px !important; background: rgba(255,255,255,.22) !important; }
-html[data-sai-theme="noir"] .x-progressBar-fillColor { background: #fff !important; }
+html[data-sai-theme="noir"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgba(255,255,255,.18), 0 0 46px rgba(255,255,255,.16) !important; }
+
+/* Light: buttons, the playing title, the progress bar. */
+html[data-sai-theme="noir"] [class*="button-primary__inner"] {
+  background: #fff !important;
+  color: #000 !important;
+  box-shadow: 0 0 18px rgba(255,255,255,.55), 0 0 44px rgba(255,255,255,.18) !important;
+}
+html[data-sai-theme="noir"] .main-trackList-trackListRow[aria-selected="true"] .main-trackList-rowTitle,
+html[data-sai-theme="noir"] .main-nowPlayingWidget-trackInfo a { text-shadow: 0 0 10px rgba(255,255,255,.5); }
+html[data-sai-theme="noir"] .playback-progressbar { filter: drop-shadow(0 0 5px rgba(255,255,255,.75)); }
+html[data-sai-theme="noir"] .progress-bar { --fg-color: #fff; --is-active-fg-color: #fff; --bg-color: rgba(255,255,255,.18); }
+
+/* Rows and cards light up instead of turning grey. */
+html[data-sai-theme="noir"] .main-trackList-trackListRow:hover {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 0 22px rgba(255,255,255,.06);
+}
+html[data-sai-theme="noir"] :is(.main-card-card, .view-homeShortcutsGrid-shortcut):hover {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 0 26px rgba(255,255,255,.08);
+}
+html[data-sai-theme="noir"] .main-nowPlayingView-section { outline: 1px solid rgba(255,255,255,.10); outline-offset: -1px; }
+
+/* Lyrics: white light on black instead of the cover's colour. */
+html[data-sai-theme="noir"] [style*="--lyrics-color-background"] {
+  --lyrics-color-background: rgba(0,0,0,.35) !important;
+  --lyrics-color-active: #fff !important;
+  --lyrics-color-inactive: rgba(255,255,255,.32) !important;
+  --lyrics-color-passed: rgba(255,255,255,.6) !important;
+}
+html[data-sai-theme="noir"] .os-theme-spotify.os-scrollbar { --os-handle-bg: rgba(255,255,255,.28); --os-handle-bg-hover: rgba(255,255,255,.6); }
 
 /* =================================================================== GLASS
    The cover of the playing song, blurred, fills the window; the panels float

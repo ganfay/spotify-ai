@@ -55,6 +55,12 @@ await build({
   footer: { js: "function render(){return __aiPlaylists.render();}" },
 });
 
+async function replaceAsync(text, pattern, fn) {
+  const parts = await Promise.all([...text.matchAll(pattern)].map((m) => fn(...m)));
+  let i = 0;
+  return text.replace(pattern, () => parts[i++]);
+}
+
 // The startup extension: applies the saved look. Kept as small as possible (see src/core/index.ts).
 await build({ ...common, entryPoints: ["src/core/index.ts"], outfile: join("dist", "spotify-ai-core.js"), format: "iife", minify: true });
 
@@ -74,7 +80,13 @@ if (process.argv.includes("--release")) {
   await cp(out, target, { recursive: true });
   await cp(join("dist", "spotify-ai-core.js"), join("release", "spotify-ai-core.js"));
   await rm(join("release", "theme"), { recursive: true, force: true });
-  await cp("theme", join("release", "theme"), { recursive: true });
+  await mkdir(join("release", "theme"), { recursive: true });
+  await cp(join("theme", "color.ini"), join("release", "theme", "color.ini"));
+  // Fonts go into the stylesheet as data URIs: url(font:Name) -> the file theme/fonts/Name.woff2.
+  let css = await readFile(join("theme", "user.css"), "utf8");
+  css = await replaceAsync(css, /url\(font:([A-Za-z0-9-]+)\)/g, async (_m, name) =>
+    `url(data:font/woff2;base64,${(await readFile(join("theme", "fonts", `${name}.woff2`))).toString("base64")})`);
+  await writeFile(join("release", "theme", "user.css"), css);
   console.log(`copied to agent/${target} (commit it)`);
 }
 
