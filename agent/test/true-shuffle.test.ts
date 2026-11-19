@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   DEFAULT_MAX_CONTEXTS,
+  MAX_SAVED_CHARS,
   fisherYatesShuffle,
   nextCycleMode,
   normalizeContextUri,
@@ -450,6 +451,17 @@ test("LRU eviction (including constant clock and maxContexts=0) and mode persist
   const snap = zeroCache.prepareDeck("spotify:playlist:ephemeral", makeTracks(2));
   assert.equal(snap.order.length, 2);
   assert.equal(zeroCache.getDeck("spotify:playlist:ephemeral"), null);
+});
+
+test("saved decks stay under the size cap; an oversized deck lives in memory only", () => {
+  const storage = createMemoryStorage();
+  const engine = new TrueShuffleEngine({ storage, maxContexts: 4 });
+  const big = Array.from({ length: 6000 }, (_, i) => ({ uri: `spotify:track:big${i}`, uid: `uid_big_${i}` }));
+  engine.prepareDeck("spotify:playlist:huge", big);
+  const saved = storage.getItem(SHUFFLE_STORAGE_KEY) ?? "";
+  assert.ok(saved.length <= MAX_SAVED_CHARS);
+  assert.equal(JSON.parse(saved).decks.length, 0);
+  assert.equal(engine.getDeck("spotify:playlist:huge")?.order.length, 6000);
 });
 
 test("recovers from corrupt JSON, handles QuotaExceededError, and performs zero writes when idle", () => {

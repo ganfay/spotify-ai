@@ -120,7 +120,7 @@ export function createTrueShuffleController(deps?: TrueShuffleControllerDeps): T
   const resetPending = () => { fetchGeneration++; runtimeActive = false; pendingSkip = null; recentSkips = []; };
   const displayMode = (s: ButtonStateLike | null | undefined): ShuffleCycleMode =>
     engine.getMode() === "true" ? "true" : s ? (s.shuffle || s.smartShuffle ? "spotify" : "off") : engine.getMode();
-  const exitToSpotify = (s?: ButtonStateLike | null) => { resetPending(); engine.setMode("spotify"); syncButtonUi(s); };
+  const exitToSpotify = (s?: ButtonStateLike | null) => { resetPending(); engine.setMode("spotify"); syncButtonUi(s); attach(); };
 
   const ensureStyle = () => {
     if (destroyed) return;
@@ -156,7 +156,7 @@ export function createTrueShuffleController(deps?: TrueShuffleControllerDeps): T
     } finally { isApplyingDom = false; }
     if (label !== null) try { boundTippy?.setContent?.(label); } catch {}
   };
-  const setNativeShuffle = async (rawCtx: string, mode: 0 | 1) => {
+  const setNativeShuffle = async (rawCtx: string, mode: 0 | 1 | 2) => {
     const sp = getSp(), shuffleApi = sp?.Platform?.ShuffleAPI, playerApi = sp?.Platform?.PlayerAPI;
     suppressExternalUntil = nowFn() + 1500; isInternalShuffleWrite = true;
     try {
@@ -327,31 +327,46 @@ export function createTrueShuffleController(deps?: TrueShuffleControllerDeps): T
     if ((!activeDeckCtx || !evCtx || evCtx === activeDeckCtx) && (data?.shuffleMode === 1 || data?.shuffleMode === 2)) exitToSpotify(state);
   };
   const onClickCapture = (ev: Event) => {
-    if (destroyed || !ev.target) return;
+    // Listens on the whole document, so most clicks must leave at once.
+    if (destroyed || !ev.target || !(ev.target as Element).closest?.(".player-controls__left")) return;
     const state = getPlayerApi()?.getState?.(), btn = findShuffleButton(getBarRoot(), state);
     if (!btn || (btn !== ev.target && !btn.contains?.(ev.target as Node))) return;
     ev.preventDefault?.(); ev.stopPropagation?.(); ev.stopImmediatePropagation?.();
     hasOverriddenLabel = true;
     if (isUnavailable(btn, state)) { syncButtonUi(state); return; }
-    const nextMode = nextCycleMode(displayMode(state)), rawCtx = typeof state?.context?.uri === "string" ? state.context.uri : "";
+    // Spotify's own order is kept and True Shuffle comes last: off -> shuffle -> Smart Shuffle (where
+    // Spotify offers it) -> True Shuffle -> off.
+    const cur = displayMode(state), rawCtx = typeof state?.context?.uri === "string" ? state.context.uri : "";
+    const smartNext = cur === "spotify" && !state?.smartShuffle && state?.restrictions?.canToggleSmartShuffle === true;
+    const nextMode = smartNext ? "spotify" : nextCycleMode(cur);
     if (nextMode === "true") {
       engine.setMode("true"); syncButtonUi({ ...state, shuffle: false, smartShuffle: false });
+      // Activate first: it marks our own shuffle change, so the watcher started next does not take it for the user's.
       if (state?.hasContext && rawCtx) void activateContext(rawCtx, state); else runtimeActive = false;
+      attach();
     } else {
-      resetPending(); engine.setMode(nextMode); void setNativeShuffle(rawCtx, nextMode === "spotify" ? 1 : 0);
-      syncButtonUi({ ...state, shuffle: nextMode === "spotify", smartShuffle: false });
+      resetPending(); engine.setMode(nextMode); void setNativeShuffle(rawCtx, smartNext ? 2 : nextMode === "spotify" ? 1 : 0);
+      attach();
     }
+  };
+  // Watching the player costs a little on every update, so it runs only while True Shuffle is on.
+  const stopLive = () => {
+    observer?.disconnect(); observer = null; observedNode = null;
+    for (const u of unsubs) try { u(); } catch {}
+    unsubs.length = 0; playerBound = false; shuffleBound = false; cleanupBoundBtn();
+    resetPending(); activeDeckCtx = "";
   };
   const sub = (em: any, pairs: Array<[string, (e: any) => void]>) => {
     if (typeof em?.addListener !== "function") return false;
-    for (const [e, fn] of pairs) { const u = em.addListener(e, fn); if (typeof u === "function") unsubs.push(u); }
+    for (const [e, fn] of pairs) { const u = em.addListener(e, fn); unsubs.push(typeof u === "function" ? u : () => em.removeListener?.(e, fn)); }
     return true;
   };
   const attach = (): boolean => {
     if (destroyed) return true;
+    if (!clickBox) { clickBox = doc; clickBox.addEventListener?.("click", onClickCapture, true); }
+    if (engine.getMode() !== "true") { if (playerBound || shuffleBound || observer || boundBtn) stopLive(); return true; }
     const center = doc.querySelector?.(".main-nowPlayingBar-center"), barRoot = center ?? doc.querySelector?.(".Root__now-playing-bar");
     if (barRoot) {
-      if (clickBox !== barRoot) { clickBox?.removeEventListener?.("click", onClickCapture, true); clickBox = barRoot; clickBox.addEventListener?.("click", onClickCapture, true); }
       if (ObserverCtor && observedNode !== barRoot) {
         observer?.disconnect();
         observer = new ObserverCtor(() => { if (!destroyed && !isApplyingDom) { const up = doc.querySelector?.(".main-nowPlayingBar-center"); if (up && observedNode !== up) attach(); else syncButtonUi(); } });
@@ -364,7 +379,7 @@ export function createTrueShuffleController(deps?: TrueShuffleControllerDeps): T
     const apiReady = Boolean(sp?.Platform?.PlayerAPI && sp?.Platform?.PlaylistAPI);
     if (!playerBound && apiReady) playerBound = sub(sp?.Platform?.PlayerAPI?.getEvents?.(), [["update", onPlayerUpdate], ["action", onPlayerAction], ["queue_update", () => { if (!destroyed && engine.getMode() === "true" && runtimeActive && activeDeckCtx) void syncRollingQueue(); }]]);
     if (!shuffleBound && apiReady) shuffleBound = sub(sp?.Platform?.ShuffleAPI?.getEvents?.(), [["update", onShuffleEvent], ["update_complete", onShuffleEvent]]);
-    if (playerBound && engine.getMode() === "true") onPlayerUpdate(); else if (playerBound && hasOverriddenLabel) syncButtonUi();
+    if (playerBound) onPlayerUpdate();
     return Boolean(center) && playerBound && apiReady;
   };
 

@@ -180,10 +180,17 @@ test("1. startup, SSR safety, singleton idempotency, zero idle overhead & static
   assert.equal(h1, h2); assert.equal(dom.doc.querySelectorAll(`#${TRUE_SHUFFLE_STYLE_ID}`).length, 1);
   assert.equal(storage.reads, 1); assert.equal(storage.writes, 0);
   assert.equal(mock.playlistFetchCalls.length + mock.libraryFetchCalls.length + mock.setQueueCalls.length, 0);
-  const obs = Array.from(dom.doc.observers);
-  assert.equal(obs.length, 1); assert.equal(obs[0]!.observedTarget, dom.center);
+  // Off: nothing watches the player bar or listens to the player; only one click listener on the document.
+  assert.equal(dom.doc.observers.size, 0);
+  assert.equal(dom.doc.listeners.get("click")?.length, 1);
   h1.destroy();
-  assert.equal(dom.doc.querySelectorAll(`#${TRUE_SHUFFLE_STYLE_ID}`).length, 0); assert.equal(obs[0]!.disconnected, true);
+  assert.equal(dom.doc.querySelectorAll(`#${TRUE_SHUFFLE_STYLE_ID}`).length, 0); assert.equal(dom.doc.listeners.get("click")?.length, 0);
+  // Saved as True: the player bar is watched from the start.
+  const dom2 = createDom("modern"), eng = new TrueShuffleEngine({ storage: memStore() }); eng.setMode("true");
+  const h3 = initTrueShuffle({ win: dom2.win, doc: dom2.doc as unknown as Document, spicetify: mock.sp, storage: memStore(), engine: eng });
+  const obs = Array.from(dom2.doc.observers);
+  assert.equal(obs.length, 1); assert.equal(obs[0]!.observedTarget, dom2.center);
+  h3.destroy(); assert.equal(obs[0]!.disconnected, true);
   const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "core", "shuffle-controller.ts"), "utf8");
   assert.equal(src.includes("api.spotify.com") || src.includes("../app/") || src.includes("../spotify/"), false);
 });
@@ -219,12 +226,29 @@ test("2. button discovery, exclusions, 4-lang tooltips, capture cycling, CSS ::b
   mock.emitUpdate({ restrictions: { canToggleShuffle: false } }); assert.equal(modern.shuffleBtn!.getAttribute("aria-label"), SHUFFLE_TEXTS.en.unavailable);
   modern.shuffleBtn!.dispatchEvent(new MockEvent("click")); assert.equal(handle.getMode(), "true");
   mock.emitUpdate({ restrictions: { canToggleShuffle: true } });
-  modern.shuffleBtn!.dispatchEvent(new MockEvent("click")); await flush(); assert.equal(handle.getMode(), "off");
+  // A button re-rendered by Spotify while True Shuffle is on gets the badge again.
   modern.shuffleBtn!.remove();
   const remount = modern.doc.createElement("button"); remount.setAttribute("data-encore-id", "buttonTertiary");
   modern.left.children.unshift(remount); remount.parentElement = modern.left; modern.doc.notify("childList", modern.left);
-  assert.equal(remount.getAttribute("data-sai-shuffle-mode"), "off");
-  handle.destroy(); assert.equal(mock.tippyInstances[0]!.destroyed, true);
+  assert.equal(remount.getAttribute("data-sai-shuffle-mode"), "true");
+  remount.dispatchEvent(new MockEvent("click")); await flush(); assert.equal(handle.getMode(), "off");
+  // Leaving True Shuffle stops watching and removes our marks.
+  assert.equal(modern.doc.observers.size, 0); assert.equal(remount.getAttribute("data-sai-shuffle-mode"), null);
+  assert.equal(mock.tippyInstances[0]!.destroyed, true);
+  handle.destroy();
+});
+
+test("2b. Smart Shuffle keeps its place: off -> shuffle -> smart -> True -> off", async () => {
+  const dom = createDom("modern");
+  const mock = createMockSpicetify({ contextUri: "spotify:playlist:s1", tracksByPlaylist: { "spotify:playlist:s1": makeTracks(6) } });
+  mock.setState({ restrictions: { canToggleShuffle: true, canToggleSmartShuffle: true, disallowSetQueueReasons: [] } });
+  const handle = initTrueShuffle({ win: dom.win, doc: dom.doc as unknown as Document, spicetify: mock.sp, storage: memStore() });
+  const click = async () => { dom.shuffleBtn!.dispatchEvent(new MockEvent("click")); await flush(); };
+  await click(); assert.equal(mock.getState().shuffle, true); assert.equal(mock.getState().smartShuffle, false);
+  await click(); assert.equal(mock.getState().smartShuffle, true); assert.equal(mock.setShuffleApiCalls.at(-1)?.mode, 2); assert.equal(handle.getMode(), "spotify");
+  await click(); assert.equal(handle.getMode(), "true"); assert.equal(mock.getState().shuffle, false);
+  await click(); assert.equal(handle.getMode(), "off");
+  handle.destroy();
 });
 
 test("3. 1,250-track mid-playlist progression without repeats, bounded queue <= 8 & rapid skipTo re-entrancy", async () => {
@@ -329,7 +353,8 @@ test("5. Liked Songs, Album, Artist, LocalFiles, unsupported, QUEUE_REVISION_MIS
   assert.equal(handle.getMode(), "true"); assert.equal(engine.getDeck("spotify:playlist:A"), null); assert.ok(engine.getDeck("spotify:playlist:B"));
   fakeNow += 500; mock.emitUpdate({ shuffle: true }); assert.equal(handle.getMode(), "true");
   fakeNow += 2000; mock.shuffleEvents.emit("update", { contextURI: "spotify:playlist:B", shuffleMode: 2 });
-  assert.equal(handle.getMode(), "spotify"); assert.equal(dom.shuffleBtn!.getAttribute("data-sai-shuffle-mode"), "spotify");
+  // Spotify's own shuffle took over: our mark and watchers are gone.
+  assert.equal(handle.getMode(), "spotify"); assert.equal(dom.shuffleBtn!.getAttribute("data-sai-shuffle-mode"), null); assert.equal(dom.doc.observers.size, 0);
   assert.equal(SHUFFLE_STORAGE_KEY, "spotify-ai:true-shuffle:v1");
   handle.destroy();
 });

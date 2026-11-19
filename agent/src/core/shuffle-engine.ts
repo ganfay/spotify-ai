@@ -2,7 +2,9 @@
 // Runs in startup core (spotify-ai-core.js) and in Node unit tests without DOM dependencies.
 
 export const SHUFFLE_STORAGE_KEY = "spotify-ai:true-shuffle:v1";
-export const DEFAULT_MAX_CONTEXTS = 10;
+export const DEFAULT_MAX_CONTEXTS = 4;
+/** Saved decks share local storage with chats, undo points and the background picture: keep them small. */
+export const MAX_SAVED_CHARS = 300_000;
 
 export type ShuffleCycleMode = "off" | "spotify" | "true";
 export interface ShuffleTrack { uri: string; uid?: string; isPlayable?: boolean; isLocal?: boolean; }
@@ -220,7 +222,10 @@ export class TrueShuffleEngine {
     if (!this.storage) return;
     const decks = this.maxContexts <= 0 ? [] : Array.from(this.decks.values()).slice(-this.maxContexts);
     for (;;) {
-      try { this.storage.setItem(this.storageKey, JSON.stringify({ version: 1, mode: this.mode, decks })); return; }
+      const text = JSON.stringify({ version: 1, mode: this.mode, decks });
+      // Oldest decks go first; a deck too big on its own is kept in memory only (it is reshuffled after a restart).
+      if (text.length > MAX_SAVED_CHARS && decks.length) { decks.shift(); continue; }
+      try { this.storage.setItem(this.storageKey, text); return; }
       catch { if (!decks.length) return; decks.shift(); }
     }
   }
