@@ -48,6 +48,31 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
   background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
 }
 
+/* ------------------------------------------------------ gradient: islands
+   As in stock Spotify: everything outside the panels (gaps, top bar, player bar)
+   is ONE darker surface, and the three panels are a step lighter with a hairline
+   edge — so they read as islands wherever the gradient is bright or dark. The
+   dark veil sits on the grid that holds them all; the gradient shows through
+   gaps and panels alike. (Glass and Neon keep their own panels.) */
+html[data-sai-gradient="on"]:not([data-sai-theme]) {
+  --sai-island: .07;       /* how much lighter a panel is than the gaps */
+  --sai-island-edge: .09;  /* hairline around a panel */
+}
+html[data-sai-gradient="on"]:not([data-sai-theme]) .Root__top-container {
+  background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
+}
+/* The player bar is part of that surface, not a panel (Spotify pulls it up under the panels). */
+html[data-sai-gradient="on"]:not([data-sai-theme]) .Root__now-playing-bar {
+  background-color: transparent !important;
+}
+html[data-sai-gradient="on"]:not([data-sai-theme]) :is(.main-yourLibraryX-library, .Root__main-view, .Root__right-sidebar-peek) {
+  background-color: rgba(var(--spice-rgb-text), var(--sai-island)) !important;
+}
+html[data-sai-gradient="on"]:not([data-sai-theme]) :is(.Root__nav-bar, .Root__main-view, .Root__right-sidebar-peek) {
+  outline: 1px solid rgba(var(--spice-rgb-text), var(--sai-island-edge));
+  outline-offset: -1px;
+}
+
 /* ---------------------------------------------- see-through: inner wrappers
    Spotify paints the part of a page below its header with the page colour. The
    names of those boxes change between versions, so they are found by what they
@@ -61,10 +86,18 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-mainWrapper {
   background-color: transparent !important;
 }
+/* Artist pages: Spotify washes the whole page with the artist's colour at 70 %. On
+   its own dark page that is a soft tint; on a see-through panel it is a solid slab. */
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) [data-testid="overscroll-background"] {
+  opacity: .3;
+  -webkit-mask-image: linear-gradient(#000 20%, transparent 75%);
+  mask-image: linear-gradient(#000 20%, transparent 75%);
+}
 /* Fades at the edges of carousels are drawn in the page colour: off. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .search-searchCategory-contentArea {
-  --carousel-start-chevron-gradient: transparent;
-  --carousel-end-chevron-gradient: transparent;
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .search-searchCategory-contentArea,
+html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .Root__main-view [data-shelf="carousel"] {
+  --carousel-start-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
+  --carousel-end-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
 }
 /* "Now playing", older layout: the veils over the video end in the solid page colour. */
 html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"]) .main-nowPlayingView-contextItemInfo::before,
@@ -125,7 +158,7 @@ html[data-sai-look] :is(.Root__globalNav, .Root__nav-bar, .Root__main-view, .Roo
 /* Native drop-downs (Settings): the opened list must be solid. */
 html[data-sai-look] select option { background-color: var(--sai-raised); color: var(--spice-text); }
 /* Inside the search field the magnifier and "browse" are bare icons: no second circle. */
-html[data-sai-look] .main-globalNav-searchSection button { background-color: transparent !important; }
+html[data-sai-look] :is(.main-globalNav-searchInputContainer, .main-globalNav-browseButtonWrapper) button { background-color: transparent !important; }
 /* Playlist, album and artist headers: the cover's colour stays as a soft glow that fades out. */
 html[data-sai-look] .main-entityHeader-backgroundColor,
 html[data-sai-look] .main-home-homeHeader {
@@ -140,6 +173,10 @@ html[data-sai-look] .playlist-playlist-actionBarBackground-background { visibili
    that made a look feel less smooth than stock, so they are a thick tint instead.
    Only the Glass theme, which is about frosted glass, blurs. */
 html[data-sai-look] .main-home-filterChipsSection { background-color: transparent !important; background-image: none !important; }
+/* "Is the page scrolled?" is asked from Spotify's own scroll timeline of the main view,
+   made visible to the whole panel. Where that is not supported the bars just stay tinted. */
+html[data-sai-look] .Root__main-view { timeline-scope: --main-view-scroll; }
+@keyframes sai-bar-in { from { opacity: 0; } to { opacity: 1; } }
 html[data-sai-look] .main-topBar-background {
   background-color: rgba(var(--spice-rgb-main), .88) !important;
   background-image: none !important;
@@ -166,10 +203,28 @@ html[data-sai-look] .main-trackList-trackListHeader::before {
 
 /* More bars that stay in place while the page scrolls under them (search chips, the
    discography bar, the column titles of the expanded library): the same thick tint. */
-html[data-sai-look] .Root__main-view div:has(> .contentSpacing > .search-searchCategory-contentArea),
 html[data-sai-look] .artist-artistDiscography-topBar.artist-artistDiscography-topBarScrolled,
 html[data-sai-look] .main-yourLibraryX-libraryContainer div:has(> * > [role="columnheader"]) {
   background-color: rgba(var(--spice-rgb-main), .9) !important;
+}
+
+/* The chips row of search results sticks at the very top, so it is clear while the
+   page is at rest and gets a solid backing (no rows showing through) once scrolled. */
+html[data-sai-look] .Root__main-view div:has(> .contentSpacing > .search-searchCategory-contentArea) {
+  background-color: transparent !important;
+}
+html[data-sai-look] .Root__main-view div:has(> .contentSpacing > .search-searchCategory-contentArea)::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -10px;
+  z-index: -1;
+  pointer-events: none;
+  background-color: color-mix(in srgb, var(--spice-main), var(--spice-text) 7%);
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 10px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 10px), transparent);
+  animation: sai-bar-in linear both;
+  animation-timeline: --main-view-scroll;
+  animation-range: 0 32px;
 }
 
 /* ------------------------------------------------------------ row spacing
