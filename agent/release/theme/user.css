@@ -242,6 +242,26 @@ html[data-sai-look] .Root__main-view div:has(> .contentSpacing > .search-searchC
   animation-range: 0 32px;
 }
 
+/* ------------------------------------------------------------------ lyrics
+   Spotify colours the lyrics page from the cover (its colours are variables set
+   right on the page element). With a look on they come from the look instead: the
+   page shows the look's own background, the sung line is in the text colour, the
+   rest fades. A glow in the colour of each line (currentColor) makes the sung line
+   shine and leaves the faded ones dim. */
+html[data-sai-look] [style*="--lyrics-color-background"] {
+  --lyrics-color-background: transparent !important;
+  --lyrics-color-active: rgb(var(--spice-rgb-text)) !important;
+  --lyrics-color-inactive: rgba(var(--spice-rgb-text), .36) !important;
+  --lyrics-color-passed: rgba(var(--spice-rgb-text), .62) !important;
+  --lyrics-color-messaging: var(--spice-subtext) !important;
+}
+html[data-sai-look] [style*="--lyrics-color-background"] div { transition: text-shadow .3s; }
+/* The small lyrics card in "Now playing" keeps a card of its own. */
+html[data-sai-look] [data-testid="lyrics-npv-section"],
+html[data-sai-look] [data-testid="lyrics-npv-section"] [style*="--lyrics-color-background"] {
+  --lyrics-color-background: rgba(var(--spice-rgb-text), .07) !important;
+}
+
 /* ------------------------------------------------------------ row spacing
    Two highlighted rows next to each other must not share an edge. Row heights are
    fixed by Spotify's virtual lists, so only the painted highlight shrinks. */
@@ -393,12 +413,16 @@ html[data-sai-theme="noir"] :is(.main-card-card, .view-homeShortcutsGrid-shortcu
 }
 html[data-sai-theme="noir"] .main-nowPlayingView-section { outline: 1px solid rgba(255,255,255,.10); outline-offset: -1px; }
 
-/* Lyrics: white light on black instead of the cover's colour. */
+/* Lyrics: blackletter, white light. */
 html[data-sai-theme="noir"] [style*="--lyrics-color-background"] {
-  --lyrics-color-background: rgba(0,0,0,.35) !important;
-  --lyrics-color-active: #fff !important;
-  --lyrics-color-inactive: rgba(255,255,255,.32) !important;
-  --lyrics-color-passed: rgba(255,255,255,.6) !important;
+  --lyrics-color-inactive: rgba(255,255,255,.26) !important;
+  --lyrics-color-passed: rgba(255,255,255,.5) !important;
+}
+html[data-sai-theme="noir"] [style*="--lyrics-color-background"] div {
+  font-family: "Sai Gothic", "UnifrakturMaguntia", Georgia, serif !important;
+  font-weight: 600 !important;
+  letter-spacing: .01em !important;
+  text-shadow: 0 0 10px currentColor, 0 0 30px rgba(255,255,255,.12);
 }
 html[data-sai-theme="noir"] .os-theme-spotify.os-scrollbar { --os-handle-bg: rgba(255,255,255,.28); --os-handle-bg-hover: rgba(255,255,255,.6); }
 
@@ -546,3 +570,18 @@ html[data-sai-theme="neon"] .main-connectBar-connectBar * { color: #fff !importa
 /* ----------------------------------------------------------- small, any look */
 /* Cinema mode has a black frame of its own; over a backdrop it is a black box. */
 html[data-sai-look] .Root__cinema-view { outline-color: transparent; }
+
+/* Lyrics in Glass: white on frosted glass, a soft halo on the sung line. */
+html[data-sai-theme="glass"] [style*="--lyrics-color-background"] {
+  --lyrics-color-inactive: rgba(255,255,255,.42) !important;
+  --lyrics-color-passed: rgba(255,255,255,.72) !important;
+}
+html[data-sai-theme="glass"] [style*="--lyrics-color-background"] div { text-shadow: 0 2px 18px rgba(0,0,0,.35), 0 0 22px color-mix(in srgb, currentColor 35%, transparent); }
+
+/* Lyrics in Neon: the sung line white-hot with a pink glow, sung ones cyan, the rest lavender. */
+html[data-sai-theme="neon"] [style*="--lyrics-color-background"] {
+  --lyrics-color-active: #fff !important;
+  --lyrics-color-inactive: rgba(199,184,230,.45) !important;
+  --lyrics-color-passed: rgba(139,233,247,.75) !important;
+}
+html[data-sai-theme="neon"] [style*="--lyrics-color-background"] div { text-shadow: 0 0 12px color-mix(in srgb, currentColor 70%, #ff3ea5), 0 0 34px rgba(255,62,165,.18); }
