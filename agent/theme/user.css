@@ -256,6 +256,19 @@ html[data-sai-look] [style*="--lyrics-color-background"] {
   --lyrics-color-messaging: var(--spice-subtext) !important;
 }
 html[data-sai-look] [style*="--lyrics-color-background"] div { transition: text-shadow .3s; }
+/* The Lyrics button opens a "cinema" view: its upper half is a gradient made from the
+   cover (two variables of its own) and the rest is a solid page colour. Both follow
+   the look: a faint light from above, and nothing solid in see-through looks. */
+html[data-sai-look] :is(.Root__cinema-view, .Root__cinema-view [style*="--cinema-mode-bg-color"]) {
+  --cinema-mode-bg-color-from: rgba(var(--spice-rgb-text), .07) !important;
+  --cinema-mode-bg-color-to: transparent !important;
+}
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__cinema-view :is(.main-actionBar-ActionBarContainer, [style*="--background-base"]) {
+  --background-base: transparent !important;
+  background-color: transparent !important;
+}
+/* With the cinema view see-through, the right panel underneath would show through it. */
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container:has(> .Root__cinema-view) > .Root__right-sidebar { visibility: hidden; }
 /* The small lyrics card in "Now playing" keeps a card of its own. */
 html[data-sai-look] [data-testid="lyrics-npv-section"],
 html[data-sai-look] [data-testid="lyrics-npv-section"] [style*="--lyrics-color-background"] {
@@ -316,6 +329,8 @@ html[data-sai-look] .main-trackList-trackListRow {
   font-display: swap;
   unicode-range: U+0400-045F, U+0490-0491, U+2116;
 }
+@font-face { font-family: "Sai Glass"; src: url(font:Comfortaa-Bold) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sai Neon"; src: url(font:RussoOne-Regular) format("woff2"); font-display: swap; }
 html[data-sai-theme="noir"] {
   --sai-panel-rgb: 0,0,0;
   --sai-panel: .82;
@@ -585,3 +600,23 @@ html[data-sai-theme="neon"] [style*="--lyrics-color-background"] {
   --lyrics-color-passed: rgba(139,233,247,.75) !important;
 }
 html[data-sai-theme="neon"] [style*="--lyrics-color-background"] div { text-shadow: 0 0 12px color-mix(in srgb, currentColor 70%, #ff3ea5), 0 0 34px rgba(255,62,165,.18); }
+
+/* Glass and Neon have fonts of their own too, in the same places as Noir: page titles,
+   section headings, the library title, the song in "Now playing", the lyrics. */
+html[data-sai-theme="glass"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2,
+  .main-entityHeader-topbarTitle, .main-yourLibraryX-header h1, .main-nowPlayingView-sectionHeaderText,
+  [data-npv-root] [class*="encore-text-title"], [style*="--lyrics-color-background"] div) {
+  font-family: "Sai Glass", "Comfortaa", system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -.01em !important;
+}
+html[data-sai-theme="neon"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2,
+  .main-entityHeader-topbarTitle, .main-yourLibraryX-header h1, .main-nowPlayingView-sectionHeaderText,
+  [data-npv-root] [class*="encore-text-title"], [style*="--lyrics-color-background"] div) {
+  font-family: "Sai Neon", "Russo One", system-ui, sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: .02em !important;
+}
+html[data-sai-theme="neon"] :is(.Root__main-view h2, .main-nowPlayingView-sectionHeaderText, .main-yourLibraryX-header h1) {
+  text-shadow: 0 0 10px rgba(255,62,165,.45);
+}
