@@ -4,6 +4,7 @@
 
 import { applyAppearance, loadAppearance } from "./appearance";
 import { firstStartHint } from "./hint";
+import { initTrueShuffle } from "./shuffle-controller";
 
 (() => {
   const look = loadAppearance();
@@ -12,4 +13,9 @@ import { firstStartHint } from "./hint";
   (window as unknown as { __spotifyAiAppearance?: typeof applyAppearance }).__spotifyAiAppearance = applyAppearance;
   // On the first start only: point at the AI Playlists button.
   firstStartHint();
+  try {
+    initTrueShuffle();
+  } catch {
+    // Startup core must never break Spotify or appearance if controller initialization fails.
+  }
 })();
