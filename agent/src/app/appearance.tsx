@@ -2,7 +2,7 @@
 // change is shown at once and saved; the small startup extension applies the
 // saved look when Spotify starts (src/core).
 
-import { APPEARANCE_KEY, applyAppearance, loadAppearance } from "../core/appearance";
+import { type Appearance, APPEARANCE_KEY, applyAppearance, loadAppearance, PHOTO_KEY } from "../core/appearance";
 import { t } from "./i18n";
 import { type Choice, fromAppearance, hexToHsl, hslToHex, PRESETS, STOCK, type Theme, themeAppearance, themeMark, THEMES, toAppearance } from "./look";
 import type { Key } from "./i18n";
@@ -71,6 +71,24 @@ function ColorField({ value, onChange, onRemove }: { value: string; onChange: (h
   );
 }
 
+const MAX_PHOTO_CHARS = 1_400_000; // local storage is shared with Spotify: keep the picture small
+
+/** Reads a picture file, shrinks it to at most 1600 px on the long side and returns it as a JPEG data URL. */
+async function shrinkPicture(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  for (const quality of [0.84, 0.72, 0.6, 0.48]) {
+    const url = canvas.toDataURL("image/jpeg", quality);
+    if (url.length <= MAX_PHOTO_CHARS) return url;
+  }
+  throw new Error("too big");
+}
+
 const preview = (c: Choice): string =>
   c.gradient ? `linear-gradient(${c.gradient.angle}deg, ${c.gradient.colors.map((x) => `#${x}`).join(", ")})` : `#${c.background}`;
 
@@ -79,25 +97,31 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
   const [saved, setSaved] = useState(() => loadAppearance() !== null);
   const [choice, setChoice] = useState(() => fromAppearance(loadAppearance()));
   const [works] = useState(looksReady);
+  // The own picture: kept apart from the colours, so it stays when a preset or theme is picked.
+  const [photo, setPhoto] = useState(() => { try { return localStorage.getItem(PHOTO_KEY); } catch { return null; } });
+  const [photoSet, setPhotoSet] = useState(() => loadAppearance()?.photo ?? null);
+  const [photoError, setPhotoError] = useState("");
+  /** Saves and shows a look, with the picture setting added. */
+  const save = (look: Appearance | null, picture: Appearance["photo"] | null | undefined = photoSet) => {
+    const full = look ?? (picture ? { colors: {}, photo: picture } : null);
+    if (full && picture) full.photo = picture; else if (full) delete full.photo;
+    if (full) localStorage.setItem(APPEARANCE_KEY, JSON.stringify(full)); else localStorage.removeItem(APPEARANCE_KEY);
+    apply(full);
+  };
 
   const use = (next: Choice | null) => {
     if (next === null) {
-      localStorage.removeItem(APPEARANCE_KEY);
-      apply(null);
+      save(null);
       setChoice({ ...STOCK });
       setSaved(false);
       return;
     }
-    const look = toAppearance(next);
-    localStorage.setItem(APPEARANCE_KEY, JSON.stringify(look));
-    apply(look);
+    save(toAppearance(next));
     setChoice(next);
     setSaved(true);
   };
   const useTheme = (theme: Theme) => {
-    const look = themeAppearance(theme);
-    localStorage.setItem(APPEARANCE_KEY, JSON.stringify(look));
-    apply(look);
+    save(themeAppearance(theme));
     setChoice({ background: theme.background, accent: theme.accent, gradient: null, preset: themeMark(theme.id) });
     setSaved(true);
   };
@@ -105,6 +129,30 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
   const edit = (patch: Partial<Choice>) => {
     const { preset: _preset, ...rest } = { ...choice, ...patch };
     use(rest);
+  };
+  /** The current look again, with a new picture setting. */
+  const repaint = (picture: Appearance["photo"] | null | undefined) => {
+    setPhotoSet(picture ?? null);
+    const current = loadAppearance();
+    const base = current && Object.keys(current.colors ?? {}).length ? current : null;
+    save(base, picture);
+  };
+  const pickPhoto = async (file: File | undefined) => {
+    if (!file) return;
+    setPhotoError("");
+    try {
+      const url = await shrinkPicture(file);
+      localStorage.setItem(PHOTO_KEY, url);
+      setPhoto(url);
+      repaint(photoSet ?? { strength: 0.55 });
+    } catch {
+      setPhotoError(t("look.photoTooBig"));
+    }
+  };
+  const removePhoto = () => {
+    try { localStorage.removeItem(PHOTO_KEY); } catch { /* ignore */ }
+    setPhoto(null);
+    repaint(null);
   };
   const gradient = choice.gradient;
   const setGradient = (patch: Partial<NonNullable<Choice["gradient"]>>) => gradient && edit({ gradient: { ...gradient, ...patch } });
@@ -165,6 +213,33 @@ export function AppearanceView({ onBack }: { onBack: () => void }) {
           )}
           <div style={row}><div style={labelStyle}>{t("look.direction")}</div><Slider value={gradient.angle} min={0} max={360} onChange={(v) => setGradient({ angle: v })} /><span style={{ ...css.muted, width: 44, textAlign: "right" }}>{gradient.angle}°</span></div>
           <div style={row}><div style={labelStyle}>{t("look.strength")}</div><Slider value={Math.round(gradient.intensity * 100)} min={0} max={100} onChange={(v) => setGradient({ intensity: v / 100 })} /><span style={{ ...css.muted, width: 44, textAlign: "right" }}>{Math.round(gradient.intensity * 100)}%</span></div>
+        </div>
+      )}
+
+      <div style={section}>{t("look.photo")}</div>
+      <p style={{ ...css.muted, margin: "0 0 12px" }}>{t("look.photoNote")}</p>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        {photo && <div className="sai-photo-thumb" style={{ backgroundImage: `url(${photo})` }} />}
+        <label style={{ ...css.secondary, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
+          {t(photo ? "look.photoChange" : "look.photoChoose")}
+          <input type="file" accept="image/png, image/jpeg, image/webp, image/gif" style={{ display: "none" }}
+                 onChange={(e: any) => { void pickPhoto(e.target.files?.[0]); e.target.value = ""; }} />
+        </label>
+        {photo && <span className="sai-link" onClick={removePhoto}><Icon name="cross" size={12} />{t("look.photoRemove")}</span>}
+      </div>
+      {photoError && <p style={css.error}>{photoError}</p>}
+      {photo && (
+        <div className="sai-in" style={{ marginTop: 10 }}>
+          <label style={{ ...row, cursor: "pointer" }}>
+            <input type="checkbox" style={{ accentColor: "var(--spice-button, #1ed760)" }} checked={!!photoSet}
+                   onChange={() => repaint(photoSet ? null : { strength: 0.55 })} />
+            <span>{t("look.photoOn")}</span>
+          </label>
+          {photoSet && (
+            <div style={row}><div style={labelStyle}>{t("look.strength")}</div>
+              <Slider value={Math.round(photoSet.strength * 100)} min={0} max={100} onChange={(v) => repaint({ strength: v / 100 })} />
+              <span style={{ ...css.muted, width: 44, textAlign: "right" }}>{Math.round(photoSet.strength * 100)}%</span></div>
+          )}
         </div>
       )}
 

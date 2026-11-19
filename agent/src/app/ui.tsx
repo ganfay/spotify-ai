@@ -93,6 +93,7 @@ export function GlobalStyles() {
       .sai-theme-neon .word { background: linear-gradient(92deg, #fff, #ffb3dc, #8be9f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 12px rgba(255,62,165,.7)); }
       html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .sai-dock { background: transparent !important; }
       .sai-look .pic { box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-text, 255,255,255), .14); }
+      .sai-photo-thumb { width: 96px; height: 60px; border-radius: 8px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-text, 255,255,255), .14); }
       .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(var(--spice-rgb-text, 255,255,255),.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }
       .sai-tour-btn:hover { background: rgba(var(--spice-rgb-text, 255,255,255),.18); transform: scale(1.03); }
       .sai-tour-btn.primary { background: var(--spice-button, #1ed760); color: var(--sai-on-accent, #000); }

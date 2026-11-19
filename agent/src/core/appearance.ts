@@ -3,6 +3,8 @@
 // in the code that runs every time Spotify starts, so it must stay tiny.
 
 export const APPEARANCE_KEY = "spotify-ai:appearance";
+/** The user's own background picture (a data URL), kept apart so the look itself stays small. */
+export const PHOTO_KEY = "spotify-ai:photo";
 
 /** Spicetify's colour names (Themes/spotify-ai/color.ini lists the stock values). */
 export type ColorName =
@@ -19,6 +21,8 @@ export interface Appearance {
   theme?: string;
   /** The theme uses the cover of the playing song as its backdrop. */
   cover?: boolean;
+  /** Show the user's own picture (PHOTO_KEY) behind the panels; strength 0–1 = how much of it shows. */
+  photo?: { strength: number };
   /** What the Appearance page built the colours from, so it can be edited again. */
   base?: { background: string; accent: string; preset?: string };
 }
@@ -75,6 +79,7 @@ export function applyAppearance(look: Appearance | null): void {
   root.removeAttribute("data-sai-theme");
   root.removeAttribute("data-sai-gradient");
   root.removeAttribute("data-sai-look");
+  root.removeAttribute("data-sai-photo");
   if (!look) return;
   root.setAttribute("data-sai-look", "on");
 
@@ -99,8 +104,22 @@ export function applyAppearance(look: Appearance | null): void {
     root.style.setProperty("--sai-panel", Math.max(0.2, 1 - strength * 0.8).toFixed(2));
     root.setAttribute("data-sai-gradient", "on");
   }
+  // The user's own picture. In a theme it takes the place of the playing song's cover;
+  // otherwise it is the backdrop, and the panels become see-through as with a gradient.
+  let photo: string | null = null;
+  if (look.photo) {
+    try { photo = localStorage.getItem(PHOTO_KEY); } catch { photo = null; }
+  }
+  if (photo && photo.startsWith("data:image/") && !/["'()\\\s]/.test(photo)) {
+    root.style.setProperty("--sai-cover", `url(${photo})`);
+    root.setAttribute("data-sai-photo", "on");
+    if (!gradient) {
+      const strength = Math.max(0, Math.min(1, Number(look.photo!.strength) || 0));
+      root.style.setProperty("--sai-panel", Math.max(0.2, 1 - strength * 0.8).toFixed(2));
+    }
+  } else photo = null;
   if (look.theme && /^[a-z0-9-]{1,30}$/.test(look.theme)) {
     root.setAttribute("data-sai-theme", look.theme);
-    if (look.cover) stopCover = followCover(root);
+    if (look.cover && !photo) stopCover = followCover(root);
   }
 }

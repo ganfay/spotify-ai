@@ -12,7 +12,7 @@
    (Not `background-attachment: fixed`: that can make scrolling repaint on the main thread.) */
 html[data-sai-gradient="on"] { background: var(--spice-main) !important; }
 html[data-sai-gradient="on"] body { background: transparent !important; }
-html[data-sai-gradient="on"]:not([data-sai-theme]) body::before {
+html[data-sai-gradient="on"]:not([data-sai-theme]):not([data-sai-photo]) body::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -26,26 +26,41 @@ html[data-sai-gradient="on"]:not([data-sai-theme]) body::before {
    Used by the gradient and by the Glass and Neon themes. Everything outside the
    panels (top bar, gaps) is clear, so the backdrop is one seamless surface; the
    panels are a tint of the background colour. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__globalNav,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__nav-bar,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-libraryContainer,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-playlistContent,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="artist-page"] > div > div,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__globalNav,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__nav-bar,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-libraryContainer,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-playlistContent,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="artist-page"] > div > div,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] {
   background-color: transparent !important;
 }
 /* "Now playing": Spotify lays dark veils over the cover or video (plain empty
    boxes with a dark gradient). On a see-through panel they turn it black, so they
    are thinned — not removed, the title over a video still needs them. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] div:empty { opacity: .45; }
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-library,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar-peek,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__now-playing-bar {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] div:empty { opacity: .45; }
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-library,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar-peek,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__now-playing-bar {
   background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
+}
+
+/* The user's own picture behind everything (plain looks; the themes use it in their own way). */
+html[data-sai-photo]:not([data-sai-theme]) { background: #000 !important; }
+html[data-sai-photo]:not([data-sai-theme]) body { background: transparent !important; }
+html[data-sai-photo]:not([data-sai-theme]) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--sai-cover);
+  background-size: cover;
+  background-position: center;
+  will-change: transform;
 }
 
 /* ------------------------------------------------------ gradient: islands
@@ -54,21 +69,21 @@ html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neo
    edge — so they read as islands wherever the gradient is bright or dark. The
    dark veil sits on the grid that holds them all; the gradient shows through
    gaps and panels alike. (Glass and Neon keep their own panels.) */
-html[data-sai-gradient="on"]:not([data-sai-theme]) {
+html:is([data-sai-gradient="on"], [data-sai-photo]):not([data-sai-theme]) {
   --sai-island: .07;       /* how much lighter a panel is than the gaps */
   --sai-island-edge: .09;  /* hairline around a panel */
 }
-html[data-sai-gradient="on"]:not([data-sai-theme]) .Root__top-container {
+html:is([data-sai-gradient="on"], [data-sai-photo]):not([data-sai-theme]) .Root__top-container {
   background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
 }
 /* The player bar is part of that surface, not a panel (Spotify pulls it up under the panels). */
-html[data-sai-gradient="on"]:not([data-sai-theme]) .Root__now-playing-bar {
+html:is([data-sai-gradient="on"], [data-sai-photo]):not([data-sai-theme]) .Root__now-playing-bar {
   background-color: transparent !important;
 }
-html[data-sai-gradient="on"]:not([data-sai-theme]) :is(.main-yourLibraryX-library, .Root__main-view, .Root__right-sidebar-peek) {
+html:is([data-sai-gradient="on"], [data-sai-photo]):not([data-sai-theme]) :is(.main-yourLibraryX-library, .Root__main-view, .Root__right-sidebar-peek) {
   background-color: rgba(var(--spice-rgb-text), var(--sai-island)) !important;
 }
-html[data-sai-gradient="on"]:not([data-sai-theme]) :is(.Root__nav-bar, .Root__main-view, .Root__right-sidebar-peek) {
+html:is([data-sai-gradient="on"], [data-sai-photo]):not([data-sai-theme]) :is(.Root__nav-bar, .Root__main-view, .Root__right-sidebar-peek) {
   outline: 1px solid rgba(var(--spice-rgb-text), var(--sai-island-edge));
   outline-offset: -1px;
 }
@@ -77,32 +92,32 @@ html[data-sai-gradient="on"]:not([data-sai-theme]) :is(.Root__nav-bar, .Root__ma
    Spotify paints the part of a page below its header with the page colour. The
    names of those boxes change between versions, so they are found by what they
    contain: the stable .contentSpacing box, or the action-bar background. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> .contentSpacing),
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-concertsFooter,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .artist-artistDiscography-headerContainer,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-view-container__mh-footer-container,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id::before,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-mainWrapper {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> .contentSpacing),
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-concertsFooter,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .artist-artistDiscography-headerContainer,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-view-container__mh-footer-container,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id::before,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-mainWrapper {
   background-color: transparent !important;
 }
 /* Artist pages: Spotify washes the whole page with the artist's colour at 70 %. On
    its own dark page that is a soft tint; on a see-through panel it is a solid slab. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="overscroll-background"] {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="overscroll-background"] {
   opacity: .3;
   -webkit-mask-image: linear-gradient(#000 20%, transparent 75%);
   mask-image: linear-gradient(#000 20%, transparent 75%);
 }
 /* Fades at the edges of carousels are drawn in the page colour: off. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .search-searchCategory-contentArea,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view [data-shelf="carousel"] {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .search-searchCategory-contentArea,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view [data-shelf="carousel"] {
   --carousel-start-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
   --carousel-end-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
 }
 /* "Now playing", older layout: the veils over the video end in the solid page colour. */
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-contextItemInfo::before,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::before,
-html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-contextItemInfo::before,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::before,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
 
 /* ------------------------------------------------------------- any look on
    Things Spotify colours by itself (from the cover of what is open) or leaves
@@ -406,30 +421,39 @@ html[data-sai-theme="glass"] body { background: transparent !important; }
 /* Two layers behind everything: a soft aurora that is always there, and the cover
    of the playing song on top of it. The cover only ADDS light ("screen"), so a
    black cover leaves the aurora and a colourful one takes over. */
-html[data-sai-theme="glass"] body::before,
+/* Two layers behind everything: a soft aurora that is always there, and the cover of
+   the playing song over it. Both are cheap to draw: the aurora is plain gradients (no
+   filter), and the cover is blurred at a quarter of the window size, then scaled up —
+   a blur that wide looks the same and costs a sixteenth. */
+html[data-sai-theme="glass"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 18% 22%, rgba(91,63,214,.75) 0%, transparent 72%),
+    radial-gradient(55% 60% at 86% 30%, rgba(14,127,168,.7) 0%, transparent 72%),
+    radial-gradient(65% 60% at 55% 96%, rgba(168,50,126,.7) 0%, transparent 72%),
+    #0b0b14;
+}
 html[data-sai-theme="glass"] body::after {
   content: "";
   position: fixed;
-  inset: -110px;
+  left: 0;
+  top: 0;
+  width: 25vw;
+  height: 25vh;
   z-index: -1;
   pointer-events: none;
-}
-html[data-sai-theme="glass"] body::before {
-  background:
-    radial-gradient(60% 55% at 18% 22%, #5b3fd6 0%, transparent 70%),
-    radial-gradient(55% 60% at 86% 30%, #0e7fa8 0%, transparent 70%),
-    radial-gradient(65% 60% at 55% 96%, #a8327e 0%, transparent 70%),
-    #0b0b14;
-  filter: blur(40px) brightness(.78);
-}
-html[data-sai-theme="glass"] body::after {
   background-image: var(--sai-cover, none);
   background-size: cover;
   background-position: center;
-  filter: blur(70px) saturate(1.9) brightness(.85);
-  mix-blend-mode: screen;
-  opacity: .9;
-  transition: background-image 1.4s ease;
+  transform: scale(4);
+  transform-origin: 0 0;
+  filter: blur(14px) saturate(1.7) brightness(.7);
+  opacity: .78;
+  will-change: transform;
 }
 html[data-sai-theme="glass"] .main-yourLibraryX-library,
 html[data-sai-theme="glass"] .Root__main-view,
@@ -450,7 +474,7 @@ html[data-sai-theme="glass"] .main-image-image,
 html[data-sai-theme="glass"] .main-trackList-rowImage { border-radius: 10px !important; }
 html[data-sai-theme="glass"] .main-entityHeader-image { border-radius: 18px !important; box-shadow: 0 18px 50px rgba(0,0,0,.5) !important; }
 html[data-sai-theme="glass"] .main-nowPlayingWidget-coverArt img { border-radius: 12px !important; }
-html[data-sai-theme="glass"] [class*="button-primary__inner"] { box-shadow: 0 8px 26px rgba(0,0,0,.4) !important; }
+html[data-sai-theme="glass"] :is(.main-actionBar-ActionBarPlayButtonContainer, .main-playButton-PlayButton) [class*="button-primary__inner"] { box-shadow: 0 8px 26px rgba(0,0,0,.4) !important; }
 html[data-sai-theme="glass"] .main-connectBar-connectBar { background: rgba(255,255,255,.14) !important; color: #fff !important; border-radius: 0 0 20px 20px; }
 html[data-sai-theme="glass"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }
 
@@ -526,7 +550,5 @@ html[data-sai-theme="neon"] .main-connectBar-connectBar { background: linear-gra
 html[data-sai-theme="neon"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }
 
 /* ----------------------------------------------------------- small, any look */
-/* The volume pop-out is drawn in a "raised grey" that is see-through inside the bar. */
-html[data-sai-look] .volume-bar__slider-container { background-color: var(--sai-raised-hi) !important; }
 /* Cinema mode has a black frame of its own; over a backdrop it is a black box. */
 html[data-sai-look] .Root__cinema-view { outline-color: transparent; }
