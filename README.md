@@ -7,6 +7,7 @@ A desktop Spotify setup for Windows, macOS and Linux:
 - no ads;
 - listening stats keep working (Recently played, Listening stats, Wrapped);
 - an AI agent inside Spotify that manages your playlists in plain language;
+- colours, gradients, your own background picture and three ready-made themes for the whole Spotify (AI Playlists → Appearance);
 - you never enter API keys and never give your credentials to anyone.
 
 It is built from three parts, installed by one command:
@@ -70,7 +71,7 @@ Remove everything: `./install.sh --uninstall`. The installer asks for `sudo` twi
 
 ### Already have a modified Spotify?
 
-On Windows and macOS the installer looks at the Spotify that is already there. If it was changed by another mod (SpotX, BlockTheSpot, a "cracked" copy …), it says what it found and offers to put a clean copy from Spotify's own server in its place. You stay logged in; playlists and likes live on Spotify's servers. If you keep the modified one, ad blocking or the AI Playlists button may not work, Spotify may open as an empty window, and uninstalling returns Spotify to that modified state. A Spotify that already has Spicetify is not replaced: your Spicetify is kept and only our parts are added (your theme is switched off).
+On Windows and macOS the installer looks at the Spotify that is already there. If it was changed by another mod (SpotX, BlockTheSpot, a "cracked" copy …), it says what it found and offers to put a clean copy from Spotify's own server in its place. You stay logged in; playlists and likes live on Spotify's servers. If you keep the modified one, ad blocking or the AI Playlists button may not work, Spotify may open as an empty window, and uninstalling returns Spotify to that modified state. A Spotify that already has Spicetify is not replaced: your Spicetify is kept and only our parts are added. Your Spicetify theme is replaced by ours (needed for the looks); uninstalling puts yours back.
 
 ### Options
 

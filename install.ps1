@@ -26,7 +26,8 @@
 #   2. stops Spotify auto-updates (a locked file where the updater keeps its downloads);
 #   3. installs Spicetify at a pinned version into %LOCALAPPDATA%\spicetify;
 #   4. installs the adblockify extension at a pinned commit;
-#   5. installs the AI Playlists app;
+#   5. installs the AI Playlists app and the looks (a theme folder with Spotify's own
+#      colours, and a small startup extension that applies a chosen look);
 #   6. applies everything to Spotify.
 # Downloads are checked by SHA-256 (Spotify's own installer: by its digital signature).
 # Nothing needs administrator rights. This file must stay plain ASCII.
@@ -75,6 +76,9 @@ function Install-SpotifyAi {
   $KeepFile = 'native-licenses.html'
   $Extension = 'spotify-ai-adblock.js'
   $AgentApp = 'ai-playlists'
+  $CoreExtension = 'spotify-ai-core.js'   # applies the saved look; first-start hint
+  $Theme = 'spotify-ai'                   # theme folder: stock colours + the looks' styles
+  $ThemeBeforeFile = Join-Path $env:APPDATA 'spotify-ai\theme-before'
   $Utf8 = New-Object System.Text.UTF8Encoding($false)
   $Work = Join-Path ([IO.Path]::GetTempPath()) ('spotify-ai-' + [Guid]::NewGuid().ToString('N'))
   $Local = [bool]$Here -and (Test-Path -LiteralPath (Join-Path $Here 'versions'))
@@ -479,6 +483,25 @@ function Install-SpotifyAi {
     Info 'installed'
   }
 
+  # Looks (colours, gradients, themes) and the first-start hint: a small startup
+  # extension plus a theme folder with Spotify's stock colours and the looks' styles.
+  function Install-Looks {
+    Say 'Looks'
+    $extensions = Join-Path $ConfigDir 'Extensions'
+    $themeDir = Join-Path $ConfigDir "Themes\$Theme"
+    New-Item -ItemType Directory -Path $extensions -Force | Out-Null
+    New-Item -ItemType Directory -Path $themeDir -Force | Out-Null
+    Get-RepoFile "agent/release/$CoreExtension" (Join-Path $extensions $CoreExtension)
+    foreach ($file in 'color.ini', 'user.css') { Get-RepoFile "agent/release/theme/$file" (Join-Path $themeDir $file) }
+    Info 'installed'
+  }
+
+  function Get-IniValue($ini, $key) {
+    $line = Get-IniLine $ini $key
+    if ($line -match '^[^=]*=\s*(.*?)\s*$') { return $Matches[1] }
+    return ''
+  }
+
   function Read-Options {
     $options = @{ ADBLOCK = 'on'; BLOCK_REPORTS = 'on' }
     if (Test-Path -LiteralPath $OptionsFile) {
@@ -504,8 +527,19 @@ function Install-SpotifyAi {
     [void](Invoke-Spicetify config)                       # creates the config on first run
     $ini = Join-Path $ConfigDir 'config-xpui.ini'
     if (-not (Test-Path -LiteralPath $ini)) { throw "Spicetify did not create its config ($ini)." }
-    # No themes, no recolouring: we only need the platform. Keeps idle cost at zero.
-    Set-SpicetifyConfig inject_css 0 replace_colors 0
+    # A Spicetify that was here before us may have its own theme: remember it, so
+    # uninstalling can put it back.
+    $themeNow = Get-IniValue $ini 'current_theme'
+    if ($themeNow -ne $Theme -and -not (Test-Path -LiteralPath $OursMarker) -and -not (Test-Path -LiteralPath $ThemeBeforeFile)) {
+      New-Item -ItemType Directory -Path (Split-Path $ThemeBeforeFile -Parent) -Force | Out-Null
+      $lines = @($themeNow, (Get-IniValue $ini 'color_scheme'), (Get-IniValue $ini 'inject_css'), (Get-IniValue $ini 'replace_colors'))
+      [IO.File]::WriteAllText($ThemeBeforeFile, ($lines -join "`n") + "`n")
+    }
+    # Our theme: Spotify's own colours until a look is chosen in AI Playlists > Appearance.
+    Set-SpicetifyConfig current_theme $Theme color_scheme base inject_css 1 replace_colors 1 inject_theme_js 0
+    if (-not (Get-IniLine $ini 'extensions').Contains($CoreExtension)) {
+      Set-SpicetifyConfig extensions $CoreExtension
+    }
     # We ship pinned versions, so Spicetify's own update check would only add a request at startup.
     Set-SpicetifyConfig check_spicetify_update 0
     $hasExtension = (Get-IniLine $ini 'extensions').Contains($Extension)
@@ -563,6 +597,9 @@ function Install-SpotifyAi {
     if ($options.ADBLOCK -eq 'on' -and -not $applied) { throw 'the ad-blocking extension was not applied.' }
     if ($options.ADBLOCK -eq 'off' -and $applied) { throw 'the ad-blocking extension is still applied.' }
     if (-not (Test-Path -Path (Join-Path $xpui "spicetify-routes-$AgentApp*"))) { throw 'the AI Playlists app was not applied.' }
+    if (-not (Test-Path -LiteralPath (Join-Path $xpui "extensions\$CoreExtension")) -or -not (Test-Path -LiteralPath (Join-Path $xpui 'user.css'))) {
+      throw 'the looks were not applied.'
+    }
     Info 'done'
   }
 
@@ -586,8 +623,28 @@ function Install-SpotifyAi {
     } elseif ($hasSpicetify) {
       # Spicetify was here before us: remove only what this installer added.
       Remove-Item -LiteralPath (Join-Path $ConfigDir "Extensions\$Extension") -Force -ErrorAction SilentlyContinue
+      Remove-Item -LiteralPath (Join-Path $ConfigDir "Extensions\$CoreExtension") -Force -ErrorAction SilentlyContinue
       Remove-Item -LiteralPath (Join-Path $ConfigDir "CustomApps\$AgentApp") -Recurse -Force -ErrorAction SilentlyContinue
-      [void](Invoke-Spicetify config extensions "$Extension-" custom_apps "$AgentApp-")
+      Remove-Item -LiteralPath (Join-Path $ConfigDir "Themes\$Theme") -Recurse -Force -ErrorAction SilentlyContinue
+      [void](Invoke-Spicetify config extensions "$Extension-" extensions "$CoreExtension-" custom_apps "$AgentApp-")
+      # Their own theme back, as it was before us (or none).
+      $before = @('', '', '0', '0')
+      if (Test-Path -LiteralPath $ThemeBeforeFile) {
+        $saved = @(Get-Content -LiteralPath $ThemeBeforeFile)
+        for ($i = 0; $i -lt [Math]::Min(4, $saved.Count); $i++) { $before[$i] = "$($saved[$i])" }
+      }
+      if (-not $before[2]) { $before[2] = '0' }
+      if (-not $before[3]) { $before[3] = '0' }
+      # Written straight into the config: Windows PowerShell drops empty arguments to
+      # programs, and "no theme" is an empty value.
+      $ini = Join-Path $ConfigDir 'config-xpui.ini'
+      if (Test-Path -LiteralPath $ini) {
+        $values = @{ current_theme = $before[0]; color_scheme = $before[1]; inject_css = $before[2]; replace_colors = $before[3] }
+        $text = foreach ($line in Get-Content -LiteralPath $ini) {
+          if ($line -match '^(current_theme|color_scheme|inject_css|replace_colors)(\s*=)') { "$($Matches[1])$($Matches[2]) $($values[$Matches[1]])".TrimEnd() } else { $line }
+        }
+        [IO.File]::WriteAllText($ini, (($text -join "`r`n") + "`r`n"), $Utf8)
+      }
       [void](Invoke-Spicetify backup apply)
       Info 'our extension and app removed; your own Spicetify setup was kept'
     }
@@ -632,6 +689,7 @@ function Install-SpotifyAi {
     Install-Spicetify
     Install-Adblockify
     Install-Agent
+    Install-Looks
     Set-Configuration $options
     Invoke-Apply $options
     Say (T finished)

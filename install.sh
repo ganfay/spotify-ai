@@ -25,7 +25,8 @@
 #   3. Linux only: lets your user write to the Spotify folder (needed by Spicetify);
 #   4. installs Spicetify at a pinned version into ~/.spicetify;
 #   5. installs the adblockify extension at a pinned commit;
-#   6. installs the AI Playlists app;
+#   6. installs the AI Playlists app and the looks (a theme folder with Spotify's
+#      own colours, and a small startup extension that applies a chosen look);
 #   7. applies everything to Spotify.
 # Downloads are checked by SHA-256 (Spotify's own disk image: by its code signature).
 # Windows has its own installer: install.cmd / install.ps1.
@@ -46,6 +47,9 @@ SPICETIFY_CONFIG_DIR="${HOME}/.config/spicetify"
 EXTENSION="spotify-ai-adblock.js"
 OLD_EXTENSION="adblock.js"   # name used by earlier versions of this installer
 AGENT_APP="ai-playlists"
+CORE_EXTENSION="spotify-ai-core.js"   # applies the saved look; first-start hint
+THEME="spotify-ai"                    # theme folder: stock colours + the looks' styles
+THEME_BEFORE_FILE="${HOME}/.config/spotify-ai/theme-before"
 AGENT_SOURCE=""
 MPRIS="org.mpris.MediaPlayer2.spotify"
 OPTIONS_FILE="${HOME}/.config/spotify-ai/options"
@@ -248,6 +252,8 @@ detect_os() {
 load_sources() {
   if [[ -n "${HERE}" && -f "${HERE}/versions" && -f "${HERE}/agent/release/${AGENT_APP}/index.js" ]]; then
     AGENT_SOURCE="${HERE}/agent/release/${AGENT_APP}"
+    CORE_SOURCE="${HERE}/agent/release/${CORE_EXTENSION}"
+    THEME_SOURCE="${HERE}/agent/release/theme"
   else
     say "Downloading spotify-ai"
     need curl
@@ -258,6 +264,15 @@ load_sources() {
     for file in index.js manifest.json; do
       curl -fsSL -o "${AGENT_SOURCE}/${file}" "${BASE_URL}/agent/release/${AGENT_APP}/${file}" \
         || die "could not download ${file} from ${BASE_URL}."
+    done
+    CORE_SOURCE="${WORK}/${CORE_EXTENSION}"
+    THEME_SOURCE="${WORK}/theme"
+    mkdir -p "${THEME_SOURCE}"
+    curl -fsSL -o "${CORE_SOURCE}" "${BASE_URL}/agent/release/${CORE_EXTENSION}" \
+      || die "could not download ${CORE_EXTENSION} from ${BASE_URL}."
+    for file in color.ini user.css; do
+      curl -fsSL -o "${THEME_SOURCE}/${file}" "${BASE_URL}/agent/release/theme/${file}" \
+        || die "could not download theme/${file} from ${BASE_URL}."
     done
     HERE="${WORK}"
     info "ok"
@@ -599,6 +614,22 @@ install_agent() {
   info "installed"
 }
 
+# Looks (colours, gradients, themes) and the first-start hint: a small startup
+# extension plus a theme folder with Spotify's stock colours and the looks' styles.
+install_looks() {
+  say "Looks"
+  [[ -f "${CORE_SOURCE}" && -f "${THEME_SOURCE}/color.ini" && -f "${THEME_SOURCE}/user.css" ]] \
+    || die "the looks files are missing (${THEME_SOURCE}). Re-download the repository."
+  mkdir -p "${SPICETIFY_CONFIG_DIR}/Extensions" "${SPICETIFY_CONFIG_DIR}/Themes/${THEME}"
+  cp "${CORE_SOURCE}" "${SPICETIFY_CONFIG_DIR}/Extensions/${CORE_EXTENSION}"
+  cp "${THEME_SOURCE}/color.ini" "${THEME_SOURCE}/user.css" "${SPICETIFY_CONFIG_DIR}/Themes/${THEME}/"
+  info "installed"
+}
+
+ini_value() { # ini key
+  { grep -E "^$2[[:space:]]*=" "$1" || true; } | head -n1 | sed -E 's/^[^=]*=[[:space:]]*//; s/[[:space:]]*$//'
+}
+
 load_options() {
   [[ -f "${OPTIONS_FILE}" ]] || return 0
   local key value
@@ -624,8 +655,19 @@ configure() {
   "${SPICETIFY}" config >/dev/null 2>&1 || true            # creates the config on first run
   local ini="${SPICETIFY_CONFIG_DIR}/config-xpui.ini"
   [[ -f "${ini}" ]] || die "Spicetify did not create its config (${ini})."
-  # No themes, no recolouring: we only need the platform. Keeps idle cost at zero.
-  "${SPICETIFY}" config inject_css 0 replace_colors 0 >/dev/null
+  # A Spicetify that was here before us may have its own theme: remember it, so
+  # uninstalling can put it back.
+  local theme_now
+  theme_now="$(ini_value "${ini}" current_theme)"
+  if [[ "${theme_now}" != "${THEME}" && ! -f "${OURS_MARKER}" && ! -f "${THEME_BEFORE_FILE}" ]]; then
+    mkdir -p "$(dirname "${THEME_BEFORE_FILE}")"
+    printf '%s\n' "${theme_now}" "$(ini_value "${ini}" color_scheme)" "$(ini_value "${ini}" inject_css)" "$(ini_value "${ini}" replace_colors)" > "${THEME_BEFORE_FILE}"
+  fi
+  # Our theme: Spotify's own colours until a look is chosen in AI Playlists > Appearance.
+  "${SPICETIFY}" config current_theme "${THEME}" color_scheme base inject_css 1 replace_colors 1 inject_theme_js 0 >/dev/null
+  if ! grep -E '^extensions' "${ini}" | grep -F "${CORE_EXTENSION}" >/dev/null; then
+    "${SPICETIFY}" config extensions "${CORE_EXTENSION}" >/dev/null
+  fi
   # We ship pinned versions, so Spicetify's own update check would only add a request at startup.
   "${SPICETIFY}" config check_spicetify_update 0 >/dev/null
   if grep -E '^extensions' "${ini}" | tr '|=' '  ' | grep -w "${OLD_EXTENSION}" >/dev/null; then
@@ -689,6 +731,8 @@ apply() {
     [[ ! -f "${SPOTIFY_DIR}/Apps/xpui/extensions/${EXTENSION}" ]] || die "the ad-blocking extension is still applied."
   fi
   compgen -G "${SPOTIFY_DIR}/Apps/xpui/spicetify-routes-${AGENT_APP}*" >/dev/null || die "the AI Playlists app was not applied."
+  [[ -f "${SPOTIFY_DIR}/Apps/xpui/extensions/${CORE_EXTENSION}" && -f "${SPOTIFY_DIR}/Apps/xpui/user.css" ]] \
+    || die "the looks were not applied."
   clear_quarantine
   info "done"
 }
@@ -717,9 +761,17 @@ uninstall() {
     info "Spicetify removed"
   elif [[ -x "${SPICETIFY}" ]]; then
     # Spicetify was here before us: remove only what this installer added.
-    rm -f "${SPICETIFY_CONFIG_DIR}/Extensions/${EXTENSION}"
-    rm -rf "${SPICETIFY_CONFIG_DIR}/CustomApps/${AGENT_APP}"
-    "${SPICETIFY}" config extensions "${EXTENSION}-" custom_apps "${AGENT_APP}-" >/dev/null 2>&1 || true
+    rm -f "${SPICETIFY_CONFIG_DIR}/Extensions/${EXTENSION}" "${SPICETIFY_CONFIG_DIR}/Extensions/${CORE_EXTENSION}"
+    rm -rf "${SPICETIFY_CONFIG_DIR}/CustomApps/${AGENT_APP}" "${SPICETIFY_CONFIG_DIR}/Themes/${THEME}"
+    "${SPICETIFY}" config extensions "${EXTENSION}-" extensions "${CORE_EXTENSION}-" custom_apps "${AGENT_APP}-" >/dev/null 2>&1 || true
+    # Their own theme back, as it was before us (or none).
+    local before=("" "" "0" "0")
+    if [[ -f "${THEME_BEFORE_FILE}" ]]; then   # (no mapfile: macOS has bash 3.2)
+      local i=0 line
+      while IFS= read -r line && [[ ${i} -lt 4 ]]; do before[i]="${line}"; i=$((i + 1)); done < "${THEME_BEFORE_FILE}"
+    fi
+    "${SPICETIFY}" config current_theme "${before[0]:-}" color_scheme "${before[1]:-}" \
+      inject_css "${before[2]:-0}" replace_colors "${before[3]:-0}" >/dev/null 2>&1 || true
     "${SPICETIFY}" backup apply >/dev/null 2>&1 || true
     info "our extension and app removed; your own Spicetify setup was kept"
   fi
@@ -780,6 +832,7 @@ main() {
   install_spicetify
   install_adblockify
   install_agent
+  install_looks
   configure
   apply
   say "$(T finished)"

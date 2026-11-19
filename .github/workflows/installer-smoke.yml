@@ -40,6 +40,8 @@ jobs:
           (Get-Item "$env:APPDATA\Spotify\Spotify.exe").VersionInfo | Format-List FileVersion, ProductVersion
           if (-not (Test-Path "$xpui\extensions\spotify-ai-adblock.js")) { throw 'extension missing' }
           if (-not (Test-Path "$xpui\spicetify-routes-ai-playlists*")) { throw 'app missing' }
+          if (-not (Test-Path "$xpui\extensions\spotify-ai-core.js")) { throw 'looks extension missing' }
+          if (-not (Select-String -Path "$xpui\user.css" -Pattern 'data-sai-theme' -Quiet)) { throw 'looks theme missing' }
           Get-Content "$env:APPDATA\spicetify\config-xpui.ini"
           $update = "$env:LOCALAPPDATA\Spotify\Update"
           Get-Item $update -Force | Format-List Mode, Attributes, Length
@@ -118,6 +120,8 @@ jobs:
           defaults read /Applications/Spotify.app/Contents/Info CFBundleShortVersionString
           test -f "$R/Apps/xpui/extensions/spotify-ai-adblock.js"
           ls "$R/Apps/xpui" | grep spicetify-routes-ai-playlists
+          test -f "$R/Apps/xpui/extensions/spotify-ai-core.js"
+          grep -q data-sai-theme "$R/Apps/xpui/user.css"
           cat ~/.config/spicetify/config-xpui.ini
           U="$HOME/Library/Application Support/Spotify/PersistentCache/Update"
           ls -ldO "$U"
