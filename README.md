@@ -10,6 +10,14 @@ A desktop Spotify setup for Windows, macOS and Linux:
 - colours, gradients, your own background picture and three ready-made themes for the whole Spotify (AI Playlists → Appearance);
 - you never enter API keys and never give your credentials to anyone.
 
+![One Spotify, five looks: stock, Violet Night, Noir, Glass, Neon](docs/media/looks.gif)
+
+| AI Playlists — tools and an AI agent | Appearance — looks, colours, your own picture |
+|---|---|
+| ![AI Playlists home](docs/media/ai-playlists.jpg) | ![Appearance page](docs/media/appearance.jpg) |
+| **Noir** — black and white, smoke from the cover | **Glass** — the cover blurred behind frosted panels |
+| ![Noir theme](docs/media/noir.jpg) | ![Glass theme](docs/media/glass.jpg) |
+
 It is built from three parts, installed by one command:
 
 1. [Spicetify](https://github.com/spicetify/cli) — mod platform for the Spotify desktop client;
