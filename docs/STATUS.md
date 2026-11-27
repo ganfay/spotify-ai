@@ -171,5 +171,5 @@ Wanted by the owner, not started — see "Next big things" below.
 ## Waiting on the owner
 
 - A run of the Windows installer on his own machine (dual boot) and of the macOS one by his friend, with a look at the interface and the ads.
-- When Spicetify supports Spotify 1.3.10: raise `SPOTIFY_MAX` (and the Spicetify version if a new one is needed).
+- When Spotify publishes a newer version: the daily `watch` check opens an issue; the owner checks the interface on Windows, then `SPOTIFY_MAX` is raised. Last time: 1.3.11.2657 on 2026-11-27 (issue #2), checked by the owner and raised on 2026-11-28.
 - The three checks listed under "Not verified yet" that only he can do (ads after switching off, language filter on the big playlist, stats on the phone).
