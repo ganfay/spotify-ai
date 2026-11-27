@@ -427,10 +427,9 @@ html[data-sai-look] .Root__cinema-view .main-actionBar-ActionBarContainer { outl
 
 /* Lyrics in Glass: white on frosted glass, a soft halo on the sung line. The blurred cover can be
    bright and busy, so the lyrics view gets a dark veil and every line a soft dark shadow. */
-html[data-sai-theme="glass"] :is(.Root__cinema-view, .Root__cinema-view [style*="--cinema-mode-bg-color"]) {
-  --cinema-mode-bg-color-from: rgba(6,6,12,.42) !important;
-  --cinema-mode-bg-color-to: rgba(6,6,12,.30) !important;
-}
+/* The veil sits on the lyrics view itself, which stays in place. (Spotify's own gradient layer
+   scrolls with the lines, so a veil there showed its bottom edge as a dark band.) */
+html[data-sai-theme="glass"] .Root__cinema-view { background-color: rgba(6,6,12,.36) !important; }
 html[data-sai-theme="glass"] [style*="--lyrics-color-background"] {
   --lyrics-color-active: #fff !important;
   --lyrics-color-inactive: rgba(255,255,255,.5) !important;
