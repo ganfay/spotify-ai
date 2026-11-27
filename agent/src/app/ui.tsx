@@ -85,15 +85,9 @@ export function GlobalStyles() {
       .sai-look .name { font-size: 13px; font-weight: 700; padding: 7px 2px 2px; }
       .sai-theme .pic { height: 104px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
       .sai-theme .word { font-size: 26px; font-weight: 800; color: #fff; }
-      .sai-theme-noir { background: radial-gradient(60% 70% at 25% 10%, rgba(255,255,255,.22), transparent 70%), radial-gradient(50% 60% at 90% 100%, rgba(255,255,255,.12), transparent 70%), #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
-      .sai-theme-noir .word { font-family: "Sai Gothic", "UnifrakturMaguntia", Georgia, serif; font-weight: 600; font-size: 40px; text-shadow: 0 0 2px #fff, 0 0 16px rgba(255,255,255,.6), 0 0 36px rgba(255,255,255,.25); }
       .sai-theme-glass { background: radial-gradient(70% 80% at 15% 20%, #5b3fd6, transparent 70%), radial-gradient(70% 80% at 90% 30%, #0e7fa8, transparent 70%), radial-gradient(80% 80% at 55% 110%, #a8327e, transparent 70%), #0b0b14; border-radius: 14px !important; }
       .sai-theme-glass .word { padding: 8px 20px; border-radius: 14px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); font-family: "Sai Glass", system-ui, sans-serif; font-weight: 700; font-size: 22px; }
-      .sai-theme-ghoul { background: radial-gradient(70% 80% at 50% 115%, rgba(200,16,46,.7), transparent 65%), radial-gradient(40% 50% at 0% 0%, rgba(200,16,46,.3), transparent 70%), #050203; box-shadow: inset 0 0 0 1px rgba(200,16,46,.55); }
-      .sai-theme-ghoul .word { font-family: "Sai Ghoul", Impact, system-ui, sans-serif; font-size: 30px; color: #fff; text-shadow: 0 0 2px rgba(255,255,255,.6), 0 0 14px rgba(200,16,46,.9), 0 0 30px rgba(200,16,46,.45); }
-      .sai-theme-neon { background: radial-gradient(90% 120% at 10% 0%, rgba(255,62,165,.55), transparent 60%), radial-gradient(90% 120% at 100% 100%, rgba(34,211,238,.45), transparent 60%), linear-gradient(180deg, #170a34, #06030e); box-shadow: inset 0 0 0 1px rgba(255,62,165,.5); }
-      .sai-theme-neon .word { font-family: "Sai Neon", system-ui, sans-serif; font-size: 26px; color: #fff; text-shadow: 0 0 2px rgba(255,255,255,.6), 0 0 14px rgba(255,62,165,.7), 0 0 30px rgba(124,58,237,.4); }
-      html:is([data-sai-gradient="on"], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .sai-dock { background: transparent !important; }
+      html:is([data-sai-gradient="on"], [data-sai-theme="glass"]) .sai-dock { background: transparent !important; }
       .sai-look .pic { box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-text, 255,255,255), .14); }
       .sai-photo-thumb { width: 96px; height: 60px; border-radius: 8px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(var(--spice-rgb-text, 255,255,255), .14); }
       .sai-tour-btn { cursor: pointer; border: 0; border-radius: 500px; padding: 8px 16px; font-size: 13px; font-weight: 700; background: rgba(var(--spice-rgb-text, 255,255,255),.1); color: var(--spice-text, #fff); transition: transform .12s, background .15s; }

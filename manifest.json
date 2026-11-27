@@ -1,8 +1,18 @@
 {
   "name": "AI Playlists",
-  "description": "An AI agent for your playlists (duplicates, filter by language, split by mood, clean-up, recommendations; it only proposes, every change has Undo) plus colour looks and three full themes: Noir, Glass, Neon. Install with one command from the README.",
+  "description": "An AI agent for your playlists (duplicates, filter by language, split by mood, clean-up, recommendations; it only proposes, every change has Undo) plus colour looks, gradients, your own background picture and the Glass theme. Install with one command from the README.",
   "preview": "docs/media/ai-playlists.jpg",
   "readme": "README.md",
-  "authors": [{ "name": "ganfay", "url": "https://github.com/ganfay" }],
-  "tags": ["ai", "playlists", "themes", "duplicates"]
+  "authors": [
+    {
+      "name": "ganfay",
+      "url": "https://github.com/ganfay"
+    }
+  ],
+  "tags": [
+    "ai",
+    "playlists",
+    "themes",
+    "duplicates"
+  ]
 }

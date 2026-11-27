@@ -1,19 +1,15 @@
-# Fonts of the themes
-
-All are under the SIL Open Font License 1.1 (licence texts next to this file), taken
-from the Google Fonts repository and cut down to the letters the theme needs:
+# Font of the Glass theme
 
 | File | Font | Cut to |
 |---|---|---|
-| `GrenzeGotisch-SemiBold.woff2` | Grenze Gotisch (Omnibus-Type), weight 600 of the variable font | Latin, Latin-1, Latin Extended-A, punctuation |
-| `RuslanDisplay-Cyrillic.woff2` | Ruslan Display (Oleg Snarsky) | Cyrillic (Russian, Ukrainian) and № |
-| `Manrope-Bold.woff2` (Glass) | Manrope (Mikhail Sharanda), weight 700 of the variable font | Latin, Latin-1, Latin Extended-A, Cyrillic, punctuation |
-| `RussoOne-Regular.woff2` (Neon) | Russo One (Jovanny Lemonad) | Latin, Latin-1, Latin Extended-A, Cyrillic, punctuation |
-| `RubikGlitch-Regular.woff2` (Ghoul) | Rubik Glitch (Rubik Filtered project, NaN) | Latin, Latin-1, Latin Extended-A, Cyrillic, punctuation |
+| `Manrope-Bold.woff2` | Manrope (Mikhail Sharanda), weight 700 of the variable font | Latin, Latin-1, Latin Extended-A, Cyrillic, punctuation |
 
-The build (`agent/build.mjs`) puts them into the theme's `user.css` as data URIs,
-because a Spicetify theme cannot ship separate font files without overwriting
-Spotify's own assets. Together they add about 270 KB to that stylesheet (Rubik Glitch alone is 120 KB: its broken letters have many outlines).
+SIL Open Font License 1.1 (licence text next to this file), taken from the Google Fonts
+repository. The build (`agent/build.mjs`) puts it into the theme's `user.css` as a data URI,
+because a Spicetify theme cannot ship separate font files without overwriting Spotify's own
+assets. It adds about 30 KB to that stylesheet.
 
-Made with fontTools: `fonttools varLib.instancer GrenzeGotisch[wght].ttf wght=600`,
-then `pyftsubset … --flavor=woff2`.
+Made with fontTools: `fonttools varLib.instancer Manrope[wght].ttf wght=700`, then
+`pyftsubset … --unicodes="U+0020-007E,U+00A0-017F,U+0400-045F,U+0490-0491,U+2010-2027,U+2030-205E,U+2116,U+20AC" --layout-features='*' --flavor=woff2`.
+
+Noir, Neon and Ghoul (and their fonts) were removed on 2026-11-28 (decision 33).

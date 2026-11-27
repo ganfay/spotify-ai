@@ -131,10 +131,7 @@ export interface Theme {
   cover?: boolean;
 }
 export const THEMES: Theme[] = [
-  { id: "noir", name: "Noir", background: "000000", accent: "ffffff", colors: { subtext: "a9a9a9", sidebar: "000000", player: "000000", card: "111111", "main-elevated": "141414", "tab-active": "262626" }, cover: true },
   { id: "glass", name: "Glass", background: "12121a", accent: "ffffff", colors: { subtext: "cfcfdc", "main-elevated": "2a2a3a" }, cover: true },
-  { id: "ghoul", name: "Ghoul", background: "050203", accent: "c8102e", colors: { text: "f4eeee", subtext: "b7a3a5", sidebar: "000000", player: "000000", card: "0e0607", "main-elevated": "160a0c", "tab-active": "2a0e12", "selected-row": "f4eeee" }, cover: true },
-  { id: "neon", name: "Neon", background: "0e0620", accent: "ff3ea5", colors: { subtext: "c7b8e6", "button-active": "ff7cc4", "main-elevated": "1c0f3a" } },
 ];
 /** The preset name stored for a theme, so the page can show which one is on. */
 export const themeMark = (id: string): string => `theme:${id}`;

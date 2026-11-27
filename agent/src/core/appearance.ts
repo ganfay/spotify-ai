@@ -38,6 +38,8 @@ export function loadAppearance(): Appearance | null {
 }
 
 const HEX = /^[0-9a-fA-F]{6}$/;
+/** The exclusive themes user.css still has. */
+const THEMES_NOW = ["glass"];
 
 /** Stops following the playing song's cover (set while a theme that uses it is on). */
 let stopCover: (() => void) | null = null;
@@ -118,7 +120,9 @@ export function applyAppearance(look: Appearance | null): void {
       root.style.setProperty("--sai-panel", Math.max(0.2, 1 - strength * 0.8).toFixed(2));
     }
   } else photo = null;
-  if (look.theme && /^[a-z0-9-]{1,30}$/.test(look.theme)) {
+  // Only themes that still exist: a look saved with a removed one (Noir, Neon, Ghoul) keeps its
+  // colours and becomes a plain look instead of a half-styled theme.
+  if (look.theme && THEMES_NOW.includes(look.theme)) {
     root.setAttribute("data-sai-theme", look.theme);
     if (look.cover && !photo) stopCover = followCover(root);
   }

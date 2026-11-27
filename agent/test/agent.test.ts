@@ -417,7 +417,7 @@ test("exclusive themes: readable colours, and every theme has styles and texts",
   // The test runs from agent/ (npm test).
   const css = readFileSync("theme/user.css", "utf8");
   const texts = readFileSync("src/app/i18n.ts", "utf8");
-  assert.equal(THEMES.length, 4);
+  assert.equal(THEMES.length, 1);
   for (const theme of THEMES) {
     const look = themeAppearance(theme);
     assert.equal(look.theme, theme.id);
@@ -426,5 +426,5 @@ test("exclusive themes: readable colours, and every theme has styles and texts",
     assert.ok(css.includes(`html[data-sai-theme="${theme.id}"]`), `styles for ${theme.id}`);
     assert.equal(texts.split(`"look.theme.${theme.id}"`).length - 1, 4, `texts for ${theme.id} in four languages`);
   }
-  assert.ok(THEMES.some((t) => t.id === "noir"), "a black and white theme exists");
+  assert.ok(THEMES.some((t) => t.id === "glass"), "the Glass theme exists");
 });
