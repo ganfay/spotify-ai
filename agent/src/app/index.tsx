@@ -401,19 +401,18 @@ function PlaylistPicker({ title, onPick, onBack }: { title: string; onPick: (p: 
   );
 }
 
-// Where the user was, kept while Spotify is open: the page is rebuilt on every visit, and the
-// AI Playlists button should bring back the same tool, not the home screen.
-const lastView: { tool: string; selected: Playlist | null } = { tool: "", selected: null };
-
 function App() {
   const { useEffect, useState } = hooks();
-  const [tool, setTool] = useState(lastView.tool);
-  // Spotify closes the big lyrics view only when the page changes. Our button in the top
-  // bar points at the page that is already open under the lyrics, so a press would do
-  // nothing: close the lyrics ourselves when the press leaves us on this page.
+  const [tool, setTool] = useState("" as string);
+  // Our button in the top bar points at the page that is already open, so Spotify does nothing
+  // on a press. We do it ourselves: back to the main menu, and the big lyrics view (which
+  // Spotify closes only when the page changes) is closed.
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (!(e.target as Element | null)?.closest?.(".main-globalNav-navLink")) return;
+      const link = (e.target as Element | null)?.closest?.(".main-globalNav-navLink");
+      if (!link) return;
+      // Our own button always shows the main menu, from any tool (the owner's wish).
+      if (link.getAttribute("aria-label") === "AI Playlists") { setTool(""); setSelected(null); }
       const path = Spicetify.Platform.History.location.pathname;
       setTimeout(() => {
         if (Spicetify.Platform.History.location.pathname !== path || !document.querySelector(".Root__cinema-view")) return;
@@ -423,9 +422,7 @@ function App() {
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, []);
-  const [selected, setSelected] = useState(lastView.selected);
-  lastView.tool = tool;
-  lastView.selected = selected;
+  const [selected, setSelected] = useState(null as Playlist | null);
   // Re-rendering the whole page after a language change is enough: every text is read through t().
   const [lang, setLang] = useState(setLanguage(loadSettings().language));
 

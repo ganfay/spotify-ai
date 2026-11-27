@@ -425,18 +425,18 @@ html[data-sai-look] .Root__cinema-view { outline-color: transparent; }
    it, which hides the corners on a black page. Over a look's backdrop it showed as black corners. */
 html[data-sai-look] .Root__cinema-view .main-actionBar-ActionBarContainer { outline-color: transparent !important; }
 
-/* Lyrics in Glass: white on frosted glass, a soft halo on the sung line. The blurred cover can be
-   bright and busy, so the lyrics view gets a dark veil and every line a soft dark shadow. */
-/* The veil sits on the lyrics view itself, which stays in place. (Spotify's own gradient layer
-   scrolls with the lines, so a veil there showed its bottom edge as a dark band.) */
-html[data-sai-theme="glass"] .Root__cinema-view { background-color: rgba(6,6,12,.36) !important; }
+/* Lyrics in Glass. The blurred cover can be bright, grey or busy, so the lyrics view gets an
+   even dark veil (on the view itself: it stays in place while the lines scroll) and the lines
+   are plain white at three strengths. No glow and no heavy shadow: on a mid-grey backdrop
+   they turned into dirty halos. */
+html[data-sai-theme="glass"] .Root__cinema-view { background-color: rgba(8,8,14,.62) !important; }
 html[data-sai-theme="glass"] [style*="--lyrics-color-background"] {
   --lyrics-color-active: #fff !important;
-  --lyrics-color-inactive: rgba(255,255,255,.5) !important;
-  --lyrics-color-passed: rgba(255,255,255,.78) !important;
+  --lyrics-color-inactive: rgba(255,255,255,.38) !important;
+  --lyrics-color-passed: rgba(255,255,255,.62) !important;
   --encore-title-font-stack: "Sai Glass", "Manrope", system-ui, sans-serif;
   letter-spacing: -.01em;
-  text-shadow: 0 2px 14px rgba(0,0,0,.55), 0 0 24px color-mix(in srgb, currentColor 30%, transparent);
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
 }
 
 /* Glass has a font of its own: page titles, section headings, the library title,
