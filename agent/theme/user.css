@@ -26,25 +26,25 @@ html[data-sai-gradient="on"]:not([data-sai-theme]):not([data-sai-photo]) body::b
    Used by the gradient and by the Glass and Neon themes. Everything outside the
    panels (top bar, gaps) is clear, so the backdrop is one seamless surface; the
    panels are a tint of the background colour. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__globalNav,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__nav-bar,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-libraryContainer,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-playlistContent,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="artist-page"] > div > div,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__top-container,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__globalNav,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__nav-bar,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__right-sidebar,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-yourLibraryX-libraryContainer,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .playlist-playlist-playlistContent,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) [data-testid="artist-page"] > div > div,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) #Desktop_PanelContainer_Id,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) [data-npv-root] {
   background-color: transparent !important;
 }
 /* "Now playing": Spotify lays dark veils over the cover or video (plain empty
    boxes with a dark gradient). On a see-through panel they turn it black, so they
    are thinned — not removed, the title over a video still needs them. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-npv-root] div:empty { opacity: .45; }
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-yourLibraryX-library,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__right-sidebar-peek,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__now-playing-bar {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) [data-npv-root] div:empty { opacity: .45; }
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-yourLibraryX-library,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__main-view,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__right-sidebar-peek,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__now-playing-bar {
   background-color: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), var(--sai-panel, .5)) !important;
 }
 
@@ -92,32 +92,32 @@ html:is([data-sai-gradient="on"], [data-sai-photo]):not([data-sai-theme]) :is(.R
    Spotify paints the part of a page below its header with the page colour. The
    names of those boxes change between versions, so they are found by what they
    contain: the stable .contentSpacing box, or the action-bar background. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> .contentSpacing),
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .playlist-playlist-concertsFooter,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .artist-artistDiscography-headerContainer,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-view-container__mh-footer-container,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) #Desktop_PanelContainer_Id::before,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-mainWrapper {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__main-view div:has(> .contentSpacing),
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__main-view div:has(> :is(.main-actionBarBackground-background, .playlist-playlist-actionBarBackground-background)),
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .playlist-playlist-concertsFooter,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .artist-artistDiscography-headerContainer,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-view-container__mh-footer-container,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) #Desktop_PanelContainer_Id::before,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-nowPlayingView-mainWrapper {
   background-color: transparent !important;
 }
 /* Artist pages: Spotify washes the whole page with the artist's colour at 70 %. On
    its own dark page that is a soft tint; on a see-through panel it is a solid slab. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) [data-testid="overscroll-background"] {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) [data-testid="overscroll-background"] {
   opacity: .3;
   -webkit-mask-image: linear-gradient(#000 20%, transparent 75%);
   mask-image: linear-gradient(#000 20%, transparent 75%);
 }
 /* Fades at the edges of carousels are drawn in the page colour: off. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .search-searchCategory-contentArea,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__main-view [data-shelf="carousel"] {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .search-searchCategory-contentArea,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__main-view [data-shelf="carousel"] {
   --carousel-start-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
   --carousel-end-chevron-gradient: rgba(var(--sai-panel-rgb, var(--spice-rgb-main)), .7);
 }
 /* "Now playing", older layout: the veils over the video end in the solid page colour. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-contextItemInfo::before,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::before,
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-nowPlayingView-contextItemInfo::before,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-nowPlayingView-canvasVisualEnhancement::before,
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .main-nowPlayingView-canvasVisualEnhancement::after { opacity: .45; }
 
 /* ------------------------------------------------------------- any look on
    Things Spotify colours by itself (from the cover of what is open) or leaves
@@ -198,6 +198,10 @@ html[data-sai-theme="noir"] {
 html[data-sai-theme="glass"] {
   --sai-sticky-bg: #141320;
   --sai-sticky-border: rgba(255, 255, 255, .11);
+}
+html[data-sai-theme="ghoul"] {
+  --sai-sticky-bg: #0a0405;
+  --sai-sticky-border: rgba(200, 16, 40, .32);
 }
 html[data-sai-theme="neon"] {
   --sai-sticky-bg: #14082e;
@@ -291,7 +295,7 @@ html[data-sai-look] :is(.Root__cinema-view, .Root__cinema-view [style*="--cinema
   --cinema-mode-bg-color-from: rgba(var(--spice-rgb-text), .07) !important;
   --cinema-mode-bg-color-to: transparent !important;
 }
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__cinema-view :is(.main-actionBar-ActionBarContainer, [style*="--background-base"]) {
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__cinema-view :is(.main-actionBar-ActionBarContainer, [style*="--background-base"]) {
   --background-base: transparent !important;
   background-color: transparent !important;
 }
@@ -300,7 +304,7 @@ html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [d
 html[data-sai-look] .Root__cinema-view > div[style*="--header-text-color"]::before {
   background: linear-gradient(rgba(var(--spice-rgb-main), .55), rgba(var(--spice-rgb-main), 0)) !important; }
 /* With the cinema view see-through, the right panel underneath would show through it. */
-html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"]) .Root__top-container:has(> .Root__cinema-view) > .Root__right-sidebar { visibility: hidden; }
+html:is([data-sai-gradient="on"], [data-sai-photo], [data-sai-theme="glass"], [data-sai-theme="neon"], [data-sai-theme="noir"], [data-sai-theme="ghoul"]) .Root__top-container:has(> .Root__cinema-view) > .Root__right-sidebar { visibility: hidden; }
 /* The small lyrics card in "Now playing" keeps a card of its own. */
 html[data-sai-look] [data-testid="lyrics-npv-section"],
 html[data-sai-look] [data-testid="lyrics-npv-section"] [style*="--lyrics-color-background"] {
@@ -366,7 +370,7 @@ html[data-sai-look] .main-trackList-trackListRow {
   font-display: swap;
   unicode-range: U+0400-045F, U+0490-0491, U+2116;
 }
-@font-face { font-family: "Sai Glass"; src: url(font:Comfortaa-Bold) format("woff2"); font-display: swap; }
+@font-face { font-family: "Sai Glass"; src: url(font:Manrope-Bold) format("woff2"); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: "Sai Neon"; src: url(font:RussoOne-Regular) format("woff2"); font-weight: 100 900; font-display: swap; }
 html[data-sai-theme="noir"] {
   --sai-panel-rgb: 0,0,0;
@@ -619,6 +623,120 @@ html[data-sai-theme="neon"] .main-nowPlayingWidget-coverArt img { border-radius:
 html[data-sai-theme="neon"] .main-connectBar-connectBar { background: linear-gradient(90deg, var(--sai-pink), var(--sai-violet), var(--sai-cyan)) !important; color: #fff !important; }
 html[data-sai-theme="neon"] .main-connectBar-connectBar * { color: #fff !important; fill: #fff !important; }
 
+/* =================================================================== GHOUL
+   Black and blood red. The playing cover (or the user's own picture) becomes red smoke
+   behind near-black panels; titles are glitched letters glowing red; the play buttons and
+   the progress bar are blood red. Original design: no characters, art or logos. */
+@font-face { font-family: "Sai Ghoul"; src: url(font:RubikGlitch-Regular) format("woff2"); font-weight: 100 900; font-display: swap; }
+html[data-sai-theme="ghoul"] {
+  --sai-panel-rgb: 6,2,3;
+  --sai-panel: .84;
+  --sai-blood: #c8102e;
+  --sai-red-glow: 0 0 1px rgba(255,255,255,.55), 0 0 10px rgba(200,16,46,.75), 0 0 28px rgba(200,16,46,.35);
+  background: #000 !important;
+}
+html[data-sai-theme="ghoul"] body { background: transparent !important; }
+/* Red smoke: the cover drained to grey, crushed to black, then dyed red. One fixed layer. */
+html[data-sai-theme="ghoul"] body::before {
+  content: "";
+  position: fixed;
+  inset: -80px;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #000;
+  background-image: var(--sai-cover, radial-gradient(40% 50% at 30% 60%, #5a0a14, transparent 70%));
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(1) contrast(2.2) brightness(.32) sepia(1) hue-rotate(-50deg) saturate(5) blur(28px);
+  transition: background-image 1.6s ease;
+}
+/* The user's own picture stays recognisable: less crushed, only darkened and tinted. */
+html[data-sai-theme="ghoul"][data-sai-photo] body::before {
+  inset: 0;
+  filter: brightness(.42) saturate(1.15) contrast(1.05);
+}
+/* Grain and a red haze from below. */
+html[data-sai-theme="ghoul"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 .2  0 0 0 0 .25  0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(60% 45% at 50% 110%, rgba(200,16,46,.22), transparent 70%),
+    radial-gradient(35% 40% at 0% 0%, rgba(200,16,46,.10), transparent 70%);
+  opacity: .5;
+}
+
+/* Islands: black glass with a thin red edge. */
+html[data-sai-theme="ghoul"] :is(.main-yourLibraryX-library, .Root__main-view, .Root__right-sidebar-peek) {
+  outline: 1px solid rgba(200,16,46,.28);
+  outline-offset: -1px;
+  box-shadow: 0 0 30px rgba(200,16,46,.08);
+}
+html[data-sai-theme="ghoul"] .Root__now-playing-bar { background-color: transparent !important; }
+html[data-sai-theme="ghoul"] :is(.main-yourLibraryX-library, .Root__right-sidebar-peek) {
+  background-image: linear-gradient(rgba(200,16,46,.05), transparent 40%) !important;
+}
+
+/* Glitched titles glowing red. */
+html[data-sai-theme="ghoul"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2,
+  .main-entityHeader-topbarTitle, .main-yourLibraryX-header h1, .main-nowPlayingView-sectionHeaderText,
+  [data-npv-root] [class*="encore-text-title"], .main-nowPlayingWidget-trackInfo .main-trackInfo-name) {
+  font-family: "Sai Ghoul", "Impact", system-ui, sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: .01em !important;
+  text-shadow: var(--sai-red-glow);
+}
+html[data-sai-theme="ghoul"] :is(.Root__main-view h2, .main-nowPlayingView-sectionHeaderText, .main-yourLibraryX-header h1, .main-nowPlayingWidget-trackInfo .main-trackInfo-name) {
+  text-shadow: 0 0 8px rgba(200,16,46,.55);
+}
+/* A short glitch when the pointer is on the page title (only then: no idle cost). */
+@keyframes sai-ghoul-glitch {
+  0%, 100% { text-shadow: var(--sai-red-glow); transform: none; }
+  20% { text-shadow: -3px 0 rgba(200,16,46,.9), 3px 0 rgba(255,255,255,.35); transform: translateX(1px); }
+  40% { text-shadow: 3px 0 rgba(200,16,46,.9), -2px 0 rgba(255,255,255,.3); transform: translateX(-1px); }
+  60% { text-shadow: var(--sai-red-glow); transform: none; }
+}
+html[data-sai-theme="ghoul"] .main-entityHeader-title:hover { animation: sai-ghoul-glitch .45s steps(2) 2; }
+html[data-sai-theme="ghoul"] .main-entityHeader-backgroundColor,
+html[data-sai-theme="ghoul"] .main-home-homeHeader {
+  background: radial-gradient(70% 120% at 30% 0%, rgba(200,16,46,.22), transparent 70%) !important;
+  opacity: 1;
+}
+html[data-sai-theme="ghoul"] .main-entityHeader-image { box-shadow: 0 0 0 1px rgba(200,16,46,.35), 0 0 46px rgba(200,16,46,.25) !important; }
+
+/* Blood red: buttons, the playing title, the progress bar. */
+html[data-sai-theme="ghoul"] [class*="button-primary__inner"] { background: var(--sai-blood) !important; color: #fff !important; }
+html[data-sai-theme="ghoul"] :is(.main-actionBar-ActionBarPlayButtonContainer, .main-playButton-PlayButton, [data-testid="control-button-playpause"]) [class*="button-primary__inner"],
+html[data-sai-theme="ghoul"] [data-testid="control-button-playpause"] {
+  box-shadow: 0 0 14px rgba(200,16,46,.6), 0 0 34px rgba(200,16,46,.25) !important;
+}
+html[data-sai-theme="ghoul"] .main-trackList-trackListRow[aria-selected="true"] .main-trackList-rowTitle,
+html[data-sai-theme="ghoul"] .main-nowPlayingWidget-trackInfo a { color: #ff3b52 !important; text-shadow: 0 0 10px rgba(200,16,46,.6); }
+html[data-sai-theme="ghoul"] .progress-bar { --fg-color: var(--sai-blood); --is-active-fg-color: #ff3b52; --bg-color: rgba(255,255,255,.14); }
+
+/* Rows and cards: a red light instead of grey. */
+html[data-sai-theme="ghoul"] .main-trackList-trackListRow:hover {
+  box-shadow: inset 0 0 0 1px rgba(200,16,46,.3), 0 0 22px rgba(200,16,46,.1);
+}
+html[data-sai-theme="ghoul"] :is(.main-card-card, .view-homeShortcutsGrid-shortcut):hover {
+  box-shadow: inset 0 0 0 1px rgba(200,16,46,.35), 0 0 26px rgba(200,16,46,.14);
+}
+html[data-sai-theme="ghoul"] .main-nowPlayingView-section { outline: 1px solid rgba(200,16,46,.18); outline-offset: -1px; }
+
+/* Lyrics: glitched letters, the sung line white with a red glow, the rest dark red. */
+html[data-sai-theme="ghoul"] [style*="--lyrics-color-background"] {
+  --lyrics-color-active: #fff !important;
+  --lyrics-color-inactive: rgba(200,16,46,.42) !important;
+  --lyrics-color-passed: rgba(255,255,255,.55) !important;
+  --encore-title-font-stack: "Sai Ghoul", "Impact", system-ui, sans-serif;
+  letter-spacing: .01em;
+  text-shadow: 0 0 12px rgba(200,16,46,.65);
+}
+html[data-sai-theme="ghoul"] .os-theme-spotify.os-scrollbar { --os-handle-bg: rgba(200,16,46,.4); --os-handle-bg-hover: rgba(200,16,46,.8); }
+
 /* ----------------------------------------------------------- small, any look */
 /* Cinema mode has a black frame of its own; over a backdrop it is a black box. */
 html[data-sai-look] .Root__cinema-view { outline-color: transparent; }
@@ -627,7 +745,7 @@ html[data-sai-look] .Root__cinema-view { outline-color: transparent; }
 html[data-sai-theme="glass"] [style*="--lyrics-color-background"] {
   --lyrics-color-inactive: rgba(255,255,255,.42) !important;
   --lyrics-color-passed: rgba(255,255,255,.72) !important;
-  --encore-title-font-stack: "Sai Glass", "Comfortaa", system-ui, sans-serif;
+  --encore-title-font-stack: "Sai Glass", "Manrope", system-ui, sans-serif;
   letter-spacing: -.01em;
   text-shadow: 0 2px 18px rgba(0,0,0,.35), 0 0 22px color-mix(in srgb, currentColor 35%, transparent);
 }
@@ -647,7 +765,7 @@ html[data-sai-theme="neon"] [style*="--lyrics-color-background"] {
 html[data-sai-theme="glass"] :is(.main-entityHeader-title, .main-entityHeader-title *, .Root__main-view h1, .Root__main-view h2,
   .main-entityHeader-topbarTitle, .main-yourLibraryX-header h1, .main-nowPlayingView-sectionHeaderText,
   [data-npv-root] [class*="encore-text-title"]) {
-  font-family: "Sai Glass", "Comfortaa", system-ui, sans-serif !important;
+  font-family: "Sai Glass", "Manrope", system-ui, sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: -.01em !important;
 }

@@ -417,7 +417,7 @@ test("exclusive themes: readable colours, and every theme has styles and texts",
   // The test runs from agent/ (npm test).
   const css = readFileSync("theme/user.css", "utf8");
   const texts = readFileSync("src/app/i18n.ts", "utf8");
-  assert.equal(THEMES.length, 3);
+  assert.equal(THEMES.length, 4);
   for (const theme of THEMES) {
     const look = themeAppearance(theme);
     assert.equal(look.theme, theme.id);
