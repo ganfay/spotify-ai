@@ -30,9 +30,18 @@ const avatar = {
 } as const;
 const mine = {
   background: "rgba(var(--spice-rgb-text, 255,255,255),.1)", borderRadius: "18px 18px 4px 18px", padding: "10px 16px", maxWidth: "75%",
-  marginLeft: "auto", whiteSpace: "pre-wrap", lineHeight: 1.45,
+  marginLeft: "auto", whiteSpace: "pre-wrap", lineHeight: 1.45, userSelect: "text", WebkitUserSelect: "text", cursor: "text",
 } as const;
-const answer = { whiteSpace: "pre-wrap", lineHeight: 1.5, paddingTop: 3, flex: 1, minWidth: 0 } as const;
+const answer = { whiteSpace: "pre-wrap", lineHeight: 1.5, paddingTop: 3, flex: 1, minWidth: 0, userSelect: "text", WebkitUserSelect: "text", cursor: "text" } as const;
+
+// Kept while Spotify is open, across visits to other pages (the page itself is rebuilt each time):
+// which chat was on screen, the model's full memory of each chat, and chats still waiting for an answer.
+const openChats = new Map<string, string>(); // playlist uri ("" = none) -> chat id
+const liveAgents = new Map<string, Agent>(); // chat id -> agent that remembers the whole chat
+const busy = new Map<string, { history: Message[]; progress: Progress; agent: Agent; stopped: boolean }>(); // chat id -> run in progress
+const listeners = new Set<() => void>();
+const changed = () => listeners.forEach((fn) => fn());
+const newChatId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const composer = {
   display: "flex", alignItems: "center", gap: 8, padding: "6px 6px 6px 18px", borderRadius: 500,
   background: "var(--spice-card, #181818)", border: "1px solid rgba(var(--spice-rgb-text, 255,255,255),.14)", transition: "border-color .15s",
@@ -282,7 +291,7 @@ interface Progress {
 const EXAMPLES: Key[] = ["ex.1", "ex.2", "ex.3", "ex.4", "ex.5"];
 
 export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: { onBack: () => void; onSettings: () => void; initialPrompt?: string; playlist?: Playlist }) {
-  const { useRef, useState } = hooks();
+  const { useEffect, useRef, useState } = hooks();
   const [settings] = useState(loadSettings);
   const [agent, setAgent] = useState(null as Agent | null);
   const [messages, setMessages] = useState([] as Message[]);
@@ -296,10 +305,29 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
   // A run that stopped on a failed request to the model and can go on from there.
   const [stalled, setStalled] = useState(null as Agent | null);
 
-  // Recent chats (this computer only). chatId is empty until the first answer is saved.
+  // Recent chats (this computer only). chatId is empty until the first message is sent.
+  const scope = playlist?.uri ?? "";
   const chatId = useRef("");
   const [chats, setChats] = useState(() => listChats(playlist?.uri));
   const [reopened, setReopened] = useState(false);
+  // Coming back to this page: show the chat that was open, with its memory, or its run still going.
+  const restore = () => {
+    const id = openChats.get(scope);
+    if (!id) return;
+    const run = busy.get(id);
+    if (run) { chatId.current = id; setMessages(run.history); setProgress(run.progress); return; }
+    const saved = listChats(playlist?.uri).find((c) => c.id === id);
+    if (!saved) { openChats.delete(scope); return; }
+    chatId.current = id; setMessages(saved.messages); setProgress(null);
+    const memory = liveAgents.get(id) ?? null;
+    setAgent(memory); setReopened(!memory);
+  };
+  useEffect(() => {
+    if (!initialPrompt) restore();
+    const onChange = () => { if (chatId.current && openChats.get(scope) === chatId.current) restore(); setChats(listChats(playlist?.uri)); };
+    listeners.add(onChange);
+    return () => { listeners.delete(onChange); };
+  }, []);
   const latest = useRef(messages);
   latest.current = messages;
   /** Shows the messages and saves the chat. */
@@ -307,7 +335,8 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
     setMessages(all);
     const title = all.find((m) => m.from === "user")?.text.slice(0, 80);
     if (!title) return;
-    if (!chatId.current) chatId.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    if (!chatId.current) chatId.current = newChatId();
+    openChats.set(scope, chatId.current);
     saveChat({ id: chatId.current, title, updatedAt: new Date().toISOString(), ...(playlist ? { playlistUri: playlist.uri } : {}), messages: all });
     setChats(listChats(playlist?.uri));
   };
@@ -315,14 +344,19 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
     keep(latest.current.map((m, i) => (i === index ? { ...m, applied: [...(m.applied ?? []), proposalId] } : m)));
   const openChat = (chat: SavedChat) => {
     chatId.current = chat.id;
+    openChats.set(scope, chat.id);
     setMessages(chat.messages);
-    setAgent(null);
+    // The model still remembers this chat if it ran since Spotify started; otherwise a recap.
+    const memory = liveAgents.get(chat.id) ?? null;
+    setAgent(memory);
     setStalled(null);
-    setReopened(true);
+    setReopened(!memory);
   };
   const removeChat = (event: { stopPropagation(): void }, id: string) => {
     event.stopPropagation();
     deleteChat(id);
+    liveAgents.delete(id);
+    if (openChats.get(scope) === id) openChats.delete(scope);
     setChats(listChats(playlist?.uri));
   };
   const when = (iso: string) => new Date(iso).toLocaleString(language(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -331,30 +365,43 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
   const drive = async (current: Agent, history: Message[], start: (onEvent: (e: AgentEvent) => void) => Promise<AgentResult>) => {
     const id = ++runId.current;
     running.current = current;
+    if (!chatId.current) chatId.current = newChatId();
+    const chat = chatId.current;
+    openChats.set(scope, chat);
+    // The run goes on if the page is left: its answer is saved and shown on coming back.
+    const run = { history, progress: { text: t("ag.thinking") } as Progress, agent: current, stopped: false };
+    busy.set(chat, run);
+    const show = (p: Progress) => { run.progress = p; if (mine()) setProgress(p); };
+    const mine = () => runId.current === id && !run.stopped;
     setStalled(null);
     setMessages(history);
-    setProgress({ text: t("ag.thinking") });
-    const mine = () => runId.current === id;
+    setProgress(run.progress);
     try {
       const result = await start((e) => {
         if (!mine()) return;
-        if (e.type === "tool") setProgress({ text: t(`tool.${e.name}` as Key) });
-        else if (e.type === "progress") setProgress({ text: t("progress.checking", { done: e.done, total: e.total }), done: e.done, total: e.total });
-        else if (e.type === "thinking") setProgress({ text: t("ag.thinking") });
+        if (e.type === "tool") show({ text: t(`tool.${e.name}` as Key) });
+        else if (e.type === "progress") show({ text: t("progress.checking", { done: e.done, total: e.total }), done: e.done, total: e.total });
+        else if (e.type === "thinking") show({ text: t("ag.thinking") });
       });
-      if (!mine()) return;
-      const reply = result.incomplete ? t(result.proposals.length ? "ag.partial" : "ag.failed") : result.text;
-      keep([...history, { from: "agent", text: reply, proposals: result.proposals }]);
-      setAgent(result.incomplete ? null : current);
+      if (mine()) {
+        const reply = result.incomplete ? t(result.proposals.length ? "ag.partial" : "ag.failed") : result.text;
+        if (result.incomplete) liveAgents.delete(chat); else liveAgents.set(chat, current);
+        keep([...history, { from: "agent", text: reply, proposals: result.proposals }]);
+        setAgent(result.incomplete ? null : current);
+      }
     } catch (e) {
-      if (!mine()) return;
-      const retry = current.canResume(e);
-      keep([...history, { from: "error", text: errorText(e), proposals: [], retry }]);
-      // A new message starts a fresh conversation; "Try again" continues this one.
-      setAgent(null);
-      if (retry) setStalled(current);
+      if (mine()) {
+        const retry = current.canResume(e);
+        liveAgents.delete(chat);
+        keep([...history, { from: "error", text: errorText(e), proposals: [], retry }]);
+        // A new message starts a fresh conversation; "Try again" continues this one.
+        setAgent(null);
+        if (retry) setStalled(current);
+      }
     }
-    setProgress(null);
+    if (busy.get(chat) === run) busy.delete(chat);
+    if (mine()) setProgress(null);
+    changed();
   };
 
   const send = (event: { preventDefault(): void }) => {
@@ -377,6 +424,9 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
   };
 
   const stop = () => {
+    // The run may have been started before this page was rebuilt.
+    const run = busy.get(chatId.current);
+    if (run) { run.stopped = true; run.agent.cancel(); busy.delete(chatId.current); }
     running.current?.cancel();
     runId.current++;
     setAgent(null);
@@ -386,6 +436,7 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
   };
   const reset = () => {
     chatId.current = "";
+    openChats.delete(scope);
     setReopened(false);
     setChats(listChats(playlist?.uri));
     setMessages([]);
@@ -484,6 +535,7 @@ export function AgentView({ onBack, onSettings, initialPrompt = "", playlist }: 
             ? <button type="button" className="sai-send" title={t("ag.stop")} onClick={stop} style={{ background: "var(--spice-text, #fff)" }}><Icon name="stop" size={16} /></button>
             : <button type="submit" className="sai-send" title={t("ag.send")} disabled={!ready || !prompt.trim()}><Icon name="send" size={18} /></button>}
         </div>
+        <p style={{ ...css.muted, fontSize: 11, textAlign: "center", margin: "8px 0 0" }}>{t("ag.disclaimer")}</p>
       </form>
     </div>
   );

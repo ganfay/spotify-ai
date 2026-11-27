@@ -1,11 +1,12 @@
 // Recent chats with the agent, kept in the Spotify client's local storage on this
-// computer only. What is saved is what the screen shows (messages and proposals),
-// not the model's memory: a reopened chat is continued with a short text recap.
+// computer only. What is saved is what the screen shows (messages and proposals).
+// While Spotify stays open the model keeps each chat's whole memory (agent.tsx); after a
+// restart a reopened chat is continued with a short text recap.
 
 import type { Proposal } from "./agent/proposals";
 
 const KEY = "spotify-ai:chats:v1";
-export const MAX_CHATS = 5;
+export const MAX_CHATS = 20;
 /** Proposals for big playlists are large; the whole store stays under this size. */
 const MAX_CHARS = 1_500_000;
 

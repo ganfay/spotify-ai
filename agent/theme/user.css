@@ -307,6 +307,11 @@ html[data-sai-look] [data-testid="lyrics-npv-section"] [style*="--lyrics-color-b
   --lyrics-color-background: rgba(var(--spice-rgb-text), .07) !important;
 }
 
+/* Search matches (in a playlist, the library, search results) are painted in the accent colour
+   with the normal text colour on top. With a white accent (Noir, Glass, light looks) that was
+   white on white: the text on a match takes the colour made for the accent. */
+html[data-sai-look] mark { color: var(--sai-on-accent, #fff) !important; }
+
 /* ------------------------------------------------------------ row spacing
    Two highlighted rows next to each other must not share an edge. Row heights are
    fixed by Spotify's virtual lists, so only the painted highlight shrinks. */
