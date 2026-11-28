@@ -358,13 +358,14 @@ html[data-sai-theme="glass"] {
    content with z-index -1 would otherwise be covered by the body's own background. */
 html[data-sai-theme="glass"] { background: #07070b !important; }
 html[data-sai-theme="glass"] body { background: transparent !important; }
-/* Two layers behind everything: a soft aurora that is always there, and the cover
-   of the playing song on top of it. The cover only ADDS light ("screen"), so a
-   black cover leaves the aurora and a colourful one takes over. */
-/* Two layers behind everything: a soft aurora that is always there, and the cover of
-   the playing song over it. Both are cheap to draw: the aurora is plain gradients (no
-   filter), and the cover is blurred at a quarter of the window size, then scaled up —
-   a blur that wide looks the same and costs a sixteenth. */
+/* Three layers behind everything, each cheap to draw (nothing is redone while scrolling):
+   1. a near-black base with a faint hint of colour, for when no cover is known;
+   2. the cover of the playing song: blurred at a quarter of the window size and scaled up
+      (looks the same, costs a sixteenth), with LESS colour and light than the cover has, so a
+      loud cover gives a mood, not a flood;
+   3. one even dark veil over it, a little deeper at the top and bottom edges. It makes any
+      cover land in the same range of darkness (a white cover no longer washes the window grey)
+      and ties the top bar, the page and the player bar into one surface. */
 html[data-sai-theme="glass"] body::before {
   content: "";
   position: fixed;
@@ -372,10 +373,9 @@ html[data-sai-theme="glass"] body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 55% at 18% 22%, rgba(91,63,214,.75) 0%, transparent 72%),
-    radial-gradient(55% 60% at 86% 30%, rgba(14,127,168,.7) 0%, transparent 72%),
-    radial-gradient(65% 60% at 55% 96%, rgba(168,50,126,.7) 0%, transparent 72%),
-    #0b0b14;
+    radial-gradient(60% 55% at 18% 22%, rgba(91,63,214,.16) 0%, transparent 72%),
+    radial-gradient(65% 60% at 60% 96%, rgba(120,60,150,.12) 0%, transparent 72%),
+    #0a0a10;
 }
 html[data-sai-theme="glass"] body::after {
   content: "";
@@ -391,9 +391,19 @@ html[data-sai-theme="glass"] body::after {
   background-position: center;
   transform: scale(4);
   transform-origin: 0 0;
-  filter: blur(14px) saturate(1.7) brightness(.7);
-  opacity: .78;
+  filter: blur(20px) saturate(1.05) contrast(.85) brightness(.6);
+  opacity: .8;
   will-change: transform;
+}
+html[data-sai-theme="glass"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(130% 100% at 50% 45%, transparent 55%, rgba(7,7,11,.38) 100%),
+    linear-gradient(180deg, rgba(7,7,11,.62) 0%, rgba(7,7,11,.44) 16%, rgba(7,7,11,.44) 78%, rgba(7,7,11,.64) 100%);
 }
 html[data-sai-theme="glass"] .main-yourLibraryX-library,
 html[data-sai-theme="glass"] .Root__main-view,
@@ -425,15 +435,18 @@ html[data-sai-look] .Root__cinema-view { outline-color: transparent; }
    it, which hides the corners on a black page. Over a look's backdrop it showed as black corners. */
 html[data-sai-look] .Root__cinema-view .main-actionBar-ActionBarContainer { outline-color: transparent !important; }
 
-/* Lyrics in Glass. The blurred cover can be bright, grey or busy, so the lyrics view gets an
-   even dark veil (on the view itself: it stays in place while the lines scroll) and the lines
-   are plain white at three strengths. No glow and no heavy shadow: on a mid-grey backdrop
+/* Lyrics in Glass. The backdrop is already calmed for the whole window (see above), so the
+   lyrics view adds only a light veil of its own (on the view itself: it stays in place while
+   the lines scroll) and the lines are plain white at three strengths. No glow and no heavy shadow: on a mid-grey backdrop
    they turned into dirty halos. */
-html[data-sai-theme="glass"] .Root__cinema-view { background-color: rgba(8,8,14,.62) !important; }
+html[data-sai-theme="glass"] .Root__cinema-view { background-color: rgba(8,8,14,.26) !important; }
+/* The title strip of the lyrics view: a light fade, not a second dark bar under the top bar. */
+html[data-sai-theme="glass"] .Root__cinema-view > div[style*="--header-text-color"]::before {
+  background: linear-gradient(rgba(8,8,14,.30), rgba(8,8,14,0)) !important; }
 html[data-sai-theme="glass"] [style*="--lyrics-color-background"] {
   --lyrics-color-active: #fff !important;
-  --lyrics-color-inactive: rgba(255,255,255,.38) !important;
-  --lyrics-color-passed: rgba(255,255,255,.62) !important;
+  --lyrics-color-inactive: rgba(255,255,255,.46) !important;
+  --lyrics-color-passed: rgba(255,255,255,.70) !important;
   --encore-title-font-stack: "Sai Glass", "Manrope", system-ui, sans-serif;
   letter-spacing: -.01em;
   text-shadow: 0 1px 2px rgba(0,0,0,.35);
